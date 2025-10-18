@@ -108,7 +108,7 @@ it('can filter products by category', function () {
     $coffeeProducts = Product::factory(3)->create(['category_id' => $category1->id]);
     $teaProducts = Product::factory(2)->create(['category_id' => $category2->id]);
 
-    $response = $this->get("/products?category={$category1->slug}")
+    $response = $this->get("/products?category={$category1->id}")
         ->assertStatus(200);
 
     foreach ($coffeeProducts as $product) {
