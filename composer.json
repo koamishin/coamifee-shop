@@ -82,7 +82,44 @@
             "./vendor/bin/pint",
             "bun run fix"
         ],
-        "test:typos": "./vendor/bin/peck"
+        "test:typos": "./vendor/bin/peck",
+        "project:install": [
+            "@php artisan project:install"
+        ],
+        "project:fresh": [
+            "@php artisan project:install --fresh --force --seed"
+        ],
+        "project:demo": [
+            "@php artisan project:install --demo --seed --force"
+        ],
+        "setup:dev": [
+            "@php artisan project:install --env=local --seed",
+            "npm install",
+            "npm run build"
+        ],
+        "setup:prod": [
+            "@php artisan project:install --env=production --fresh --force",
+            "npm install --production",
+            "npm run build"
+        ],
+        "coffee:serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74\" \"php artisan serve\" \"npm run dev\" --names='server,frontend'"
+        ],
+        "coffee:test": [
+            "./vendor/bin/pint",
+            "@php artisan test"
+        ],
+        "coffee:deploy": [
+            "@php artisan config:cache",
+            "@php artisan route:cache",
+            "@php artisan view:cache",
+            "npm run build"
+        ],
+        "coffee:reset": [
+            "@php artisan migrate:fresh --seed --force",
+            "npm run build"
+        ]
     },
     "extra": {
         "laravel": {

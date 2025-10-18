@@ -233,48 +233,106 @@ it('can complete customer order flow', function () {
 ---
 
 ## 🚀 Getting Started Today
+## 🚀 Getting Started TODAY
 
-### Day 1: Initial Setup
+### 🎯 Quick Start (Recommended)
 
-1. **Create Laravel Project**
-    ```bash
-    laravel new coamifee-shop --git
-    cd coamifee-shop
-    ```
+**Option 1: Automated Installation (Easiest)**
+```bash
+# Clone and install automatically
+git clone <your-repo-url> coamifee-shop
+cd coamifee-shop
+composer install
+composer run project:install
 
-2. **Install Core Dependencies**
-    ```bash
-    composer require livewire/livewire filament/filament
-    composer require --dev laravel/pint pestphp/pest
-    ```
+# Or with demo data
+composer run project:demo
 
-3. **Configure Database (.env)**
-    ```env
-    DB_CONNECTION=pgsql
-    DB_HOST=127.0.0.1
-    DB_PORT=5432
-    DB_DATABASE=coffee_shop
-    DB_USERNAME=postgres
-    DB_PASSWORD=password
-    ```
+# Or for fresh development setup
+composer run setup:dev
+```
 
-4. **Run Initial Setup**
-    ```bash
-    php artisan key:generate
-    php artisan migrate
-    php artisan filament:install --panels
-    npm install && npm run build
-    ```
+**Option 2: Manual Installation**
+```bash
+# Clone repository
+git clone <your-repo-url> coamifee-shop
+cd coamifee-shop
 
-5. **Create First Model & Migration**
-    ```bash
-    php artisan make:model Product -m
-    ```
+# Install dependencies
+composer install
+npm install
 
-6. **Write First Test**
-    ```bash
-    php artisan make:test ProductTest --pest
-    ```
+# Configure .env file
+cp .env.example .env
+php artisan key:generate
+
+# Run automated installer
+php artisan project:install --seed
+
+# Build frontend assets
+npm run build
+```
+
+### 🛠️ Available Commands
+
+**Project Installation:**
+```bash
+# Interactive installation
+php artisan project:install
+
+# Fresh install with demo data
+composer run project:demo
+
+# Development setup
+composer run setup:dev
+
+# Production setup
+composer run setup:prod
+
+# Fresh reinstall
+composer run project:fresh
+```
+
+**Development Commands:**
+```bash
+# Start development servers
+composer run coffee:serve
+
+# Run tests and linting
+composer run coffee:test
+
+# Deploy optimizations
+composer run coffee:deploy
+
+# Reset database and rebuild
+composer run coffee:reset
+```
+
+**User Management:**
+```bash
+# Create admin user
+php artisan make:user "John Doe" "john@example.com" --admin --password=secure123
+
+# Create regular user
+php artisan make:user "Jane Smith" "jane@example.com"
+```
+
+### ⚙️ Available Options for project:install
+
+```bash
+php artisan project:install [options]
+
+Options:
+  --force          Force installation even if already installed
+  --env=ENV        Environment to setup (local, staging, production)
+  --seed           Run database seeding after installation
+  --demo           Install with demo data
+  --fresh          Fresh install (drop existing tables)
+
+Examples:
+  php artisan project:install --env=local --seed --demo
+  php artisan project:install --env=production --fresh --force
+```
 
 ---
 
@@ -337,13 +395,28 @@ git push origin feature/product-management
 
 ---
 
+## 📝 After Installation
+
+Access your coffee shop management system:
+
+- **Admin Panel:** `http://127.0.0.1:8000/admin`
+- **Default Login:** admin@admin.com / password
+- **API Documentation:** `http://127.0.0.1:8000/api/docs`
+
 ## 📝 Next Steps
 
-After completing Phase 1, you'll have:
+After installation, you'll have:
 - ✅ Fully functional product and inventory management
 - ✅ Working order system with Livewire
 - ✅ Admin panel with Filament
 - ✅ Comprehensive test suite
+- ✅ Demo data for testing
 - ✅ Solid foundation for advanced features
+
+### Development Workflow
+1. Start development: `composer run coffee:serve`
+2. Run tests: `composer run coffee:test`
+3. Check code style: `composer lint`
+4. Deploy: `composer run coffee:deploy`
 
 Ready to build your coffee shop empire with Laravel and Livewire! ☕
