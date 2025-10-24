@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Filament\Admin\Resources\Products\ProductResource;
 use App\Filament\Admin\Resources\Users\UserResource;
 use App\Filament\Admin\Widgets\LatestAccessLogs;
 use App\Models\User;
@@ -126,6 +127,7 @@ final class AdminPanelProvider extends PanelProvider
                     ->users(fn () => User::pluck('email', 'name')->toArray()),
             ])
             ->resources([
+                // ProductResource::class, // Has routing issue - will fix separately
                 config('filament-logger.activity_resource'),
             ])
             ->middleware([

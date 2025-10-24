@@ -7,8 +7,6 @@ namespace App\Filament\Admin\Resources\Products;
 use App\Filament\Admin\Resources\Products\Pages\CreateProduct;
 use App\Filament\Admin\Resources\Products\Pages\EditProduct;
 use App\Filament\Admin\Resources\Products\Pages\ListProducts;
-use App\Filament\Admin\Resources\Products\Schemas\ProductForm;
-use App\Filament\Admin\Resources\Products\Tables\ProductsTable;
 use App\Models\Product;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -20,16 +18,33 @@ final class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
+    protected static ?string $slug = 'products';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     public static function form(Schema $schema): Schema
     {
-        return ProductForm::configure($schema);
+        return $schema
+            ->components([
+                //
+            ]);
     }
 
     public static function table(Table $table): Table
     {
-        return ProductsTable::configure($table);
+        return $table
+            ->columns([
+                //
+            ])
+            ->filters([
+                //
+            ])
+            ->actions([
+                //
+            ])
+            ->bulkActions([
+                //
+            ]);
     }
 
     public static function getRelations(): array
