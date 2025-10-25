@@ -19,16 +19,16 @@ final class Product extends Model
         'price',
         'category_id',
         'image_url',
-        'stock',
         'is_active',
         'sku',
+        'preparation_time',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'category_id' => 'integer',
-        'stock' => 'integer',
         'is_active' => 'boolean',
+        'preparation_time' => 'integer',
     ];
 
     public function category(): BelongsTo
@@ -36,9 +36,14 @@ final class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
-    public function inventory(): HasMany
+    public function ingredients(): HasMany
     {
-        return $this->hasMany(ProductInventory::class);
+        return $this->hasMany(ProductIngredient::class);
+    }
+
+    public function metrics(): HasMany
+    {
+        return $this->hasMany(ProductMetric::class);
     }
 
     public function orderItems(): HasMany

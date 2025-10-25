@@ -10,7 +10,7 @@ use Livewire\Component;
 
 final class Sidebar extends Component
 {
-public int $selectedCategory = 0;
+    public int $selectedCategory = 0;
 
     public function addToCart(int $productId): void
     {
@@ -24,10 +24,10 @@ public int $selectedCategory = 0;
 
     public function render(): \Illuminate\View\View
     {
-    // Load categories for sidebar navigation
-    $categories = Category::where('is_active', true)->orderBy('name')->get();
+        // Load categories for sidebar navigation
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
 
-    // Load best sellers (recently added products - in real app, this would be based on sales data)
+        // Load best sellers (recently added products - in real app, this would be based on sales data)
         $bestSellers = Product::with(['category'])
             ->where('is_active', true)
             ->orderBy('created_at', 'desc')

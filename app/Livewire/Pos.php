@@ -5,53 +5,77 @@ declare(strict_types=1);
 namespace App\Livewire;
 
 use App\Models\Category;
-use App\Models\Product;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\Product;
 use Livewire\Component;
 
 final class Pos extends Component
 {
     public string $search = '';
+
     public int $selectedCategory = 0;
+
     public array $cart = [];
 
     public float $subtotal = 0;
+
     public float $taxRate = 0.0;
+
     public float $taxAmount = 0;
+
     public float $total = 0;
 
     public string $customerName = '';
+
     public string $orderType = 'dine-in';
+
     public string $paymentMethod = 'cash';
+
     public string $tableNumber = '';
 
     public $products;
+
     public $categories;
+
     public $customers;
+
     public $recentOrders;
+
     public $bestSellers;
+
     public $favorites = [];
+
     public $todayOrders = 0;
+
     public $todaySales = 0.0;
-    
 
     public array $addOns = [];
+
     public string $otherNote = '';
 
     public float $discountPercentage = 0;
+
     public bool $discountApplied = false;
+
     public float $discountAmount = 0;
 
     public string $customerSearch = '';
 
     public bool $showFavoritesOnly = false;
+
     public bool $showPaymentModal = false;
+
     public bool $showReceiptModal = false;
+
     public bool $showPaymentPanel = false;
+
     public $selectedProductId = null;
+
     public $selectedProductIds = [];
-    
+
+    protected $listeners = ['productSelected' => 'addToCart'];
+
     public function toggleSelectProduct($productId)
     {
         if (in_array($productId, $this->selectedProductIds)) {
@@ -63,22 +87,16 @@ final class Pos extends Component
         }
     }
 
-
-
-
-    protected $listeners = ['productSelected' => 'addToCart'];
-
-
     public function selectPayment(string $method): void
     {
         $this->paymentMethod = $method;
     }
-    
 
     public function confirmPayment(): void
     {
         if (empty($this->cart)) {
             $this->dispatch('cart-empty', ['message' => 'Cart is empty']);
+
             return;
         }
 
@@ -99,8 +117,6 @@ final class Pos extends Component
         ]);
     }
 
-
-
     public function mount(): void
     {
         $this->calculateTotals();
@@ -109,54 +125,56 @@ final class Pos extends Component
 
     public function render(): \Illuminate\View\View
     {
-    // Load all products for dashboard stats
-    $this->products = Product::with(['category', 'inventory'])
-    ->where('is_active', true)
-    ->orderBy('name')
-    ->get();
-
-    // Load best sellers (for now, just featured/recent products - in real app, this would be based on sales data)
-    $this->bestSellers = Product::with(['category'])
-        ->where('is_active', true)
-        ->orderBy('created_at', 'desc')
-        ->take(5)
-        ->get();
-
-    // Load categories for sidebar navigation
-    $this->categories = Category::where('is_active', true)->orderBy('name')->get();
-
-    // Load recent orders for dashboard
-    $this->recentOrders = Order::with('items.product')
-        ->latest()
-        ->take(5)
-        ->get();
-
-    // Calculate today's orders and sales
-    $this->todayOrders = Order::whereDate('created_at', today())->count();
-    $this->todaySales = Order::whereDate('created_at', today())->sum('total');
-
-    // For POS functionality (when used as POS component)
-    if (!empty($this->customerSearch)) {
-        $this->customers = Customer::where('name', 'like', '%'.$this->customerSearch.'%')
-            ->orWhere('phone', 'like', '%'.$this->customerSearch.'%')
-            ->limit(5)
+        // Load all products for dashboard stats
+        $this->products = Product::with(['category', 'inventory'])
+            ->where('is_active', true)
+            ->orderBy('name')
             ->get();
-    } else {
-        $this->customers = collect();
-    }
 
-    $this->calculateTotals();
+        // Load best sellers (for now, just featured/recent products - in real app, this would be based on sales data)
+        $this->bestSellers = Product::with(['category'])
+            ->where('is_active', true)
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
 
-    return view('livewire.pos');
+        // Load categories for sidebar navigation
+        $this->categories = Category::where('is_active', true)->orderBy('name')->get();
+
+        // Load recent orders for dashboard
+        $this->recentOrders = Order::with('items.product')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        // Calculate today's orders and sales
+        $this->todayOrders = Order::whereDate('created_at', today())->count();
+        $this->todaySales = Order::whereDate('created_at', today())->sum('total');
+
+        // For POS functionality (when used as POS component)
+        if (! empty($this->customerSearch)) {
+            $this->customers = Customer::where('name', 'like', '%'.$this->customerSearch.'%')
+                ->orWhere('phone', 'like', '%'.$this->customerSearch.'%')
+                ->limit(5)
+                ->get();
+        } else {
+            $this->customers = collect();
+        }
+
+        $this->calculateTotals();
+
+        return view('livewire.pos');
     }
 
     // =============== CART METHODS ===============
     public function addToCart(int $productId): void
     {
         $product = Product::find($productId);
-        if (!$product) return;
+        if (! $product) {
+            return;
+        }
 
-        if (!isset($this->cart[$productId])) {
+        if (! isset($this->cart[$productId])) {
             $this->cart[$productId] = [
                 'id' => $product->id,
                 'name' => $product->name,
@@ -181,7 +199,6 @@ final class Pos extends Component
     {
         $this->removeFromCart($productId);
     }
-
 
     public function incrementQuantity(int $productId): void
     {
@@ -218,7 +235,7 @@ final class Pos extends Component
     {
         $this->addOns[] = [
             'label' => '',
-            'amount' => 0.0
+            'amount' => 0.0,
         ];
     }
 
@@ -262,7 +279,9 @@ final class Pos extends Component
     public function loadOrder(int $orderId): void
     {
         $order = Order::with('items.product')->find($orderId);
-        if (!$order) return;
+        if (! $order) {
+            return;
+        }
 
         $this->cart = [];
         foreach ($order->items as $item) {
@@ -278,11 +297,6 @@ final class Pos extends Component
         $this->customerName = $order->customer_name ?? '';
         $this->orderType = $order->order_type ?? 'dine-in';
         $this->calculateTotals();
-    }
-
-    private function loadRecentOrders(): void
-    {
-        $this->recentOrders = Order::latest()->take(5)->get();
     }
 
     public function applyDiscount(): void
@@ -313,7 +327,7 @@ final class Pos extends Component
                 'todaySales' => $this->todaySales,
                 'todayOrders' => $this->todayOrders,
                 'products' => $this->products->count(),
-            ]
+            ],
         ]);
     }
 
@@ -322,7 +336,7 @@ final class Pos extends Component
         // This would clear all orders from database - be careful with this!
         $this->dispatch('clear-all-orders', [
             'message' => 'This will clear all order history. Are you sure?',
-            'type' => 'warning'
+            'type' => 'warning',
         ]);
     }
 
@@ -334,14 +348,14 @@ final class Pos extends Component
                 'todayOrders' => $this->todayOrders,
                 'avgOrder' => $this->todayOrders > 0 ? $this->todaySales / $this->todayOrders : 0,
                 'totalProducts' => $this->products->count(),
-            ]
+            ],
         ]);
     }
 
     public function openSettings(): void
     {
         $this->dispatch('open-settings', [
-            'message' => 'Settings panel opened'
+            'message' => 'Settings panel opened',
         ]);
     }
 
@@ -349,6 +363,7 @@ final class Pos extends Component
     {
         if (empty($this->cart)) {
             $this->dispatch('cart-empty', ['message' => 'Cart is empty']);
+
             return;
         }
 
@@ -361,6 +376,11 @@ final class Pos extends Component
         $this->loadRecentOrders();
     }
 
+    private function loadRecentOrders(): void
+    {
+        $this->recentOrders = Order::latest()->take(5)->get();
+    }
+
     private function calculateTotals(): void
     {
         $subtotal = 0.0;
@@ -371,7 +391,7 @@ final class Pos extends Component
 
         // Add add-ons to subtotal
         foreach ($this->addOns as $addOn) {
-            $subtotal += floatval($addOn['amount'] ?? 0);
+            $subtotal += (float) ($addOn['amount'] ?? 0);
         }
 
         $this->subtotal = $subtotal;
