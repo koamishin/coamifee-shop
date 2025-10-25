@@ -25,35 +25,7 @@ final class DatabaseSeeder extends Seeder
             'password' => Hash::make('password'),
         ]);
 
-        // Create sample data for the cafe
-        $categories = [
-            ['name' => 'Coffee', 'description' => 'Hot and cold coffee beverages'],
-            ['name' => 'Tea', 'description' => 'Various types of tea'],
-            ['name' => 'Pastries', 'description' => 'Fresh baked pastries and breads'],
-            ['name' => 'Sandwiches', 'description' => 'Delicious sandwiches and wraps'],
-            ['name' => 'Salads', 'description' => 'Fresh and healthy salads'],
-            ['name' => 'Desserts', 'description' => 'Sweet treats and desserts'],
-            ['name' => 'Beverages', 'description' => 'Soft drinks and other beverages'],
-            ['name' => 'Breakfast', 'description' => 'Breakfast items and specials'],
-        ];
-
-        foreach ($categories as $category) {
-            \App\Models\Category::create($category);
-        }
-
-        \App\Models\Product::factory(20)->create();
-
-        \App\Models\Customer::factory(10)->create();
-
-        \App\Models\Order::factory(15)->create()->each(function ($order) {
-            $products = \App\Models\Product::inRandomOrder()->take(rand(1, 5))->get();
-            foreach ($products as $product) {
-                \App\Models\OrderItem::factory()->create([
-                    'order_id' => $order->id,
-                    'product_id' => $product->id,
-                    'price' => $product->price,
-                ]);
-            }
-        });
+        // Use the CoffeeShopSeeder for all sample data
+        $this->call(CoffeeShopSeeder::class);
     }
 }

@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
+use App\Actions\PosCheckoutAction;
+use App\Actions\ProcessOrderAction;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\InventoryService;
+use App\Services\OrderProcessingService;
+use App\Services\ReportingService;
 use Livewire\Component;
 
 final class Pos extends Component
@@ -70,11 +75,40 @@ final class Pos extends Component
 
     public bool $showPaymentPanel = false;
 
+    // Coffee shop specific features
+    public array $quickAddItems = [];
+
+    public array $sizeOptions = ['small', 'medium', 'large'];
+
+    public array $temperatureOptions = ['hot', 'iced', 'blended'];
+
+    public array $milkOptions = ['whole', 'skim', 'oat', 'almond', 'soy'];
+
+    public array $customizations = [];
+
     public $selectedProductId = null;
 
     public $selectedProductIds = [];
 
+    public array $lowStockAlerts = [];
+
+    public array $productAvailability = [];
+
     protected $listeners = ['productSelected' => 'addToCart'];
+
+    public function boot(
+        OrderProcessingService $orderProcessingService,
+        InventoryService $inventoryService,
+        ProcessOrderAction $processOrderAction,
+        ReportingService $reportingService,
+        PosCheckoutAction $posCheckoutAction
+    ): void {
+        $this->orderProcessingService = $orderProcessingService;
+        $this->inventoryService = $inventoryService;
+        $this->processOrderAction = $processOrderAction;
+        $this->reportingService = $reportingService;
+        $this->posCheckoutAction = $posCheckoutAction;
+    }
 
     public function toggleSelectProduct($productId)
     {
@@ -100,43 +134,66 @@ final class Pos extends Component
             return;
         }
 
-        // Example: simulate saving order
-        Order::create([
+        // Prepare order data
+        $orderData = [
             'customer_name' => $this->customerName ?: 'Guest',
             'order_type' => $this->orderType,
             'payment_method' => $this->paymentMethod,
+            'table_number' => $this->tableNumber,
             'total' => $this->total,
-        ]);
+            'notes' => $this->otherNote,
+        ];
 
-        // After payment, clear the cart and close modal
-        $this->clearCart();
-        $this->showPaymentModal = false;
+        // Process checkout
+        $result = $this->posCheckoutAction->execute($this->cart, $orderData);
 
-        $this->dispatch('payment-confirmed', [
-            'message' => 'Payment confirmed successfully',
-        ]);
+        if ($result['success']) {
+            $this->clearCart();
+            $this->showPaymentModal = false;
+
+            $this->dispatch('payment-confirmed', [
+                'message' => $result['message'],
+                'order_id' => $result['order_id'],
+                'order_number' => $result['order_number'],
+            ]);
+
+            // Refresh data
+            $this->loadRecentOrders();
+            $this->checkLowStock();
+            $this->updateProductAvailability();
+        } else {
+            $this->dispatch('order-failed', ['message' => $result['message']]);
+        }
     }
 
     public function mount(): void
     {
-        $this->calculateTotals();
-        $this->loadRecentOrders();
-    }
-
-    public function render(): \Illuminate\View\View
-    {
-        // Load all products for dashboard stats
-        $this->products = Product::with(['category', 'inventory'])
+        // Initialize products before using them
+        $this->products = Product::with(['category', 'ingredients.ingredient'])
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
 
-        // Load best sellers (for now, just featured/recent products - in real app, this would be based on sales data)
-        $this->bestSellers = Product::with(['category'])
+        $this->calculateTotals();
+        $this->loadRecentOrders();
+        $this->checkLowStock();
+        $this->updateProductAvailability();
+        $this->loadQuickAddItems();
+    }
+
+    public function render(): \Illuminate\View\View
+    {
+        // Load products with availability info
+        $this->products = Product::with(['category', 'ingredients.ingredient'])
             ->where('is_active', true)
-            ->orderBy('created_at', 'desc')
-            ->take(5)
+            ->orderBy('name')
             ->get();
+
+        // Load best sellers based on actual metrics data
+        $this->bestSellers = $this->reportingService->getTopProducts(5, 'daily', 7)
+            ->map(function ($metric) {
+                return $metric->product;
+            });
 
         // Load categories for sidebar navigation
         $this->categories = Category::where('is_active', true)->orderBy('name')->get();
@@ -166,11 +223,223 @@ final class Pos extends Component
         return view('livewire.pos');
     }
 
+    // =============== COFFEE SHOP SPECIFIC METHODS ===============
+    public function loadQuickAddItems(): void
+    {
+        // Load popular coffee items for quick access
+        $this->quickAddItems = Product::where('is_active', true)
+            ->whereHas('category', function ($query) {
+                $query->whereIn('name', ['Coffee', 'Espresso', 'Latte']);
+            })
+            ->orderBy('name')
+            ->take(8)
+            ->get()
+            ->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'price' => $product->price,
+                    'image' => $product->image_url,
+                    'category' => $product->category->name,
+                    'can_produce' => $this->inventoryService->canProduceProduct($product->id, 1),
+                ];
+            })
+            ->toArray();
+    }
+
+    public function quickAddProduct(int $productId, string $size = 'medium', string $temperature = 'hot'): void
+    {
+        if (! $this->inventoryService->canProduceProduct($productId, 1)) {
+            $this->dispatch('insufficient-inventory', [
+                'message' => 'Cannot add product: Insufficient ingredients',
+                'product_id' => $productId,
+            ]);
+
+            return;
+        }
+
+        $product = Product::find($productId);
+        if (! $product) {
+            return;
+        }
+
+        $cartItemId = $productId.'_'.$size.'_'.$temperature;
+
+        // Calculate price based on size
+        $priceMultiplier = match ($size) {
+            'small' => 0.85,
+            'large' => 1.25,
+            default => 1.0,
+        };
+
+        $adjustedPrice = $product->price * $priceMultiplier;
+
+        if (! isset($this->cart[$cartItemId])) {
+            $this->cart[$cartItemId] = [
+                'id' => $product->id,
+                'name' => $product->name,
+                'price' => $adjustedPrice,
+                'quantity' => 1,
+                'image' => $product->image_url,
+                'size' => $size,
+                'temperature' => $temperature,
+                'customizations' => [],
+            ];
+        } else {
+            if (! $this->inventoryService->canProduceProduct($productId, $this->cart[$cartItemId]['quantity'] + 1)) {
+                $this->dispatch('insufficient-inventory', [
+                    'message' => 'Cannot add more: Insufficient ingredients',
+                    'product_id' => $productId,
+                ]);
+
+                return;
+            }
+            $this->cart[$cartItemId]['quantity']++;
+        }
+
+        $this->calculateTotals();
+        $this->updateProductAvailability();
+    }
+
+    public function addCustomization(string $key, $value): void
+    {
+        $this->customizations[$key] = $value;
+    }
+
+    public function removeCustomization(string $key): void
+    {
+        unset($this->customizations[$key]);
+    }
+
+    public function customizeCartItem(string $cartItemId, array $customizations): void
+    {
+        if (isset($this->cart[$cartItemId])) {
+            $this->cart[$cartItemId]['customizations'] = $customizations;
+
+            // Adjust price for customizations
+            $product = Product::find($this->cart[$cartItemId]['id']);
+            if ($product) {
+                $basePrice = $product->price;
+                $customizationPrice = $this->calculateCustomizationPrice($customizations);
+                $this->cart[$cartItemId]['price'] = $basePrice + $customizationPrice;
+            }
+
+            $this->calculateTotals();
+        }
+    }
+
+    public function duplicateOrder(int $orderId): void
+    {
+        $order = Order::with('items.product')->find($orderId);
+        if (! $order) {
+            return;
+        }
+
+        $this->cart = [];
+        foreach ($order->items as $item) {
+            $cartItemId = $item->product_id;
+
+            // Check if we can produce this item
+            if (! $this->inventoryService->canProduceProduct($item->product_id, $item->quantity)) {
+                $this->dispatch('insufficient-inventory', [
+                    'message' => "Cannot duplicate order: Insufficient ingredients for {$item->product->name}",
+                    'product_name' => $item->product->name,
+                ]);
+
+                continue;
+            }
+
+            $this->cart[$cartItemId] = [
+                'id' => $item->product_id,
+                'name' => $item->product->name,
+                'price' => $item->price,
+                'quantity' => $item->quantity,
+                'image' => $item->product->image_url,
+                'customizations' => [],
+            ];
+        }
+
+        $this->customerName = $order->customer_name ?? '';
+        $this->orderType = $order->order_type ?? 'dine-in';
+        $this->tableNumber = $order->table_number ?? '';
+        $this->calculateTotals();
+        $this->updateProductAvailability();
+
+        $this->dispatch('order-duplicated', [
+            'message' => 'Order duplicated successfully',
+            'order_id' => $orderId,
+        ]);
+    }
+
+    public function applyCustomerDiscount(string $discountCode): void
+    {
+        // Simple discount logic - in real app, this would check against a database
+        $discounts = [
+            'COFFEE10' => 10,
+            'COFFEE15' => 15,
+            'WELCOME' => 5,
+        ];
+
+        if (isset($discounts[$discountCode])) {
+            $this->discountPercentage = $discounts[$discountCode];
+            $this->applyDiscount();
+
+            $this->dispatch('discount-applied', [
+                'message' => "Discount code {$discountCode} applied: {$discounts[$discountCode]}% off",
+                'percentage' => $discounts[$discountCode],
+            ]);
+        } else {
+            $this->dispatch('discount-invalid', [
+                'message' => 'Invalid discount code',
+                'code' => $discountCode,
+            ]);
+        }
+    }
+
+    public function generateReceipt(): void
+    {
+        $receiptData = [
+            'order_number' => 'POS-'.time(),
+            'date' => now()->format('M d, Y H:i'),
+            'customer_name' => $this->customerName ?: 'Guest',
+            'order_type' => $this->orderType,
+            'table_number' => $this->tableNumber,
+            'items' => [],
+            'subtotal' => $this->subtotal,
+            'tax_amount' => $this->taxAmount,
+            'discount_amount' => $this->discountAmount,
+            'total' => $this->total,
+            'payment_method' => $this->paymentMethod,
+        ];
+
+        foreach ($this->cart as $item) {
+            $receiptData['items'][] = [
+                'name' => $item['name'],
+                'quantity' => $item['quantity'],
+                'price' => $item['price'],
+                'total' => $item['price'] * $item['quantity'],
+                'customizations' => $item['customizations'] ?? [],
+            ];
+        }
+
+        $this->dispatch('receipt-generated', ['receipt_data' => $receiptData]);
+    }
+
     // =============== CART METHODS ===============
     public function addToCart(int $productId): void
     {
         $product = Product::find($productId);
         if (! $product) {
+            return;
+        }
+
+        // Check if product can be produced with current inventory
+        if (! $this->inventoryService->canProduceProduct($productId, 1)) {
+            $this->dispatch('insufficient-inventory', [
+                'message' => "Cannot add {$product->name}: Insufficient ingredients",
+                'product_name' => $product->name,
+            ]);
+
             return;
         }
 
@@ -183,10 +452,22 @@ final class Pos extends Component
                 'image' => $product->image_url,
             ];
         } else {
+            // Check if we can add one more
+            if (! $this->inventoryService->canProduceProduct($productId, $this->cart[$productId]['quantity'] + 1)) {
+                $this->dispatch('insufficient-inventory', [
+                    'message' => "Cannot add more {$product->name}: Insufficient ingredients",
+                    'product_name' => $product->name,
+                ]);
+
+                return;
+            }
             $this->cart[$productId]['quantity']++;
         }
 
         $this->calculateTotals();
+        $this->updateProductAvailability();
+        
+        $this->dispatch('productSelected', $productId);
     }
 
     public function removeFromCart(int $productId): void
@@ -203,8 +484,17 @@ final class Pos extends Component
     public function incrementQuantity(int $productId): void
     {
         if (isset($this->cart[$productId])) {
+            if (! $this->inventoryService->canProduceProduct($productId, $this->cart[$productId]['quantity'] + 1)) {
+                $this->dispatch('insufficient-inventory', [
+                    'message' => 'Cannot increase quantity: Insufficient ingredients',
+                    'product_id' => $productId,
+                ]);
+
+                return;
+            }
             $this->cart[$productId]['quantity']++;
             $this->calculateTotals();
+            $this->updateProductAvailability();
         }
     }
 
@@ -367,13 +657,104 @@ final class Pos extends Component
             return;
         }
 
-        $this->dispatch('payment-processed', [
-            'message' => 'Payment processed successfully',
-            'total' => $this->total,
-        ]);
+        $this->showPaymentModal = true;
+    }
 
-        $this->clearCart();
-        $this->loadRecentOrders();
+    private function checkLowStock(): void
+    {
+        $this->lowStockAlerts = $this->inventoryService->checkLowStock()
+            ->map(function ($inventory) {
+                return [
+                    'ingredient_name' => $inventory->ingredient->name,
+                    'current_stock' => $inventory->current_stock,
+                    'min_stock_level' => $inventory->min_stock_level,
+                    'unit_type' => $inventory->ingredient->unit_type,
+                ];
+            })
+            ->toArray();
+    }
+
+    private function updateProductAvailability(): void
+    {
+        $cartProductIds = [];
+        foreach (array_keys($this->cart) as $cartKey) {
+            // Extract the base product ID from cart keys like "1_large_hot"
+            $cartKey = (string) $cartKey; // Convert to string for explode
+            $parts = explode('_', $cartKey);
+            $cartProductIds[] = (int) $parts[0];
+        }
+
+        $allProductIds = array_merge(
+            $cartProductIds,
+            $this->products->pluck('id')->toArray()
+        );
+
+        $this->productAvailability = [];
+        foreach ($allProductIds as $productId) {
+            // Calculate total quantity in cart for this product (across all variants)
+            $inCart = 0;
+            foreach ($this->cart as $cartKey => $item) {
+                if (str_starts_with((string)$cartKey, $productId.'_')) {
+                    $inCart += $item['quantity'] ?? 0;
+                }
+            }
+
+            $canProduceOne = $this->inventoryService->canProduceProduct($productId, 1);
+            $canProduceMore = $this->inventoryService->canProduceProduct($productId, $inCart + 1);
+
+            $this->productAvailability[$productId] = [
+                'can_add' => $canProduceOne,
+                'can_increment' => $canProduceMore,
+                'max_quantity' => $this->getMaxProducibleQuantity($productId),
+            ];
+        }
+    }
+
+    private function getMaxProducibleQuantity(int $productId): int
+    {
+        $product = Product::find($productId);
+        if (! $product) {
+            return 0;
+        }
+
+        $ingredients = $product->ingredients()->with('ingredient.inventory')->get();
+        $maxQuantities = [];
+
+        foreach ($ingredients as $productIngredient) {
+            $ingredient = $productIngredient->ingredient;
+            if ($ingredient->is_trackable) {
+                $inventory = $ingredient->inventory;
+                if ($inventory) {
+                    $maxQuantities[] = (int) ($inventory->current_stock / $productIngredient->quantity_required);
+                } else {
+                    return 0; // No inventory means can't produce
+                }
+            }
+        }
+
+        return empty($maxQuantities) ? 999 : min($maxQuantities);
+    }
+
+    private function calculateCustomizationPrice(array $customizations): float
+    {
+        $price = 0.0;
+
+        // Add price for milk alternatives
+        if (isset($customizations['milk']) && in_array($customizations['milk'], ['oat', 'almond', 'soy'])) {
+            $price += 0.50;
+        }
+
+        // Add price for extra shots
+        if (isset($customizations['extra_shots'])) {
+            $price += $customizations['extra_shots'] * 0.75;
+        }
+
+        // Add price for syrups
+        if (isset($customizations['syrup']) && $customizations['syrup'] !== 'none') {
+            $price += 0.60;
+        }
+
+        return $price;
     }
 
     private function loadRecentOrders(): void

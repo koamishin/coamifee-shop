@@ -15,11 +15,23 @@ final class CoffeeShopSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create Categories
-        $coffeeCategory = Category::create(['name' => 'Coffee', 'description' => 'Hot and cold coffee beverages']);
-        $teaCategory = Category::create(['name' => 'Tea', 'description' => 'Various tea selections']);
-        $foodCategory = Category::create(['name' => 'Food', 'description' => 'Pastries, sandwiches, and meals']);
-        $dessertCategory = Category::create(['name' => 'Desserts', 'description' => 'Sweet treats and desserts']);
+        // Create Categories with proper structure
+        $categories = [
+            ['name' => 'Coffee', 'description' => 'Hot and cold coffee beverages', 'is_active' => true, 'sort_order' => 1],
+            ['name' => 'Tea', 'description' => 'Various tea selections', 'is_active' => true, 'sort_order' => 2],
+            ['name' => 'Food', 'description' => 'Pastries, sandwiches, and meals', 'is_active' => true, 'sort_order' => 3],
+            ['name' => 'Desserts', 'description' => 'Sweet treats and desserts', 'is_active' => true, 'sort_order' => 4],
+        ];
+
+        $createdCategories = [];
+        foreach ($categories as $category) {
+            $createdCategories[$category['name']] = Category::create($category);
+        }
+
+        $coffeeCategory = $createdCategories['Coffee'];
+        $teaCategory = $createdCategories['Tea'];
+        $foodCategory = $createdCategories['Food'];
+        $dessertCategory = $createdCategories['Desserts'];
 
         // Create Ingredients
         $ingredients = [
@@ -72,10 +84,24 @@ final class CoffeeShopSeeder extends Seeder
             ['name' => 'Mocha', 'price' => 4.50, 'category_id' => $coffeeCategory->id, 'preparation_time' => 6],
             ['name' => 'Iced Coffee', 'price' => 3.00, 'category_id' => $coffeeCategory->id, 'preparation_time' => 3],
 
+            // Tea Products
+            ['name' => 'Green Tea', 'price' => 2.00, 'category_id' => $teaCategory->id, 'preparation_time' => 3],
+            ['name' => 'Earl Grey Tea', 'price' => 2.00, 'category_id' => $teaCategory->id, 'preparation_time' => 3],
+            ['name' => 'Iced Tea', 'price' => 2.50, 'category_id' => $teaCategory->id, 'preparation_time' => 3],
+            ['name' => 'Chamomile Tea', 'price' => 2.25, 'category_id' => $teaCategory->id, 'preparation_time' => 3],
+
             // Food Products
             ['name' => 'Beef Burger', 'price' => 8.50, 'category_id' => $foodCategory->id, 'preparation_time' => 12],
             ['name' => 'Chicken Sandwich', 'price' => 7.50, 'category_id' => $foodCategory->id, 'preparation_time' => 10],
             ['name' => 'Bacon Burger', 'price' => 9.00, 'category_id' => $foodCategory->id, 'preparation_time' => 13],
+            ['name' => 'Caesar Salad', 'price' => 6.50, 'category_id' => $foodCategory->id, 'preparation_time' => 8],
+            ['name' => 'Grilled Cheese Sandwich', 'price' => 5.50, 'category_id' => $foodCategory->id, 'preparation_time' => 7],
+
+            // Dessert Products
+            ['name' => 'Chocolate Cake', 'price' => 4.50, 'category_id' => $dessertCategory->id, 'preparation_time' => 2],
+            ['name' => 'Cheesecake', 'price' => 5.00, 'category_id' => $dessertCategory->id, 'preparation_time' => 2],
+            ['name' => 'Apple Pie', 'price' => 4.00, 'category_id' => $dessertCategory->id, 'preparation_time' => 2],
+            ['name' => 'Ice Cream Sundae', 'price' => 3.50, 'category_id' => $dessertCategory->id, 'preparation_time' => 3],
         ];
 
         $createdProducts = [];

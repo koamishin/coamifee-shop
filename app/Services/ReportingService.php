@@ -98,6 +98,36 @@ final class ReportingService
         ];
     }
 
+    public function getTopProducts(int $limit = 5, string $period = 'daily', int $days = 7): Collection
+    {
+        $startDate = match ($period) {
+            'daily' => Carbon::now()->subDays($days),
+            'weekly' => Carbon::now()->subWeeks($days),
+            'monthly' => Carbon::now()->subMonths($days),
+            'yearly' => Carbon::now()->subYears($days),
+            default => Carbon::now()->subDays($days),
+        };
+
+        return Order::with(['items.product'])
+            ->whereBetween('created_at', [$startDate, Carbon::now()])
+            ->get()
+            ->flatMap->items
+            ->groupBy('product_id')
+            ->map(function ($items, $productId) {
+                $product = $items->first()->product;
+
+                return (object) [
+                    'product' => $product,
+                    'quantity_sold' => $items->sum('quantity'),
+                    'revenue' => $items->sum(function ($item) {
+                        return $item->price * $item->quantity;
+                    }),
+                ];
+            })
+            ->sortByDesc('quantity_sold')
+            ->take($limit);
+    }
+
     public function getCostAnalysisReport(Carbon $startDate, Carbon $endDate): array
     {
         $ingredientCosts = IngredientUsage::with('ingredient')

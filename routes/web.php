@@ -17,6 +17,10 @@ Route::get('dashboard', [App\Http\Controllers\DashboardController::class, 'index
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
+Route::get('pos', App\Livewire\Pos::class)
+    ->middleware(['auth'])
+    ->name('pos');
+
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
 
