@@ -1,0 +1,30 @@
+<?php
+
+namespace Database\Factories;
+
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Order>
+ */
+class OrderFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'customer_name' => fake()->name(),
+            'customer_id' => \App\Models\Customer::factory(),
+            'order_type' => fake()->randomElement(['dine-in', 'takeout', 'delivery']),
+            'payment_method' => fake()->randomElement(['cash', 'card', 'gcash']),
+            'total' => fake()->randomFloat(2, 5.00, 150.00),
+            'status' => fake()->randomElement(['pending', 'confirmed', 'completed']),
+            'table_number' => fake()->optional(0.7)->randomElement(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']),
+            'notes' => fake()->optional(0.3)->sentence(),
+        ];
+    }
+}

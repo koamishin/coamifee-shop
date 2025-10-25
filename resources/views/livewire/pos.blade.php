@@ -2,7 +2,7 @@
 
     <!-- HEADER -->
     <header class="backdrop-blur-md bg-white/80 dark:bg-[#2a2520]/80 border-b border-[#e8dcc8] dark:border-[#3d3530] sticky top-0 z-50 shadow-sm">
-        <div class="max-w-7xl mx-auto px-8 py-5 flex justify-between items-center">
+        <div class="w-full px-4 py-3 flex justify-between items-center">
 
             <!-- Brand -->
             <div class="flex items-center gap-4">
@@ -44,11 +44,16 @@
                 </button>
 
                 <!-- Cart Count -->
-                <div class="flex items-center gap-3 bg-[#f0e6d2] dark:bg-[#3d3530] px-4 py-2 rounded-full border border-[#e8dcc8] dark:border-[#4d4540]">
-                    <svg class="w-5 h-5 text-[#c17a4a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                <div class="flex items-center gap-3 bg-gradient-to-r from-[#f0e6d2] to-[#ede3d0] dark:from-[#3d3530] dark:to-[#454035]
+                px-5 py-3 rounded-full border border-[#e8dcc8] dark:border-[#4d4540]
+                shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group">
+                <svg class="w-5 h-5 text-[#c17a4a] group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                     </svg>
-                    <span class="text-sm text-[#2c2416] dark:text-[#f5f1e8] font-semibold">{{ $this->getCartItemCount() }}</span>
+                    <span class="text-sm text-[#2c2416] dark:text-[#f5f1e8] font-bold">{{ $this->getCartItemCount() }}</span>
+                    @if($this->getCartItemCount() > 0)
+                        <div class="w-2 h-2 bg-[#c17a4a] rounded-full animate-ping"></div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -57,90 +62,29 @@
     <!-- MAIN LAYOUT WITH SIDEBAR -->
     <div class="flex">
         <!-- Sidebar Component -->
-        @include('livewire.sidebar')
+        <livewire:sidebar />
 
         <!-- MAIN CONTENT -->
-        <main class="flex-1 px-8 py-10">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <main class="flex-1 px-4 py-6">
+            <div class="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 <!-- PRODUCTS -->
-                <section class="lg:col-span-2 space-y-6">
-                    
-                    <!-- Search + Filter + Table Number -->
-                    <div class="bg-white/70 dark:bg-[#2a2520]/70 backdrop-blur-lg rounded-2xl shadow-md p-6 border border-[#e8dcc8] dark:border-[#3d3530]">
-                        <div class="flex flex-col gap-4">
-                            <div class="flex flex-col sm:flex-row gap-4">
-                                <div class="flex-1 relative">
-                                    <input 
-                                        type="text" 
-                                        wire:model.live.debounce.300ms="search"
-                                        placeholder="Search products..."
-                                        class="w-full pl-11 pr-4 py-3 text-sm border border-[#e8dcc8] dark:border-[#3d3530] rounded-lg 
-                                               focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent dark:bg-[#1a1815] dark:text-[#f5f1e8] 
-                                               placeholder-[#8b7355] dark:placeholder-[#6b5f52] transition"
-                                    >
-                                    <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                                        <svg class="h-5 w-5 text-[#8b7355]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                        </svg>
-                                    </div>
-                                </div>
+                <section class="lg:col-span-2 space-y-4">
 
-                                <!-- Category Filter -->
-                                <select 
-                                    wire:model.live="selectedCategory"
-                                    class="px-4 py-3 text-sm border border-[#e8dcc8] dark:border-[#3d3530] rounded-lg 
-                                           focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent dark:bg-[#1a1815] dark:text-[#f5f1e8] 
-                                           text-[#2c2416] font-medium transition">
-                                    <option value="0">All Categories</option>
-                                    @foreach($categories as $category)
-                                        <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <!-- Table/Order Number & Dine-in Toggle -->
-                            <div class="flex gap-4 items-end">
-                                <div class="flex-1">
-                                    <label class="block text-xs font-semibold text-[#2c2416] dark:text-[#f5f1e8] mb-2 uppercase tracking-wide">Table / Order #</label>
-                                    <input 
-                                        type="text" 
-                                        wire:model.lazy="tableNumber"
-                                        placeholder="e.g., Table 5 or Order #123"
-                                        class="w-full px-4 py-2 text-sm border border-[#e8dcc8] dark:border-[#3d3530] rounded-lg 
-                                               focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent dark:bg-[#1a1815] dark:text-[#f5f1e8] 
-                                               placeholder-[#8b7355] dark:placeholder-[#6b5f52] transition"
-                                    >
-                                </div>
-                                <div class="flex gap-2">
-                                    <button 
-                                        wire:click="$set('orderType', 'dine-in')"
-                                        class="px-4 py-2 rounded-lg text-sm font-semibold transition {{ $orderType === 'dine-in' ? 'bg-[#c17a4a] text-white' : 'bg-[#e8dcc8] dark:bg-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8]' }}"
-                                    >
-                                        Dine-in
-                                    </button>
-                                    <button 
-                                        wire:click="$set('orderType', 'takeout')"
-                                        class="px-4 py-2 rounded-lg text-sm font-semibold transition {{ $orderType === 'takeout' ? 'bg-[#c17a4a] text-white' : 'bg-[#e8dcc8] dark:bg-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8]' }}"
-                                    >
-                                        Takeout
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div x-data="{ selected: @entangle('selectedProductId') }" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 gap-4">
+                <div x-data="{ selected: @entangle('selectedProductId') }" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 gap-6">
                         @foreach($products as $product)
-                            <div 
-                                @click="$wire.addToCart({{ $product->id }}); selected = {{ $product->id }}"
-                                :class="selected == {{ $product->id }} 
-                                    ? 'border-[#c17a4a] ring-2 ring-[#c17a4a]/50 scale-[1.02]' 
-                                    : 'border-[#e8dcc8] dark:border-[#4d4540]'"
-                                class="cursor-pointer group bg-gradient-to-br from-[#faf8f3] to-[#f0e6d2] 
-                                    dark:from-[#3d3530] dark:to-[#2a2520] rounded-xl p-3 border 
-                                    hover:border-[#c17a4a] hover:shadow-lg transition-all duration-300 active:scale-95 relative"
+                            <div
+                            @click="$wire.addToCart({{ $product->id }}); selected = {{ $product->id }}"
+                            :class="selected == {{ $product->id }}
+                            ? 'border-[#c17a4a] ring-2 ring-[#c17a4a]/50 scale-[1.02] shadow-xl animate-pulse'
+                            : 'border-[#e8dcc8] dark:border-[#4d4540]'"
+                            class="cursor-pointer group bg-gradient-to-br from-[#faf8f3] to-[#f0e6d2]
+                            dark:from-[#3d3530] dark:to-[#2a2520] rounded-2xl p-4 border
+                            hover:border-[#c17a4a] hover:shadow-2xl hover:shadow-[#c17a4a]/10
+                                    transition-all duration-500 active:scale-95 relative overflow-hidden
+                                    before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent
+                                    before:via-white/5 before:to-transparent before:translate-x-[-100%]
+                                    hover:before:translate-x-[100%] before:transition-transform before:duration-1000"
                             >
                                 <!-- Favorite Button -->
                                 <button 
@@ -158,21 +102,32 @@
 
                                 <!-- Product Image -->
                                 @if($product->image_url)
-                                    <img 
-                                        src="{{ $product->image_url }}" 
-                                        alt="{{ $product->name }}" 
-                                        class="w-full h-24 object-cover rounded-lg mb-2 
-                                            transition-transform duration-300 group-hover:scale-105"
-                                    >
+                                <div class="relative mb-3">
+                                <img
+                                    src="{{ $product->image_url }}"
+                                    alt="{{ $product->name }}"
+                                class="w-full h-28 object-cover rounded-xl shadow-sm
+                                            transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg
+                                                group-hover:shadow-[#c17a4a]/20"
+                                        >
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    </div>
+                                @else
+                                    <div class="w-full h-28 bg-gradient-to-br from-[#e8dcc8] to-[#d4c4b0] dark:from-[#4d4540] dark:to-[#3d3530]
+                                        rounded-xl mb-3 flex items-center justify-center shadow-sm">
+                                        <svg class="w-10 h-10 text-[#8b7355] dark:text-[#b8a892]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                    </div>
                                 @endif
 
                                 <!-- Product Info -->
-                                <h4 class="text-xs font-semibold text-[#2c2416] dark:text-[#f5f1e8] truncate 
-                                        group-hover:text-[#c17a4a] transition">
-                                    {{ $product->name }}
+                                <h4 class="text-sm font-semibold text-[#2c2416] dark:text-[#f5f1e8] truncate
+                                group-hover:text-[#c17a4a] transition-colors duration-300 leading-tight mb-1">
+                                {{ $product->name }}
                                 </h4>
-                                <p class="text-xs text-[#8b7355] dark:text-[#b8a892] mb-2 line-clamp-1">
-                                    {{ $product->category->name ?? 'Uncategorized' }}
+                                <p class="text-xs text-[#8b7355] dark:text-[#b8a892] mb-3 line-clamp-1 font-medium">
+                                {{ $product->category->name ?? 'Uncategorized' }}
                                 </p>
 
                                 <div class="flex justify-between items-center">
@@ -191,7 +146,7 @@
                     </div>
 
                     <!-- Order History Section -->
-                    <div class="bg-white/70 dark:bg-[#2a2520]/70 backdrop-blur-lg rounded-2xl shadow-md p-6 border border-[#e8dcc8] dark:border-[#3d3530]">
+                    <div class="bg-white/70 dark:bg-[#2a2520]/70 backdrop-blur-lg rounded-2xl shadow-md p-4 border border-[#e8dcc8] dark:border-[#3d3530]">
                         <h3 class="text-lg font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8] mb-4">Recent Orders</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto">
                             @forelse($recentOrders ?? [] as $order)
@@ -207,32 +162,140 @@
                             @endforelse
                         </div>
                     </div>
+
+                    <!-- Quick Actions Panel -->
+                    <div class="bg-gradient-to-r from-[#faf8f3] to-[#f5f1e8] dark:from-[#2a2520] dark:to-[#1f1b17]
+                                backdrop-blur-lg rounded-2xl shadow-md p-6 border border-[#e8dcc8] dark:border-[#3d3530]">
+                        <h3 class="text-base font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8] mb-4 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-[#c17a4a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            Quick Actions
+                        </h3>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <!-- Print Report -->
+                            <button
+                                wire:click="printReport"
+                                class="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-[#c17a4a] to-[#a86a3a]
+                                    hover:from-[#d4956f] hover:to-[#b87a4a] text-white rounded-xl font-semibold text-sm
+                                    shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                                </svg>
+                                <span>Print Report</span>
+                            </button>
+
+                            <!-- Clear All Orders -->
+                            <button
+                                wire:click="clearAllOrders"
+                                class="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-[#dc2626] to-[#b91c1c]
+                                    hover:from-[#ef4444] hover:to-[#dc2626] text-white rounded-xl font-semibold text-sm
+                                    shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                <span>Clear All</span>
+                            </button>
+
+                            <!-- Sales Summary -->
+                            <button
+                                wire:click="showSalesSummary"
+                                class="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-[#059669] to-[#047857]
+                                    hover:from-[#10b981] hover:to-[#059669] text-white rounded-xl font-semibold text-sm
+                                    shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                </svg>
+                                <span>Sales Summary</span>
+                            </button>
+
+                            <!-- Settings -->
+                            <button
+                                wire:click="openSettings"
+                                class="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-[#6b7280] to-[#4b5563]
+                                    hover:from-[#9ca3af] hover:to-[#6b7280] text-white rounded-xl font-semibold text-sm
+                                    shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                <span>Settings</span>
+                            </button>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- CART -->
                 <aside class="lg:col-span-1">
                     <div class="bg-white/70 dark:bg-[#2a2520]/70 backdrop-blur-lg rounded-2xl shadow-md sticky top-24 p-4 
                                 h-[calc(100vh-8rem)] border border-[#e8dcc8] dark:border-[#3d3530] 
-                                flex flex-col overflow-y-auto">
+                                flex flex-col overflow-y-auto overflow-x-hidden">
 
                         <!-- Header -->
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8]">
                                 Order Summary
                             </h3>
-                            <button wire:click="clearCart" 
-                                    class="text-xs text-[#8b7355] hover:text-[#c17a4a] 
+                            <button wire:click="clearCart"
+                                    class="text-xs text-[#8b7355] hover:text-[#c17a4a]
                                         dark:text-[#b8a892] dark:hover:text-[#d4956f] transition font-medium">
                                 Clear
                             </button>
                         </div>
 
+                        <!-- Table/Order Number & Order Type -->
+                        <div class="mb-4 space-y-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-[#2c2416] dark:text-[#f5f1e8] mb-2 uppercase tracking-wide">Table / Order #</label>
+                                <input
+                                    type="text"
+                                    wire:model.lazy="tableNumber"
+                                    placeholder="e.g., Table 5 or Order #123"
+                                    class="w-full px-3 py-2 text-sm border border-[#e8dcc8] dark:border-[#3d3530] rounded-lg
+                                           focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent dark:bg-[#1a1815] dark:text-[#f5f1e8]
+                                           placeholder-[#8b7355] dark:placeholder-[#6b5f52] transition"
+                                >
+                            </div>
+                            <div class="flex gap-3">
+                                <button
+                                    wire:click="$set('orderType', 'dine-in')"
+                                    class="flex-1 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300
+                                        {{ $orderType === 'dine-in'
+                                            ? 'bg-gradient-to-r from-[#c17a4a] to-[#a86a3a] text-white shadow-lg scale-105'
+                                            : 'bg-[#f0e6d2] dark:bg-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8] hover:bg-[#e8dcc8] dark:hover:bg-[#4d4540] hover:scale-102' }}"
+                                >
+                                    <span class="flex items-center justify-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                        </svg>
+                                        Dine-in
+                                    </span>
+                                </button>
+                                <button
+                                    wire:click="$set('orderType', 'takeout')"
+                                    class="flex-1 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300
+                                        {{ $orderType === 'takeout'
+                                            ? 'bg-gradient-to-r from-[#c17a4a] to-[#a86a3a] text-white shadow-lg scale-105'
+                                            : 'bg-[#f0e6d2] dark:bg-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8] hover:bg-[#e8dcc8] dark:hover:bg-[#4d4540] hover:scale-102' }}"
+                                >
+                                    <span class="flex items-center justify-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                                        </svg>
+                                        Takeout
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Cart items -->
                         <div class="space-y-2 mb-4">
                             @if(!empty($cart))
-                                @foreach($cart as $item)
-                                    <div class="flex items-center gap-2 p-2 bg-[#f0e6d2] dark:bg-[#3d3530] 
-                                                rounded-lg border border-[#e8dcc8] dark:border-[#4d4540]">
+                            @foreach($cart as $item)
+                            <div class="flex items-center gap-3 p-3 bg-gradient-to-r from-[#f0e6d2] to-[#ede3d0]
+                            dark:from-[#3d3530] dark:to-[#454035] rounded-xl border border-[#e8dcc8] dark:border-[#4d4540]
+                                                hover:shadow-md transition-all duration-300 hover:scale-[1.01]">
                                         <img src="{{ $item['image'] ?? '/placeholder.png' }}" 
                                             class="w-10 h-10 rounded-lg object-cover flex-shrink-0">
                                         
@@ -245,26 +308,25 @@
                                             </p>
                                         </div>
                                         
-                                        <div class="flex items-center gap-1 flex-shrink-0">
-                                            <button wire:click="decrementQuantity({{ $item['id'] }})"
-                                                    class="px-1.5 py-0.5 bg-[#e8dcc8] dark:bg-[#4d4540] 
-                                                        text-[#2c2416] dark:text-[#f5f1e8] 
-                                                        rounded hover:bg-[#d4c4b0] dark:hover:bg-[#5d5550] 
-                                                        transition text-xs font-semibold">
-                                                −
-                                            </button>
-                                            
-                                            <span class="text-xs font-semibold text-[#2c2416] dark:text-[#f5f1e8] w-5 text-center">
-                                                {{ $item['quantity'] }}
-                                            </span>
-                                            
-                                            <button wire:click="incrementQuantity({{ $item['id'] }})"
-                                                    class="px-1.5 py-0.5 bg-[#e8dcc8] dark:bg-[#4d4540] 
-                                                        text-[#2c2416] dark:text-[#f5f1e8] 
-                                                        rounded hover:bg-[#d4c4b0] dark:hover:bg-[#5d5550] 
-                                                        transition text-xs font-semibold">
-                                                +
-                                            </button>
+                                        <div class="flex items-center gap-1 flex-shrink-0 bg-[#f8f5f0] dark:bg-[#454035] rounded-lg p-1">
+                                        <button wire:click="decrementQuantity({{ $item['id'] }})"
+                                        class="w-6 h-6 flex items-center justify-center bg-[#e8dcc8] dark:bg-[#4d4540]
+                                        text-[#2c2416] dark:text-[#f5f1e8] rounded-md
+                                        hover:bg-[#d4c4b0] dark:hover:bg-[#5d5550] hover:scale-110
+                                        transition-all duration-200 text-sm font-bold shadow-sm">
+                                        −
+                                        </button>
+
+                                        <span class="text-sm font-bold text-[#2c2416] dark:text-[#f5f1e8] w-8 text-center bg-white dark:bg-[#2a2520] rounded-md py-0.5 mx-0.5">
+                                        {{ $item['quantity'] }}
+                                        </span>
+
+                                        <button wire:click="incrementQuantity({{ $item['id'] }})"
+                                        class="w-6 h-6 flex items-center justify-center bg-[#c17a4a] text-white rounded-md
+                                        hover:bg-[#a86a3a] hover:scale-110
+                                        transition-all duration-200 text-sm font-bold shadow-sm">
+                                        +
+                                        </button>
 
                                             <button wire:click="removeItem({{ $item['id'] }})"
                                                     class="p-1 text-[#a86a3a] hover:text-[#c17a4a] 
@@ -300,7 +362,7 @@
                                     <input 
                                         type="text" 
                                         wire:model.live.debounce.300ms="customerSearch"
-                                        placeholder="Search..."
+                                        placeholder="Name..."
                                         class="w-full text-xs border border-[#e8dcc8] dark:border-[#3d3530] 
                                             rounded-lg px-2 py-1.5 dark:bg-[#1a1815] dark:text-[#f5f1e8] 
                                             text-[#2c2416] placeholder-[#8b7355] dark:placeholder-[#6b5f52] 
@@ -340,53 +402,96 @@
                                 <!-- Discount -->
                                 <div>
                                     <label class="block text-xs font-semibold text-[#2c2416] dark:text-[#f5f1e8] mb-1 uppercase tracking-wide">
-                                        Discount
+                                        Discount (%)
                                     </label>
                                     <div class="flex gap-1">
-                                        <input 
-                                            type="text" 
-                                            wire:model.lazy="couponCode"
-                                            placeholder="Code"
-                                            class="flex-1 text-xs border border-[#e8dcc8] dark:border-[#3d3530] 
-                                                rounded-lg px-2 py-1.5 dark:bg-[#1a1815] dark:text-[#f5f1e8] 
-                                                text-[#2c2416] placeholder-[#8b7355] dark:placeholder-[#6b5f52] 
+                                        <input
+                                            type="number"
+                                            wire:model.lazy="discountPercentage"
+                                            placeholder="0"
+                                            min="0"
+                                            max="100"
+                                            step="1"
+                                            class="flex-1 text-xs border border-[#e8dcc8] dark:border-[#3d3530]
+                                                rounded-lg px-2 py-1.5 dark:bg-[#1a1815] dark:text-[#f5f1e8]
+                                                text-[#2c2416] placeholder-[#8b7355] dark:placeholder-[#6b5f52]
                                                 focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent transition">
-                                        <button 
-                                            wire:click="applyCoupon"
-                                            class="px-2 py-1.5 bg-[#c17a4a] text-white rounded-lg text-xs font-semibold 
+                                        <button
+                                            wire:click="applyDiscount"
+                                            class="px-2 py-1.5 bg-[#c17a4a] text-white rounded-lg text-xs font-semibold
                                                 hover:bg-[#a86a3a] transition whitespace-nowrap">
                                             Apply
                                         </button>
                                     </div>
                                     @if($discountApplied)
-                                        <p class="text-xs text-green-600 dark:text-green-400 mt-1 font-semibold">
-                                            -${{ number_format($discountAmount, 2) }}
-                                        </p>
+                                        <div class="flex items-center justify-between mt-1">
+                                            <p class="text-xs text-green-600 dark:text-green-400 font-semibold">
+                                                -${{ number_format($discountAmount, 2) }} ({{ $discountPercentage }}%)
+                                            </p>
+                                            <button
+                                                wire:click="removeDiscount"
+                                                class="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
                                     @endif
                                 </div>
 
                                 <!-- Add-ons -->
                                 <div>
-                                    <label class="block text-xs font-semibold text-[#2c2416] dark:text-[#f5f1e8] mb-1 uppercase tracking-wide">
-                                        Add-ons
-                                    </label>
-                                    <div class="flex items-center gap-1">
-                                        <input 
-                                            type="text" 
-                                            wire:model.lazy="otherLabel" 
-                                            placeholder="Name" 
-                                            class="flex-1 text-xs border border-[#e8dcc8] dark:border-[#3d3530] 
-                                                rounded-lg px-2 py-1.5 dark:bg-[#1a1815] dark:text-[#f5f1e8] 
-                                                text-[#2c2416] placeholder-[#8b7355] dark:placeholder-[#6b5f52] 
-                                                focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent transition">
-                                        <input 
-                                            wire:model.lazy="otherAmount" 
-                                            placeholder="PHP 0"
-                                            class="w-20 text-right text-xs border border-[#e8dcc8] dark:border-[#3d3530] 
-                                                rounded-lg px-2 py-1.5 dark:bg-[#1a1815] dark:text-[#f5f1e8] 
-                                                text-[#2c2416] placeholder-[#8b7355] dark:placeholder-[#6b5f52] 
-                                                focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent 
-                                                transition appearance-none overflow-hidden">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <label class="block text-xs font-semibold text-[#2c2416] dark:text-[#f5f1e8] uppercase tracking-wide">
+                                            Add-ons
+                                        </label>
+                                        <button
+                                        wire:click="addAddOn"
+                                        class="text-xs bg-gradient-to-r from-[#c17a4a] to-[#a86a3a] text-white px-3 py-2 rounded-lg
+                                                hover:from-[#d4956f] hover:to-[#b87a4a] hover:scale-105 hover:shadow-md
+                                            transition-all duration-300 font-semibold shadow-sm"
+                                        >
+                                            <span class="flex items-center gap-1">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                                </svg>
+                                                Add Item
+                                            </span>
+                                        </button>
+                                    </div>
+                                    <div class="space-y-2 max-h-32 overflow-y-auto">
+                                        @foreach($addOns as $index => $addOn)
+                                            <div class="flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    wire:model.lazy="addOns.{{ $index }}.label"
+                                                    placeholder="Name"
+                                                    class="flex-1 text-xs border border-[#e8dcc8] dark:border-[#3d3530]
+                                                        rounded-lg px-2 py-1.5 dark:bg-[#1a1815] dark:text-[#f5f1e8]
+                                                        text-[#2c2416] placeholder-[#8b7355] dark:placeholder-[#6b5f52]
+                                                        focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent transition">
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    wire:model.lazy="addOns.{{ $index }}.amount"
+                                                    placeholder="0.00"
+                                                    class="w-16 text-right text-xs border border-[#e8dcc8] dark:border-[#3d3530]
+                                                        rounded-lg px-2 py-1.5 dark:bg-[#1a1815] dark:text-[#f5f1e8]
+                                                        text-[#2c2416] placeholder-[#8b7355] dark:placeholder-[#6b5f52]
+                                                        focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent
+                                                        transition appearance-none overflow-hidden">
+                                                <button
+                                                    wire:click="removeAddOn({{ $index }})"
+                                                    class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1"
+                                                >
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        @endforeach
+                                        @if(empty($addOns))
+                                            <p class="text-xs text-[#8b7355] dark:text-[#b8a892] italic">No add-ons added</p>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -401,12 +506,12 @@
                                 </div>
 
                                 @if($discountAmount > 0)
-                                    <div class="flex justify-between text-xs">
-                                        <span class="text-[#8b7355] dark:text-[#b8a892]">Discount:</span>
-                                        <span class="font-semibold text-green-600 dark:text-green-400">
-                                            -${{ number_format($discountAmount, 2) }}
-                                        </span>
-                                    </div>
+                                <div class="flex justify-between text-xs">
+                                <span class="text-[#8b7355] dark:text-[#b8a892]">Discount ({{ $discountPercentage }}%):</span>
+                                <span class="font-semibold text-green-600 dark:text-green-400">
+                                -${{ number_format($discountAmount, 2) }}
+                                </span>
+                                </div>
                                 @endif
 
                                 <div class="flex justify-between text-base font-serif font-bold">
@@ -417,18 +522,24 @@
                                 </div>
 
                                 <!-- Checkout Button -->
-                                <button 
-                                    wire:click="$set('showPaymentPanel', true)"
-                                    class="w-full mt-2 bg-gradient-to-r from-[#c17a4a] to-[#a86a3a]
-                                        hover:from-[#d4956f] hover:to-[#b87a4a]
-                                        text-white font-semibold text-sm py-2 rounded-xl
-                                        shadow-md transition-all duration-300 hover:scale-[1.02] active:scale-95">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                                d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                <button
+                                wire:click="$set('showPaymentPanel', true)"
+                                class="w-full mt-3 bg-gradient-to-r from-[#c17a4a] via-[#d4956f] to-[#a86a3a]
+                                hover:from-[#d4956f] hover:via-[#e6b08a] hover:to-[#b87a4a]
+                                text-white font-bold text-sm py-3 rounded-2xl
+                                shadow-lg shadow-[#c17a4a]/30 hover:shadow-xl hover:shadow-[#c17a4a]/40
+                                    transition-all duration-500 hover:scale-[1.02] active:scale-95
+                                relative overflow-hidden group
+                                before:absolute before:inset-0 before:bg-gradient-to-r
+                                before:from-transparent before:via-white/20 before:to-transparent
+                                before:translate-x-[-100%] hover:before:translate-x-[100%]
+                                before:transition-transform before:duration-700">
+                                <div class="flex items-center justify-center gap-2 relative z-10">
+                                        <svg class="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                 d="M13 10V3L4 14h7v7l9-11h-7z"/>
                                         </svg>
-                                        Checkout
+                                        <span class="tracking-wide">Checkout Order</span>
                                     </div>
                                 </button>
                             </div>
@@ -562,11 +673,20 @@
                 </div>
 
                 <div class="space-y-2">
-                    @foreach($cart as $item)
-                        <div class="flex justify-between text-sm">
-                            <span class="text-[#2c2416] dark:text-[#f5f1e8]">{{ $item['name'] }} x{{ $item['quantity'] }}</span>
-                            <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">${{ number_format($item['price'] * $item['quantity'], 2) }}</span>
-                        </div>
+                @foreach($cart as $item)
+                <div class="flex justify-between text-sm">
+                <span class="text-[#2c2416] dark:text-[#f5f1e8]">{{ $item['name'] }} x{{ $item['quantity'] }}</span>
+                <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">${{ number_format($item['price'] * $item['quantity'], 2) }}</span>
+                </div>
+                @endforeach
+
+                    @foreach($addOns as $addOn)
+                        @if(!empty($addOn['label']) && $addOn['amount'] > 0)
+                            <div class="flex justify-between text-sm">
+                                <span class="text-[#2c2416] dark:text-[#f5f1e8]">{{ $addOn['label'] }}</span>
+                                <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">${{ number_format($addOn['amount'], 2) }}</span>
+                            </div>
+                        @endif
                     @endforeach
                 </div>
             </div>
@@ -577,10 +697,10 @@
                     <span class="text-[#2c2416] dark:text-[#f5f1e8]">${{ number_format($subtotal, 2) }}</span>
                 </div>
                 @if($discountAmount > 0)
-                    <div class="flex justify-between text-sm">
-                        <span class="text-[#8b7355] dark:text-[#b8a892]">Discount:</span>
-                        <span class="text-green-600 dark:text-green-400">-${{ number_format($discountAmount, 2) }}</span>
-                    </div>
+                <div class="flex justify-between text-sm">
+                <span class="text-[#8b7355] dark:text-[#b8a892]">Discount ({{ $discountPercentage }}%):</span>
+                <span class="text-green-600 dark:text-green-400">-${{ number_format($discountAmount, 2) }}</span>
+                </div>
                 @endif
                 <div class="flex justify-between text-lg font-bold pt-2 border-t border-[#e8dcc8] dark:border-[#3d3530]">
                     <span class="text-[#2c2416] dark:text-[#f5f1e8]">Total:</span>
