@@ -3,7 +3,7 @@
         "laravel-boost": {
             "command": "/home/yuuki/.config/herd-lite/bin/php",
             "args": [
-                "/home/yuuki/coamishop/artisan",
+                "/home/yuuki/coamifee-shop/artisan",
                 "boost:mcp"
             ]
         }
