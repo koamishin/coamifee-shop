@@ -50,4 +50,9 @@ final class Product extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+
+    public function inventory()
+    {
+        return $this->hasOne(ProductInventory::class);
+    }
 }
