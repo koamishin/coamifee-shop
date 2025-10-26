@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Ingredients\Schemas;
 
 use App\Filament\Concerns\CurrencyAware;
+use App\Models\Ingredient;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -74,13 +75,7 @@ final class IngredientForm
                                 ->default(true)
                                 ->reactive()
                                 ->afterStateUpdated(
-                                    fn (
-                                        $state,
-                                        callable $set,
-                                    ) => self::updateStockFieldsVisibility(
-                                        $state,
-                                        $set,
-                                    ),
+                                    self::updateStockFieldsVisibility(...),
                                 )
                                 ->columnSpan(1),
                             TextInput::make('current_stock')
@@ -104,9 +99,7 @@ final class IngredientForm
                             Placeholder::make('stock_status')
                                 ->label('Stock Status')
                                 ->content(
-                                    fn ($record) => self::getStockStatus(
-                                        $record,
-                                    ),
+                                    self::getStockStatus(...),
                                 )
                                 ->columnSpan(1),
                         ]),

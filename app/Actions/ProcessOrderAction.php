@@ -7,7 +7,7 @@ namespace App\Actions;
 use App\Models\Order;
 use App\Services\OrderProcessingService;
 
-final class ProcessOrderAction
+final readonly class ProcessOrderAction
 {
     public function __construct(
         private OrderProcessingService $orderProcessingService,

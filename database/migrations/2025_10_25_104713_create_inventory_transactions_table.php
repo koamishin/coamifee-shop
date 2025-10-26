@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('inventory_transactions', function (Blueprint $table) {
+        Schema::create('inventory_transactions', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('ingredient_id')->constrained()->onDelete('cascade');
             $table->enum('transaction_type', ['restock', 'usage', 'adjustment', 'waste']);

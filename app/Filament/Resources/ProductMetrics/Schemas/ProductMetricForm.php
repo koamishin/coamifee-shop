@@ -100,7 +100,6 @@ final class ProductMetricForm
                                     ) => self::calculateAverageOrderValue(
                                         $state,
                                         $get('total_revenue'),
-                                        $set,
                                     ),
                                 )
                                 ->columnSpan(1),
@@ -127,7 +126,6 @@ final class ProductMetricForm
                                     ) => self::calculateAverageOrderValue(
                                         $get('orders_count'),
                                         $state,
-                                        $set,
                                     ),
                                 )
                                 ->columnSpan(1),
@@ -141,7 +139,7 @@ final class ProductMetricForm
                                 Grid::make(3)->schema([
                                     Placeholder::make('average_order_value')
                                         ->label('Average Order Value')
-                                        ->content(function ($get) {
+                                        ->content(function ($get): HtmlString {
                                             $orders =
                                                 (float) ($get('orders_count') ??
                                                     0);
@@ -163,7 +161,7 @@ final class ProductMetricForm
                                                     '<span style="font-weight: bold; font-size: 1.1em; color: '.
                                                         $color.
                                                         ';">'.
-                                                        static::formatCurrency(
+                                                        self::formatCurrency(
                                                             $average,
                                                         ).
                                                         '</span>',
@@ -172,7 +170,7 @@ final class ProductMetricForm
 
                                             return new HtmlString(
                                                 '<span style="color: #6b7280;">'.
-                                                    static::formatCurrency(
+                                                    self::formatCurrency(
                                                         0.0,
                                                     ).
                                                     '</span>',
@@ -183,7 +181,7 @@ final class ProductMetricForm
 
                                     Placeholder::make('revenue_per_day')
                                         ->label('Revenue per Day')
-                                        ->content(function ($get) {
+                                        ->content(function ($get): HtmlString {
                                             $revenue =
                                                 (float) ($get(
                                                     'total_revenue',
@@ -202,7 +200,7 @@ final class ProductMetricForm
 
                                             return new HtmlString(
                                                 '<span style="font-weight: 600; color: #3b82f6;">'.
-                                                    static::formatCurrency(
+                                                    self::formatCurrency(
                                                         $revenuePerDay,
                                                     ).
                                                     '</span>',
@@ -213,7 +211,7 @@ final class ProductMetricForm
 
                                     Placeholder::make('performance_indicator')
                                         ->label('Performance')
-                                        ->content(function ($get) {
+                                        ->content(function ($get): HtmlString {
                                             $orders =
                                                 (float) ($get('orders_count') ??
                                                     0);
@@ -272,7 +270,6 @@ final class ProductMetricForm
     private static function calculateAverageOrderValue(
         $orders,
         $revenue,
-        callable $set,
     ): void {
         $orders = (float) ($orders ?? 0);
         $revenue = (float) ($revenue ?? 0);

@@ -8,11 +8,11 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-test('pos component renders', function () {
+test('pos component renders', function (): void {
     Livewire::test(Pos::class)->assertStatus(200);
 });
 
-test('cart can be cleared', function () {
+test('cart can be cleared', function (): void {
     $component = Livewire::test(Pos::class);
     $component->set('cart', [
         '1' => [
@@ -27,7 +27,7 @@ test('cart can be cleared', function () {
     $component->assertSet('cart', []);
 });
 
-test('cart item count works', function () {
+test('cart item count works', function (): void {
     $pos = new Pos();
     $pos->cart = [
         '1' => ['quantity' => 2],
@@ -38,7 +38,7 @@ test('cart item count works', function () {
     expect($result)->toBe(3);
 });
 
-test('discount can be applied', function () {
+test('discount can be applied', function (): void {
     $component = Livewire::test(Pos::class);
     $component->set('cart', [
         '1' => [
@@ -57,7 +57,7 @@ test('discount can be applied', function () {
     $component->assertSet('total', 9.0);
 });
 
-test('discount can be removed', function () {
+test('discount can be removed', function (): void {
     $pos = new Pos();
     $pos->cart = [
         '1' => ['price' => 10.0, 'quantity' => 1],
@@ -74,7 +74,7 @@ test('discount can be removed', function () {
     // expect($pos->discountAmount)->toEqual(0.0);
 })->skip();
 
-test('customer discount code valid', function () {
+test('customer discount code valid', function (): void {
     $component = Livewire::test(Pos::class);
     $component->set('cart', [
         '1' => [
@@ -91,7 +91,7 @@ test('customer discount code valid', function () {
     $component->assertSet('discountPercentage', 10);
 });
 
-test('customer discount code invalid', function () {
+test('customer discount code invalid', function (): void {
     $component = Livewire::test(Pos::class);
 
     $component->call('applyCustomerDiscount', 'INVALID');
@@ -99,7 +99,7 @@ test('customer discount code invalid', function () {
     $component->assertDispatched('discount-invalid');
 });
 
-test('receipt generation', function () {
+test('receipt generation', function (): void {
     $component = Livewire::test(Pos::class);
     $component->set('cart', [
         '1' => [
@@ -121,7 +121,7 @@ test('receipt generation', function () {
     $component->assertDispatched('receipt-generated');
 });
 
-test('process payment with empty cart', function () {
+test('process payment with empty cart', function (): void {
     $component = Livewire::test(Pos::class);
     $component->set('cart', []);
 

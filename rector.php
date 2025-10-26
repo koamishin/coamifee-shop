@@ -22,9 +22,7 @@ return RectorConfig::configure()
         LaravelSetList::LARAVEL_IF_HELPERS,
         LaravelSetList::LARAVEL_LEGACY_FACTORIES_TO_CLASSES,
     ])
-    ->withImportNames(
-        removeUnusedImports: true,
-    )
+    ->withImportNames(removeUnusedImports: true)
     ->withComposerBased(laravel: true)
     ->withCache(
         cacheDirectory: '/tmp/rector',
@@ -39,15 +37,12 @@ return RectorConfig::configure()
         __DIR__.'/routes',
         __DIR__.'/tests',
     ])
-    ->withSkip([
-        AddOverrideAttributeToOverriddenMethodsRector::class,
-    ])
+    ->withSkip([AddOverrideAttributeToOverriddenMethodsRector::class])
     ->withPreparedSets(
         deadCode: true,
         codeQuality: true,
         typeDeclarations: true,
         privatization: true,
         earlyReturn: true,
-        strictBooleans: true,
     )
     ->withPhpSets();

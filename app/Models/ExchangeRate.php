@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\Currency;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -71,7 +72,7 @@ final class ExchangeRate extends Model
         ?array $allRates = null,
         int $hoursToExpire = 24,
     ): self {
-        return self::create([
+        return self::query()->create([
             'base_currency' => $base->value,
             'target_currency' => $target->value,
             'rate' => $rate,
@@ -100,7 +101,7 @@ final class ExchangeRate extends Model
                 try {
                     $targetCurrencyEnum = Currency::from($targetCurrency);
 
-                    self::create([
+                    self::query()->create([
                         'base_currency' => $base->value,
                         'target_currency' => $targetCurrencyEnum->value,
                         'rate' => (float) $rate,
@@ -110,7 +111,7 @@ final class ExchangeRate extends Model
                         'source' => $source,
                         'is_active' => true,
                     ]);
-                } catch (ValueError $e) {
+                } catch (ValueError) {
                     // Skip unsupported currency codes
                     continue;
                 }
@@ -129,7 +130,7 @@ final class ExchangeRate extends Model
             ->latest('fetched_at')
             ->get()
             ->keyBy('target_currency')
-            ->map(fn ($rate) => (float) $rate->rate)
+            ->map(fn ($rate): float => (float) $rate->rate)
             ->toArray();
     }
 
@@ -138,7 +139,7 @@ final class ExchangeRate extends Model
      */
     public static function cleanupExpired(): int
     {
-        return self::where('expires_at', '<', now())->delete();
+        return self::query()->where('expires_at', '<', now())->delete();
     }
 
     /**
@@ -146,7 +147,7 @@ final class ExchangeRate extends Model
      */
     public static function deactivateBase(Currency $base): int
     {
-        return self::where('base_currency', $base->value)->update([
+        return self::query()->where('base_currency', $base->value)->update([
             'is_active' => false,
         ]);
     }
@@ -165,32 +166,6 @@ final class ExchangeRate extends Model
     }
 
     /**
-     * Scope for active rates
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
-
-    /**
-     * Scope for non-expired rates
-     */
-    public function scopeNotExpired($query)
-    {
-        return $query->where('expires_at', '>', now());
-    }
-
-    /**
-     * Scope for a specific currency pair
-     */
-    public function scopeForPair($query, Currency $base, Currency $target)
-    {
-        return $query
-            ->where('base_currency', $base->value)
-            ->where('target_currency', $target->value);
-    }
-
-    /**
      * Get rates data with full currency information
      */
     public function getFormattedRate(): string
@@ -200,7 +175,7 @@ final class ExchangeRate extends Model
             $target = Currency::from($this->target_currency);
 
             return "1 {$base->value} = {$this->rate} {$target->value}";
-        } catch (ValueError $e) {
+        } catch (ValueError) {
             return "1 {$this->base_currency} = {$this->rate} {$this->target_currency}";
         }
     }
@@ -219,5 +194,34 @@ final class ExchangeRate extends Model
     public function getAgeInHours(): float
     {
         return $this->fetched_at->diffInHours(now());
+    }
+
+    /**
+     * Scope for active rates
+     */
+    #[Scope]
+    protected function active($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope for non-expired rates
+     */
+    #[Scope]
+    protected function notExpired($query)
+    {
+        return $query->where('expires_at', '>', now());
+    }
+
+    /**
+     * Scope for a specific currency pair
+     */
+    #[Scope]
+    protected function forPair($query, Currency $base, Currency $target)
+    {
+        return $query
+            ->where('base_currency', $base->value)
+            ->where('target_currency', $target->value);
     }
 }

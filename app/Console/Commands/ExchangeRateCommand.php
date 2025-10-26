@@ -39,7 +39,7 @@ final class ExchangeRateCommand extends Command
 
         try {
             $baseCurrency = Currency::from($baseCurrencyCode);
-        } catch (ValueError $e) {
+        } catch (ValueError) {
             $this->error("Invalid base currency: {$baseCurrencyCode}");
 
             return 1;
@@ -77,11 +77,9 @@ final class ExchangeRateCommand extends Command
             return 1;
         }
 
-        $this->withProgressBar(1, function () use ($converter, $base) {
+        $this->withProgressBar(1, function () use ($converter, $base): void {
             $success = $converter->refreshRates($base);
-            if (! $success) {
-                throw new Exception('Failed to refresh rates');
-            }
+            throw_unless($success, Exception::class, 'Failed to refresh rates');
         });
 
         $this->newLine();
@@ -230,7 +228,7 @@ final class ExchangeRateCommand extends Command
             $this->info('📥 No rates available, fetching first...');
             try {
                 $converter->getExchangeRates($base);
-            } catch (Exception $e) {
+            } catch (Exception) {
                 $this->warn('⚠️  Could not fetch rates, using fallback');
             }
         }

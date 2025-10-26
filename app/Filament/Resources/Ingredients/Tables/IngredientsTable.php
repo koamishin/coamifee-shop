@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Ingredients\Tables;
 
 use App\Filament\Concerns\CurrencyAware;
 use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -33,7 +34,7 @@ final class IngredientsTable
                     ->description('Measurement unit')
                     ->badge()
                     ->color(
-                        fn ($state) => match ($state) {
+                        fn ($state): string => match ($state) {
                             'grams' => 'warning',
                             'ml' => 'info',
                             'pieces' => 'success',
@@ -58,7 +59,7 @@ final class IngredientsTable
                     ->sortable()
                     ->alignRight()
                     ->weight('medium')
-                    ->color(fn ($record) => self::getStockColor($record)),
+                    ->color(self::getStockColor(...)),
                 TextColumn::make('unit_cost')
                     ->label('Unit Cost')
                     ->description('Cost per unit')
@@ -102,7 +103,7 @@ final class IngredientsTable
                     ->label('Inventory')
                     ->icon('heroicon-o-cube')
                     ->url(
-                        fn ($record) => $record->is_trackable &&
+                        fn ($record): ?string => $record->is_trackable &&
                         $record->inventory
                             ? route(
                                 'filament.admin.resources.ingredient-inventories.index',
@@ -111,7 +112,7 @@ final class IngredientsTable
                             : null,
                     )
                     ->hidden(
-                        fn ($record) => ! $record->is_trackable ||
+                        fn ($record): bool => ! $record->is_trackable ||
                             ! $record->inventory,
                     )
                     ->openUrlInNewTab(),
@@ -122,7 +123,7 @@ final class IngredientsTable
                 'Create your first ingredient to get started with inventory management',
             )
             ->emptyStateActions([
-                \Filament\Actions\CreateAction::make()
+                CreateAction::make()
                     ->label('Create Ingredient')
                     ->url(route('filament.admin.resources.ingredients.create')),
             ])

@@ -14,7 +14,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->action = app(PosCheckoutAction::class);
 
     // Create category
@@ -70,7 +70,7 @@ beforeEach(function () {
     ]);
 });
 
-test('can checkout successfully', function () {
+test('can checkout successfully', function (): void {
     $cart = [
         $this->product->id => [
             'id' => $this->product->id,
@@ -98,7 +98,7 @@ test('can checkout successfully', function () {
     expect($result)->toHaveKey('order_number');
 
     // Check order was created
-    $order = Order::find($result['order_id']);
+    $order = Order::query()->find($result['order_id']);
     expect($order)->not->toBeNull();
     expect($order->customer_name)->toBe('John Doe');
     expect($order->order_type)->toBe('dine-in');
@@ -116,7 +116,7 @@ test('can checkout successfully', function () {
     expect($orderItem->price)->toBe('4.50');
 });
 
-test('checkout fails with empty cart', function () {
+test('checkout fails with empty cart', function (): void {
     $cart = [];
     $orderData = [
         'customer_name' => 'John Doe',
@@ -129,7 +129,7 @@ test('checkout fails with empty cart', function () {
     expect($result['message'])->toBe('Cart is empty');
 });
 
-test('checkout fails with nonexistent product', function () {
+test('checkout fails with nonexistent product', function (): void {
     $cart = [
         999 => [
             'id' => 999,
@@ -150,9 +150,9 @@ test('checkout fails with nonexistent product', function () {
     expect($result['message'])->toContain('not found');
 });
 
-test('checkout with insufficient inventory fails', function () {
+test('checkout with insufficient inventory fails', function (): void {
     // Reduce inventory to insufficient levels
-    $inventory = IngredientInventory::where('ingredient_id', 1)->first();
+    $inventory = IngredientInventory::query()->where('ingredient_id', 1)->first();
     $inventory->update(['current_stock' => 10]); // Less than required 20g
 
     $cart = [
@@ -175,7 +175,7 @@ test('checkout with insufficient inventory fails', function () {
     expect($result['message'])->toContain('Insufficient ingredients');
 });
 
-test('checkout sets guest customer when no name provided', function () {
+test('checkout sets guest customer when no name provided', function (): void {
     $cart = [
         $this->product->id => [
             'id' => $this->product->id,
@@ -194,12 +194,12 @@ test('checkout sets guest customer when no name provided', function () {
 
     expect($result['success'])->toBeTrue();
 
-    $order = Order::find($result['order_id']);
+    $order = Order::query()->find($result['order_id']);
     expect($order->customer_name)->toBe('Guest');
     expect($order->customer_id)->toBeNull();
 });
 
-test('checkout links to existing customer', function () {
+test('checkout links to existing customer', function (): void {
     $cart = [
         $this->product->id => [
             'id' => $this->product->id,
@@ -218,11 +218,11 @@ test('checkout links to existing customer', function () {
 
     expect($result['success'])->toBeTrue();
 
-    $order = Order::find($result['order_id']);
+    $order = Order::query()->find($result['order_id']);
     expect($order->customer_id)->toBe($this->customer->id);
 });
 
-test('checkout with default values', function () {
+test('checkout with default values', function (): void {
     $cart = [
         $this->product->id => [
             'id' => $this->product->id,
@@ -238,7 +238,7 @@ test('checkout with default values', function () {
 
     expect($result['success'])->toBeTrue();
 
-    $order = Order::find($result['order_id']);
+    $order = Order::query()->find($result['order_id']);
     expect($order->customer_name)->toBe('Guest');
     expect($order->order_type)->toBe('dine-in');
     expect($order->payment_method)->toBe('cash');
@@ -246,7 +246,7 @@ test('checkout with default values', function () {
     expect($order->notes)->toBeNull();
 });
 
-test('checkout creates multiple order items', function () {
+test('checkout creates multiple order items', function (): void {
     // Create second product
     $secondProduct = Product::factory()->create([
         'name' => 'Cappuccino',
@@ -277,7 +277,7 @@ test('checkout creates multiple order items', function () {
 
     expect($result['success'])->toBeTrue();
 
-    $order = Order::find($result['order_id']);
+    $order = Order::query()->find($result['order_id']);
     expect($order->items)->toHaveCount(2);
 
     $firstItem = $order->items
@@ -291,7 +291,7 @@ test('checkout creates multiple order items', function () {
     expect($secondItem->quantity)->toBe(1);
 });
 
-test('calculates order total correctly', function () {
+test('calculates order total correctly', function (): void {
     $cart = [
         $this->product->id => [
             'id' => $this->product->id,
@@ -312,7 +312,7 @@ test('calculates order total correctly', function () {
     expect($result['total'])->toBe($expectedTotal);
 });
 
-test('handles cart item with notes', function () {
+test('handles cart item with notes', function (): void {
     $cart = [
         $this->product->id => [
             'id' => $this->product->id,
@@ -332,7 +332,7 @@ test('handles cart item with notes', function () {
 
     expect($result['success'])->toBeTrue();
 
-    $order = Order::find($result['order_id']);
+    $order = Order::query()->find($result['order_id']);
     $orderItem = $order->items->first();
     expect($orderItem->notes)->toBe('Extra hot, no foam');
 });

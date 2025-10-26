@@ -8,24 +8,20 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
-use App\Services\OrderProcessingService;
 use Exception;
 use Illuminate\Support\Facades\DB;
 
 final class PosCheckoutAction
 {
-    public function __construct(
-        private OrderProcessingService $orderProcessingService,
-    ) {}
-
     public function execute(array $cart, array $orderData): array
     {
         try {
             DB::beginTransaction();
 
             // Validate cart
-            if (empty($cart)) {
+            if ($cart === []) {
                 DB::rollBack();
+
                 return [
                     'success' => false,
                     'message' => 'Cart is empty',
@@ -33,7 +29,7 @@ final class PosCheckoutAction
             }
 
             // Create the order
-            $order = Order::create([
+            $order = Order::query()->create([
                 'customer_name' => $orderData['customer_name'] ?? 'Guest',
                 'customer_id' => $this->getCustomerId($orderData['customer_name'] ?? null),
                 'order_type' => $orderData['order_type'] ?? 'dine-in',
@@ -46,7 +42,7 @@ final class PosCheckoutAction
 
             // Create order items
             foreach ($cart as $productId => $item) {
-                $product = Product::find($productId);
+                $product = Product::query()->find($productId);
                 if (! $product) {
                     DB::rollBack();
 
@@ -56,7 +52,7 @@ final class PosCheckoutAction
                     ];
                 }
 
-                OrderItem::create([
+                OrderItem::query()->create([
                     'order_id' => $order->id,
                     'product_id' => $productId,
                     'quantity' => $item['quantity'],
@@ -126,7 +122,7 @@ final class PosCheckoutAction
             return null;
         }
 
-        $customer = Customer::where('name', $customerName)->first();
+        $customer = Customer::query()->where('name', $customerName)->first();
 
         return $customer?->id;
     }

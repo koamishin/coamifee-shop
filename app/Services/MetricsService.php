@@ -16,13 +16,13 @@ final class MetricsService
     {
         $date ??= now();
 
-        $product = Product::find($productId);
+        $product = Product::query()->find($productId);
         if (! $product) {
             return;
         }
 
-        $orders = Order::whereDate('created_at', $date)
-            ->whereHas('items', function ($query) use ($productId) {
+        $orders = Order::query()->whereDate('created_at', $date)
+            ->whereHas('items', function ($query) use ($productId): void {
                 $query->where('product_id', $productId);
             })
             ->get();
@@ -39,17 +39,14 @@ final class MetricsService
             }
         }
 
-        ProductMetric::updateOrCreate(
-            [
-                'product_id' => $productId,
-                'metric_date' => $date->toDateString(),
-                'period_type' => 'daily',
-            ],
-            [
-                'orders_count' => $totalOrders,
-                'total_revenue' => $totalRevenue,
-            ]
-        );
+        ProductMetric::query()->updateOrCreate([
+            'product_id' => $productId,
+            'metric_date' => $date->toDateString(),
+            'period_type' => 'daily',
+        ], [
+            'orders_count' => $totalOrders,
+            'total_revenue' => $totalRevenue,
+        ]);
 
         $this->updateWeeklyMetrics($productId, $date);
         $this->updateMonthlyMetrics($productId, $date);
@@ -57,18 +54,18 @@ final class MetricsService
 
     public function getProductMetrics(int $productId, string $period = 'daily', int $days = 30): Collection
     {
-        $query = ProductMetric::where('product_id', $productId)
+        $query = ProductMetric::query()->where('product_id', $productId)
             ->where('period_type', $period);
 
         if ($period === 'daily') {
             $query->where('metric_date', '>=', now()->subDays($days))
-                ->orderBy('metric_date', 'desc');
+                ->latest('metric_date');
         } elseif ($period === 'weekly') {
             $query->where('metric_date', '>=', now()->subWeeks($days))
-                ->orderBy('metric_date', 'desc');
+                ->latest('metric_date');
         } elseif ($period === 'monthly') {
             $query->where('metric_date', '>=', now()->subMonths($days))
-                ->orderBy('metric_date', 'desc');
+                ->latest('metric_date');
         }
 
         return $query->get();
@@ -103,12 +100,10 @@ final class MetricsService
         $totalRevenue = $metrics->sum('total_revenue');
         $totalOrders = $metrics->sum('orders_count');
         $productBreakdown = $metrics->groupBy('product.name')
-            ->map(function ($productMetrics) {
-                return [
-                    'orders' => $productMetrics->sum('orders_count'),
-                    'revenue' => $productMetrics->sum('total_revenue'),
-                ];
-            });
+            ->map(fn ($productMetrics): array => [
+                'orders' => $productMetrics->sum('orders_count'),
+                'revenue' => $productMetrics->sum('total_revenue'),
+            ]);
 
         return [
             'total_revenue' => $totalRevenue,
@@ -123,7 +118,7 @@ final class MetricsService
         $weekStart = $date->startOfWeek()->toDateString();
         $weekEnd = $date->endOfWeek()->toDateString();
 
-        $weeklyMetrics = ProductMetric::where('product_id', $productId)
+        $weeklyMetrics = ProductMetric::query()->where('product_id', $productId)
             ->where('period_type', 'daily')
             ->whereBetween('metric_date', [$weekStart, $weekEnd])
             ->get();
@@ -131,17 +126,14 @@ final class MetricsService
         $totalOrders = $weeklyMetrics->sum('orders_count');
         $totalRevenue = $weeklyMetrics->sum('total_revenue');
 
-        ProductMetric::updateOrCreate(
-            [
-                'product_id' => $productId,
-                'metric_date' => $weekStart,
-                'period_type' => 'weekly',
-            ],
-            [
-                'orders_count' => $totalOrders,
-                'total_revenue' => $totalRevenue,
-            ]
-        );
+        ProductMetric::query()->updateOrCreate([
+            'product_id' => $productId,
+            'metric_date' => $weekStart,
+            'period_type' => 'weekly',
+        ], [
+            'orders_count' => $totalOrders,
+            'total_revenue' => $totalRevenue,
+        ]);
     }
 
     private function updateMonthlyMetrics(int $productId, Carbon $date): void
@@ -149,7 +141,7 @@ final class MetricsService
         $monthStart = $date->startOfMonth()->toDateString();
         $monthEnd = $date->endOfMonth()->toDateString();
 
-        $monthlyMetrics = ProductMetric::where('product_id', $productId)
+        $monthlyMetrics = ProductMetric::query()->where('product_id', $productId)
             ->where('period_type', 'daily')
             ->whereBetween('metric_date', [$monthStart, $monthEnd])
             ->get();
@@ -157,16 +149,13 @@ final class MetricsService
         $totalOrders = $monthlyMetrics->sum('orders_count');
         $totalRevenue = $monthlyMetrics->sum('total_revenue');
 
-        ProductMetric::updateOrCreate(
-            [
-                'product_id' => $productId,
-                'metric_date' => $monthStart,
-                'period_type' => 'monthly',
-            ],
-            [
-                'orders_count' => $totalOrders,
-                'total_revenue' => $totalRevenue,
-            ]
-        );
+        ProductMetric::query()->updateOrCreate([
+            'product_id' => $productId,
+            'metric_date' => $monthStart,
+            'period_type' => 'monthly',
+        ], [
+            'orders_count' => $totalOrders,
+            'total_revenue' => $totalRevenue,
+        ]);
     }
 }

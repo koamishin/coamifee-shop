@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('ingredient_inventories', function (Blueprint $table) {
+        Schema::create('ingredient_inventories', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('ingredient_id')->constrained()->onDelete('cascade');
             $table->decimal('current_stock', 10, 3);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\IngredientInventories\Schemas;
 
 use App\Filament\Concerns\CurrencyAware;
+use App\Models\Ingredient;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -40,13 +41,7 @@ final class IngredientInventoryForm
                                 )
                                 ->reactive()
                                 ->afterStateUpdated(
-                                    fn (
-                                        $state,
-                                        callable $set,
-                                    ) => self::populateIngredientDefaults(
-                                        $state,
-                                        $set,
-                                    ),
+                                    self::populateIngredientDefaults(...),
                                 )
                                 ->columnSpan(2),
 
@@ -59,16 +54,14 @@ final class IngredientInventoryForm
                                 ->placeholder('e.g., 5000')
                                 ->helperText('Current available quantity')
                                 ->prefixIcon('heroicon-o-cube')
-                                ->suffix(fn ($get) => self::getUnitSuffix($get))
+                                ->suffix(self::getUnitSuffix(...))
                                 ->reactive()
                                 ->afterStateUpdated(
                                     fn (
                                         $state,
                                         callable $set,
                                     ) => self::updateStockStatus(
-                                        $state,
                                         $get,
-                                        $set,
                                     ),
                                 )
                                 ->columnSpan(1),
@@ -83,7 +76,7 @@ final class IngredientInventoryForm
                                     'Automatically reorder when stock falls below this level',
                                 )
                                 ->prefixIcon('heroicon-o-bell-alert')
-                                ->suffix(fn ($get) => self::getUnitSuffix($get))
+                                ->suffix(self::getUnitSuffix(...))
                                 ->columnSpan(1),
                         ]),
 
@@ -96,7 +89,7 @@ final class IngredientInventoryForm
                                 ->placeholder('e.g., 100')
                                 ->helperText('Minimum acceptable stock level')
                                 ->prefixIcon('heroicon-o-arrow-down')
-                                ->suffix(fn ($get) => self::getUnitSuffix($get))
+                                ->suffix(self::getUnitSuffix(...))
                                 ->columnSpan(1),
 
                             TextInput::make('max_stock_level')
@@ -107,7 +100,7 @@ final class IngredientInventoryForm
                                 ->placeholder('e.g., 10000')
                                 ->helperText('Maximum stock capacity')
                                 ->prefixIcon('heroicon-o-arrow-up')
-                                ->suffix(fn ($get) => self::getUnitSuffix($get))
+                                ->suffix(self::getUnitSuffix(...))
                                 ->columnSpan(1),
                         ]),
 
@@ -145,34 +138,28 @@ final class IngredientInventoryForm
                             Placeholder::make('stock_status')
                                 ->label('Stock Status')
                                 ->content(
-                                    fn (
-                                        $get,
-                                        $record,
-                                    ) => self::getStockStatusDisplay(
-                                        $get,
-                                        $record,
-                                    ),
+                                    self::getStockStatusDisplay(...),
                                 )
                                 ->columnSpan(1),
 
                             Placeholder::make('stock_percentage')
                                 ->label('Stock Level')
                                 ->content(
-                                    fn ($get) => self::getStockPercentage($get),
+                                    self::getStockPercentage(...),
                                 )
                                 ->columnSpan(1),
 
                             Placeholder::make('days_until_reorder')
                                 ->label('Days Until Reorder')
                                 ->content(
-                                    fn ($get) => self::getDaysUntilReorder($get),
+                                    self::getDaysUntilReorder(...),
                                 )
                                 ->columnSpan(1),
 
                             Placeholder::make('recommended_order')
                                 ->label('Recommended Order')
                                 ->content(
-                                    fn ($get) => self::getRecommendedOrder($get),
+                                    self::getRecommendedOrder(...),
                                 )
                                 ->columnSpan(1),
                         ]),
@@ -187,21 +174,21 @@ final class IngredientInventoryForm
                             Placeholder::make('total_value')
                                 ->label('Total Value')
                                 ->content(
-                                    fn ($get) => self::calculateTotalValue($get),
+                                    self::calculateTotalValue(...),
                                 )
                                 ->columnSpan(1),
 
                             Placeholder::make('cost_per_unit')
                                 ->label('Cost per Unit')
                                 ->content(
-                                    fn ($get) => self::getCostPerUnit($get),
+                                    self::getCostPerUnit(...),
                                 )
                                 ->columnSpan(1),
 
                             Placeholder::make('turnover_rate')
                                 ->label('Turnover Rate')
                                 ->content(
-                                    fn ($get) => self::getTurnoverRate($get),
+                                    self::getTurnoverRate(...),
                                 )
                                 ->columnSpan(1),
                         ]),
@@ -218,7 +205,7 @@ final class IngredientInventoryForm
             return;
         }
 
-        $ingredient = \App\Models\Ingredient::find($ingredientId);
+        $ingredient = Ingredient::query()->find($ingredientId);
         if (! $ingredient) {
             return;
         }
@@ -242,33 +229,23 @@ final class IngredientInventoryForm
             return null;
         }
 
-        $ingredient = \App\Models\Ingredient::find($ingredientId);
+        $ingredient = Ingredient::query()->find($ingredientId);
 
         return $ingredient?->unit_type;
     }
 
     private static function updateStockStatus(
-        $stock,
         callable $get,
-        callable $set,
     ): void {
-        $current = (float) ($stock ?? 0);
-        $min = (float) ($get('min_stock_level') ?? 0);
-        $max = (float) ($get('max_stock_level') ?? PHP_FLOAT_MAX);
-
-        $status = match (true) {
-            $current <= $min => 'Low Stock',
-            $current >= $max => 'Overstocked',
-            default => 'Normal',
-        };
-
+        $get('min_stock_level') ?? 0;
+        $get('max_stock_level') ?? PHP_FLOAT_MAX;
         // Could trigger notifications or other actions here
     }
 
     private static function getStockStatusDisplay(
         callable $get,
         $record,
-    ): HtmlString|string {
+    ): HtmlString {
         $current = (float) ($get('current_stock') ?? 0);
         $min = (float) ($get('min_stock_level') ?? 0);
         $max = (float) ($get('max_stock_level') ?? PHP_FLOAT_MAX);
@@ -296,7 +273,7 @@ final class IngredientInventoryForm
         );
     }
 
-    private static function getStockPercentage(callable $get): HtmlString|string
+    private static function getStockPercentage(callable $get): HtmlString
     {
         $current = (float) ($get('current_stock') ?? 0);
         $min = (float) ($get('min_stock_level') ?? 1);
@@ -323,7 +300,7 @@ final class IngredientInventoryForm
 
     private static function getDaysUntilReorder(
         callable $get,
-    ): HtmlString|string {
+    ): HtmlString {
         $current = (float) ($get('current_stock') ?? 0);
         $reorder = (float) ($get('reorder_level') ?? 0);
 
@@ -344,7 +321,7 @@ final class IngredientInventoryForm
 
     private static function getRecommendedOrder(
         callable $get,
-    ): HtmlString|string {
+    ): HtmlString {
         $current = (float) ($get('current_stock') ?? 0);
         $max = (float) ($get('max_stock_level') ?? 1000);
         $reorder = (float) ($get('reorder_level') ?? 100);
@@ -366,7 +343,7 @@ final class IngredientInventoryForm
 
     private static function calculateTotalValue(
         callable $get,
-    ): HtmlString|string {
+    ): HtmlString {
         $current = (float) ($get('current_stock') ?? 0);
         $ingredientId = $get('ingredient_id');
 
@@ -374,17 +351,15 @@ final class IngredientInventoryForm
             return new HtmlString('<span style="color: #6b7280;">$0.00</span>');
         }
 
-        $ingredient = \App\Models\Ingredient::find($ingredientId);
+        $ingredient = Ingredient::query()->find($ingredientId);
         if (! $ingredient) {
             return new HtmlString('<span style="color: #6b7280;">$0.00</span>');
         }
 
-        $totalValue = $current * $ingredient->unit_cost;
-
         return self::formatInventoryValue($current, $ingredient->unit_cost);
     }
 
-    private static function getCostPerUnit(callable $get): HtmlString|string
+    private static function getCostPerUnit(callable $get): HtmlString
     {
         $ingredientId = $get('ingredient_id');
 
@@ -392,7 +367,7 @@ final class IngredientInventoryForm
             return new HtmlString('<span style="color: #6b7280;">$0.00</span>');
         }
 
-        $ingredient = \App\Models\Ingredient::find($ingredientId);
+        $ingredient = Ingredient::query()->find($ingredientId);
         if (! $ingredient) {
             return new HtmlString('<span style="color: #6b7280;">$0.00</span>');
         }
@@ -400,7 +375,7 @@ final class IngredientInventoryForm
         return self::formatUnitCost($ingredient->unit_cost);
     }
 
-    private static function getTurnoverRate(callable $get): HtmlString|string
+    private static function getTurnoverRate(callable $get): HtmlString
     {
         // This would typically be calculated from historical usage data
         // For now, we'll provide a placeholder

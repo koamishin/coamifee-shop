@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Models\Ingredient;
+use App\Models\Product;
+use App\Models\ProductIngredient;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ProductIngredient>
+ * @extends Factory<ProductIngredient>
  */
 final class ProductIngredientFactory extends Factory
 {
@@ -19,8 +22,8 @@ final class ProductIngredientFactory extends Factory
     public function definition(): array
     {
         return [
-            'product_id' => \App\Models\Product::factory(),
-            'ingredient_id' => \App\Models\Ingredient::factory(),
+            'product_id' => Product::factory(),
+            'ingredient_id' => Ingredient::factory(),
             'quantity_required' => fake()->randomFloat(3, 1, 1000),
         ];
     }

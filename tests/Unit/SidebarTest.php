@@ -13,27 +13,27 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-test('sidebar component renders successfully', function () {
+test('sidebar component renders successfully', function (): void {
     Livewire::test(Sidebar::class)
         ->assertStatus(200)
         ->assertViewIs('livewire.pos-sidebar');
 });
 
-test('can add to cart when product available', function () {
+test('can add to cart when product available', function (): void {
     Livewire::test(Sidebar::class)
         ->call('addToCart', $this->product->id)
         ->assertDispatched('productSelected', $this->product->id)
         ->assertNotDispatched('insufficient-inventory');
 });
 
-test('cannot add to cart when product unavailable', function () {
+test('cannot add to cart when product unavailable', function (): void {
     Livewire::test(Sidebar::class)
         ->call('addToCart', $this->unavailableProduct->id)
         ->assertDispatched('insufficient-inventory')
         ->assertNotDispatched('productSelected');
 });
 
-test('updates product availability on mount', function () {
+test('updates product availability on mount', function (): void {
     $component = Livewire::test(Sidebar::class);
     $component
         ->assertSet(
@@ -48,7 +48,7 @@ test('updates product availability on mount', function () {
         );
 });
 
-test('updates product availability for all products', function () {
+test('updates product availability for all products', function (): void {
     Livewire::test(Sidebar::class)
         ->assertSet(
             'productAvailability.'.$this->product->id.'.can_produce',
@@ -62,7 +62,7 @@ test('updates product availability for all products', function () {
         );
 });
 
-test('calculates correct stock status', function () {
+test('calculates correct stock status', function (): void {
     // Create a product with low stock
     $lowStockProduct = Product::factory()->create();
     ProductIngredient::factory()->create([
@@ -72,7 +72,7 @@ test('calculates correct stock status', function () {
     ]);
 
     // Set inventory to just enough for 5 units
-    $inventory = IngredientInventory::where('ingredient_id', 1)->first();
+    $inventory = IngredientInventory::query()->where('ingredient_id', 1)->first();
     $inventory->update(['current_stock' => 100]);
 
     Livewire::test(Sidebar::class)->assertSet(
@@ -81,9 +81,9 @@ test('calculates correct stock status', function () {
     );
 });
 
-test('calculates max producible quantity', function () {
+test('calculates max producible quantity', function (): void {
     // Set inventory to allow exactly 10 units
-    $inventory = IngredientInventory::where('ingredient_id', 1)->first();
+    $inventory = IngredientInventory::query()->where('ingredient_id', 1)->first();
     $inventory->update(['current_stock' => 200]); // 200 / 20 = 10
 
     $component = Livewire::test(Sidebar::class);
@@ -96,7 +96,7 @@ test('calculates max producible quantity', function () {
     expect($productAvailability['max_quantity'])->toBe(10);
 })->skip('Complex array structure needs investigation');
 
-test('filters products by selected category', function () {
+test('filters products by selected category', function (): void {
     // Create products in different categories
     $coffeeCategory = Category::factory()->create(['name' => 'Coffee']);
     $foodCategory = Category::factory()->create(['name' => 'Food']);
@@ -110,16 +110,11 @@ test('filters products by selected category', function () {
 
     Livewire::test(Sidebar::class)
         ->set('selectedCategory', $coffeeCategory->id)
-        ->assertViewHas('products', function ($products) use (
-            $coffeeProduct,
-            $foodProduct,
-        ) {
-            return $products->contains('id', $coffeeProduct->id) &&
-                ! $products->contains('id', $foodProduct->id);
-        });
+        ->assertViewHas('products', fn ($products): bool => $products->contains('id', $coffeeProduct->id) &&
+            ! $products->contains('id', $foodProduct->id));
 });
 
-test('refreshes inventory on event', function () {
+test('refreshes inventory on event', function (): void {
     Livewire::test(Sidebar::class)
         ->assertSet(
             'productAvailability.'.$this->product->id.'.can_produce',
@@ -136,26 +131,26 @@ test('refreshes inventory on event', function () {
     )->toBeTrue();
 });
 
-test('loads categories', function () {
+test('loads categories', function (): void {
     Livewire::test(Sidebar::class)->assertViewHas('categories');
 });
 
-test('loads best sellers', function () {
+test('loads best sellers', function (): void {
     Livewire::test(Sidebar::class)->assertViewHas('bestSellers');
 });
 
-test('loads products', function () {
+test('loads products', function (): void {
     Livewire::test(Sidebar::class)->assertViewHas('products');
 });
 
-test('can check if can add to cart', function () {
+test('can check if can add to cart', function (): void {
     Livewire::test(Sidebar::class)
         ->call('addToCart', $this->product->id)
         ->assertNotDispatched('insufficient-inventory')
         ->assertDispatched('productSelected');
 });
 
-test('handles multiple ingredients for availability', function () {
+test('handles multiple ingredients for availability', function (): void {
     // Create product with multiple ingredients
     $milkIngredient = Ingredient::factory()->create(['is_trackable' => true]);
     ProductIngredient::factory()->create([
@@ -176,7 +171,7 @@ test('handles multiple ingredients for availability', function () {
     );
 });
 
-test('ignores untrackable ingredients for availability', function () {
+test('ignores untrackable ingredients for availability', function (): void {
     // Create product with untrackable ingredient
     $sugarIngredient = Ingredient::factory()->create(['is_trackable' => false]);
     ProductIngredient::factory()->create([
@@ -193,7 +188,7 @@ test('ignores untrackable ingredients for availability', function () {
 });
 
 // Helper function to create test data
-beforeEach(function () {
+beforeEach(function (): void {
     // Create category
     $category = Category::factory()->create(['name' => 'Coffee']);
 

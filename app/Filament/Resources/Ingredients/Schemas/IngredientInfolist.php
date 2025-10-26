@@ -31,7 +31,7 @@ final class IngredientInfolist
                             ->label('Unit')
                             ->badge()
                             ->color(
-                                fn ($state) => match ($state) {
+                                fn ($state): string => match ($state) {
                                     'grams' => 'warning',
                                     'ml' => 'info',
                                     'pieces' => 'success',
@@ -59,7 +59,7 @@ final class IngredientInfolist
                             ->numeric(decimalPlaces: 2, thousandsSeparator: ',')
                             ->icon('heroicon-o-cube')
                             ->color(
-                                fn ($record) => self::getStockColor($record),
+                                self::getStockColor(...),
                             ),
                         TextEntry::make('unit_cost')
                             ->label('Unit Cost')

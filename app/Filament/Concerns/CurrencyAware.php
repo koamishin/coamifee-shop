@@ -126,7 +126,7 @@ trait CurrencyAware
     protected static function formatCostCalculation(float $quantity, float $unitCost, string $unit): HtmlString
     {
         $totalCost = $quantity * $unitCost;
-        $symbol = self::getCurrencySymbol();
+        self::getCurrencySymbol();
 
         return new HtmlString(
             "

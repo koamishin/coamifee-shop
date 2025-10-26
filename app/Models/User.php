@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -14,8 +15,9 @@ use Spatie\Permission\Traits\HasRoles;
 
 final class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable;
+
     use TwoFactorAuthenticatable;
 
     /**
@@ -23,7 +25,7 @@ final class User extends Authenticatable
      *
      * @var list<string>
      */
-    protected $fillable = ["name", "email", "password"];
+    protected $fillable = ['name', 'email', 'password'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -31,10 +33,10 @@ final class User extends Authenticatable
      * @var list<string>
      */
     protected $hidden = [
-        "password",
-        "two_factor_secret",
-        "two_factor_recovery_codes",
-        "remember_token",
+        'password',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'remember_token',
     ];
 
     /**
@@ -43,10 +45,10 @@ final class User extends Authenticatable
     public function initials(): string
     {
         return Str::of($this->name)
-            ->explode(" ")
+            ->explode(' ')
             ->take(2)
-            ->map(fn($word) => Str::substr($word, 0, 1))
-            ->implode("");
+            ->map(fn ($word) => Str::substr($word, 0, 1))
+            ->implode('');
     }
 
     /**
@@ -57,8 +59,8 @@ final class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            "email_verified_at" => "datetime",
-            "password" => "hashed",
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
         ];
     }
 }

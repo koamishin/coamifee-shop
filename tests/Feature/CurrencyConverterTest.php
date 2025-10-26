@@ -5,20 +5,20 @@ declare(strict_types=1);
 use App\Enums\Currency;
 use App\Services\CurrencyConverter;
 
-it('can create currency enum values', function () {
+it('can create currency enum values', function (): void {
     expect(Currency::USD->value)->toBe('USD');
     expect(Currency::EUR->value)->toBe('EUR');
     expect(Currency::GBP->value)->toBe('GBP');
 });
 
-it('can get currency names', function () {
+it('can get currency names', function (): void {
     expect(Currency::USD->getName())->toBe('US Dollar');
     expect(Currency::EUR->getName())->toBe('Euro');
     expect(Currency::GBP->getName())->toBe('British Pound');
     expect(Currency::JPY->getName())->toBe('Japanese Yen');
 });
 
-it('can get currency symbols', function () {
+it('can get currency symbols', function (): void {
     expect(Currency::USD->getSymbol())->toBe('$');
     expect(Currency::EUR->getSymbol())->toBe('€');
     expect(Currency::GBP->getSymbol())->toBe('£');
@@ -27,7 +27,7 @@ it('can get currency symbols', function () {
     expect(Currency::CAD->getSymbol())->toBe('C$');
 });
 
-it('can get currency decimal places', function () {
+it('can get currency decimal places', function (): void {
     expect(Currency::USD->getDecimals())->toBe(2);
     expect(Currency::EUR->getDecimals())->toBe(2);
     expect(Currency::JPY->getDecimals())->toBe(0);
@@ -35,7 +35,7 @@ it('can get currency decimal places', function () {
     expect(Currency::VND->getDecimals())->toBe(0);
 });
 
-it('can format currency amounts', function () {
+it('can format currency amounts', function (): void {
     expect(Currency::USD->formatAmount(123.45))->toBe('$123.45');
     expect(Currency::EUR->formatAmount(123.45))->toBe('123.45€');
     expect(Currency::GBP->formatAmount(123.45))->toBe('£123.45');
@@ -44,7 +44,7 @@ it('can format currency amounts', function () {
     expect(Currency::BRL->formatAmount(123.45))->toBe('R$ 123.45');
 });
 
-it('can get select options', function () {
+it('can get select options', function (): void {
     $options = Currency::getSelectOptions();
 
     expect($options)->toBeArray();
@@ -53,7 +53,7 @@ it('can get select options', function () {
     expect($options['EUR'])->toBe('Euro (EUR)');
 });
 
-it('can get common currencies', function () {
+it('can get common currencies', function (): void {
     $common = Currency::getCommon();
 
     expect($common)->toBeArray();
@@ -64,19 +64,19 @@ it('can get common currencies', function () {
     expect($common)->toContain(Currency::JPY);
 });
 
-it('can validate currency codes', function () {
+it('can validate currency codes', function (): void {
     expect(Currency::isValid('USD'))->toBeTrue();
     expect(Currency::isValid('EUR'))->toBeTrue();
     expect(Currency::isValid('INVALID'))->toBeFalse();
     expect(Currency::isValid('XYZ'))->toBeFalse();
 });
 
-it('can create currency converter', function () {
+it('can create currency converter', function (): void {
     $converter = new CurrencyConverter();
     expect($converter)->toBeInstanceOf(CurrencyConverter::class);
 });
 
-it('returns same amount when converting to same currency', function () {
+it('returns same amount when converting to same currency', function (): void {
     $converter = new CurrencyConverter();
 
     $amount = 100.5;
@@ -85,7 +85,7 @@ it('returns same amount when converting to same currency', function () {
     expect($result)->toBe($amount);
 });
 
-it('returns rate 1.0 for same currency', function () {
+it('returns rate 1.0 for same currency', function (): void {
     $converter = new CurrencyConverter();
 
     $rate = $converter->getExchangeRate(Currency::EUR, Currency::EUR);
@@ -93,7 +93,7 @@ it('returns rate 1.0 for same currency', function () {
     expect($rate)->toBe(1.0);
 });
 
-it('can convert and format with target currency', function () {
+it('can convert and format with target currency', function (): void {
     $converter = new class extends CurrencyConverter
     {
         public function convert(
@@ -114,7 +114,7 @@ it('can convert and format with target currency', function () {
     expect($result)->toBe('92.00€');
 });
 
-it('can convert to multiple currencies', function () {
+it('can convert to multiple currencies', function (): void {
     $converter = new class extends CurrencyConverter
     {
         public function convert(
@@ -146,13 +146,13 @@ it('can convert to multiple currencies', function () {
     expect($results['JPY']['amount'])->toBe(14950.0);
 });
 
-it('can clear cache', function () {
+it('can clear cache', function (): void {
     $converter = new CurrencyConverter();
 
-    expect(fn () => $converter->clearCache())->not->toThrow(Exception::class);
+    expect($converter->clearCache(...))->not->toThrow(Exception::class);
 });
 
-it('handles zero decimal currencies correctly', function () {
+it('handles zero decimal currencies correctly', function (): void {
     expect(Currency::JPY->formatAmount(123))->toBe('¥123');
     expect(Currency::KRW->formatAmount(50000))->toBe('₩50000');
     expect(Currency::VND->formatAmount(1000000))->toBe('₫1000000');
@@ -160,7 +160,7 @@ it('handles zero decimal currencies correctly', function () {
 
 it(
     'provides accurate currency information for all supported currencies',
-    function () {
+    function (): void {
         $currencies = Currency::cases();
 
         foreach ($currencies as $currency) {

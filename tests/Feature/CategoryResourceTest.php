@@ -2,17 +2,20 @@
 
 declare(strict_types=1);
 
+use App\Filament\Resources\Categories\Pages\CreateCategory;
+use App\Filament\Resources\Categories\Pages\EditCategory;
+use App\Filament\Resources\Categories\Pages\ListCategories;
 use App\Models\Category;
 use App\Models\User;
 use Livewire\Livewire;
 
-it('can create category', function () {
+it('can create category', function (): void {
     // Create a super admin user by directly setting as admin without checking roles
     $user = User::factory()->create();
 
     // Bypass permissions by testing the Livewire component directly
     Livewire::test(
-        App\Filament\Resources\Categories\Pages\CreateCategory::class,
+        CreateCategory::class,
     )
         ->fillForm([
             'name' => 'Test Category',
@@ -31,9 +34,9 @@ it('can create category', function () {
     ]);
 });
 
-it('validates category name is required', function () {
+it('validates category name is required', function (): void {
     Livewire::test(
-        App\Filament\Resources\Categories\Pages\CreateCategory::class,
+        CreateCategory::class,
     )
         ->fillForm([
             'name' => '',
@@ -45,7 +48,7 @@ it('validates category name is required', function () {
         ->assertHasFormErrors(['name' => 'required']);
 });
 
-it('can edit existing category', function () {
+it('can edit existing category', function (): void {
     $category = Category::factory()->create([
         'name' => 'Original Name',
         'description' => 'Original Description',
@@ -54,7 +57,7 @@ it('can edit existing category', function () {
     ]);
 
     Livewire::test(
-        App\Filament\Resources\Categories\Pages\EditCategory::class,
+        EditCategory::class,
         [
             'record' => $category->id,
         ],
@@ -77,38 +80,38 @@ it('can edit existing category', function () {
     ]);
 });
 
-it('displays categories in table', function () {
+it('displays categories in table', function (): void {
     Category::factory()->count(3)->create();
 
     Livewire::test(
-        App\Filament\Resources\Categories\Pages\ListCategories::class,
+        ListCategories::class,
     )->assertSuccessful();
 });
 
-it('can search categories by name', function () {
+it('can search categories by name', function (): void {
     $category1 = Category::factory()->create(['name' => 'Coffee Category']);
     $category2 = Category::factory()->create(['name' => 'Tea Category']);
 
     Livewire::test(
-        App\Filament\Resources\Categories\Pages\ListCategories::class,
+        ListCategories::class,
     )
         ->searchTable('Coffee')
         ->assertCanSeeTableRecords([$category1])
         ->assertCanNotSeeTableRecords([$category2]);
 });
 
-it('displays category columns correctly', function () {
+it('displays category columns correctly', function (): void {
     Category::factory()->create([
         'name' => 'Test Category',
         'is_active' => true,
     ]);
 
     Livewire::test(
-        App\Filament\Resources\Categories\Pages\ListCategories::class,
+        ListCategories::class,
     )->assertSuccessful();
 });
 
-it('displays category status correctly', function () {
+it('displays category status correctly', function (): void {
     Category::factory()->create([
         'name' => 'Active Category',
         'is_active' => true,
@@ -119,6 +122,6 @@ it('displays category status correctly', function () {
     ]);
 
     Livewire::test(
-        App\Filament\Resources\Categories\Pages\ListCategories::class,
+        ListCategories::class,
     )->assertSuccessful();
 });

@@ -10,6 +10,7 @@ use App\Models\InventoryTransaction;
 use App\Models\Order;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
 
 final class ReportingService
 {
@@ -18,7 +19,7 @@ final class ReportingService
         $trackableIngredients = Ingredient::with('inventory')
             ->where('is_trackable', true)
             ->get()
-            ->map(function ($ingredient) {
+            ->map(function ($ingredient): array {
                 $inventory = $ingredient->inventory()->first();
 
                 return [
@@ -32,15 +33,13 @@ final class ReportingService
                 ];
             });
 
-        $untrackableIngredients = Ingredient::where('is_trackable', false)
+        $untrackableIngredients = Ingredient::query()->where('is_trackable', false)
             ->get()
-            ->map(function ($ingredient) {
-                return [
-                    'name' => $ingredient->name,
-                    'unit_type' => $ingredient->unit_type,
-                    'unit_cost' => $ingredient->unit_cost,
-                ];
-            });
+            ->map(fn ($ingredient): array => [
+                'name' => $ingredient->name,
+                'unit_type' => $ingredient->unit_type,
+                'unit_cost' => $ingredient->unit_cost,
+            ]);
 
         return [
             'trackable' => $trackableIngredients,
@@ -55,20 +54,18 @@ final class ReportingService
             ->whereBetween('recorded_at', [$startDate, $endDate])
             ->get()
             ->groupBy('ingredient.name')
-            ->map(function ($usages) {
-                return [
-                    'ingredient_name' => $usages->first()->ingredient->name,
-                    'total_quantity_used' => $usages->sum('quantity_used'),
-                    'unit_type' => $usages->first()->ingredient->unit_type,
-                    'usage_count' => $usages->count(),
-                    'total_cost' => $usages->sum('quantity_used') * $usages->first()->ingredient->unit_cost,
-                ];
-            });
+            ->map(fn ($usages): array => [
+                'ingredient_name' => $usages->first()->ingredient->name,
+                'total_quantity_used' => $usages->sum('quantity_used'),
+                'unit_type' => $usages->first()->ingredient->unit_type,
+                'usage_count' => $usages->count(),
+                'total_cost' => $usages->sum('quantity_used') * $usages->first()->ingredient->unit_cost,
+            ]);
     }
 
     public function getSalesReport(Carbon $startDate, Carbon $endDate): array
     {
-        $orders = Order::whereBetween('created_at', [$startDate, $endDate])
+        $orders = Order::query()->whereBetween('created_at', [$startDate, $endDate])
             ->with(['items.product', 'customer'])
             ->get();
 
@@ -78,15 +75,11 @@ final class ReportingService
 
         $productSales = $orders->flatMap->items
             ->groupBy('product.name')
-            ->map(function ($items) {
-                return [
-                    'product_name' => $items->first()->product->name,
-                    'quantity_sold' => $items->sum('quantity'),
-                    'revenue' => $items->sum(function ($item) {
-                        return $item->price * $item->quantity;
-                    }),
-                ];
-            })
+            ->map(fn ($items): array => [
+                'product_name' => $items->first()->product->name,
+                'quantity_sold' => $items->sum('quantity'),
+                'revenue' => $items->sum(fn ($item): int|float => $item->price * $item->quantity),
+            ])
             ->sortByDesc('revenue');
 
         return [
@@ -101,15 +94,15 @@ final class ReportingService
     public function getTopProducts(int $limit = 5, string $period = 'daily', int $days = 7): Collection
     {
         $startDate = match ($period) {
-            'daily' => Carbon::now()->subDays($days),
-            'weekly' => Carbon::now()->subWeeks($days),
-            'monthly' => Carbon::now()->subMonths($days),
-            'yearly' => Carbon::now()->subYears($days),
-            default => Carbon::now()->subDays($days),
+            'daily' => Date::now()->subDays($days),
+            'weekly' => Date::now()->subWeeks($days),
+            'monthly' => Date::now()->subMonths($days),
+            'yearly' => Date::now()->subYears($days),
+            default => Date::now()->subDays($days),
         };
 
         return Order::with(['items.product'])
-            ->whereBetween('created_at', [$startDate, Carbon::now()])
+            ->whereBetween('created_at', [$startDate, Date::now()])
             ->get()
             ->flatMap->items
             ->groupBy('product_id')
@@ -119,9 +112,7 @@ final class ReportingService
                 return (object) [
                     'product' => $product,
                     'quantity_sold' => $items->sum('quantity'),
-                    'revenue' => $items->sum(function ($item) {
-                        return $item->price * $item->quantity;
-                    }),
+                    'revenue' => $items->sum(fn ($item): int|float => $item->price * $item->quantity),
                 ];
             })
             ->sortByDesc('quantity_sold')
@@ -134,7 +125,7 @@ final class ReportingService
             ->whereBetween('recorded_at', [$startDate, $endDate])
             ->get()
             ->groupBy('ingredient.name')
-            ->map(function ($usages) {
+            ->map(function ($usages): array {
                 $ingredient = $usages->first()->ingredient;
                 $totalQuantity = $usages->sum('quantity_used');
                 $totalCost = $totalQuantity * $ingredient->unit_cost;
@@ -161,22 +152,19 @@ final class ReportingService
     public function getInventoryTransactions(Carbon $startDate, Carbon $endDate): Collection
     {
         return InventoryTransaction::with(['ingredient', 'orderItem.product'])
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->orderBy('created_at', 'desc')
+            ->whereBetween('created_at', [$startDate, $endDate])->latest()
             ->get()
-            ->map(function ($transaction) {
-                return [
-                    'id' => $transaction->id,
-                    'ingredient_name' => $transaction->ingredient->name,
-                    'transaction_type' => $transaction->transaction_type,
-                    'quantity_change' => $transaction->quantity_change,
-                    'previous_stock' => $transaction->previous_stock,
-                    'new_stock' => $transaction->new_stock,
-                    'reason' => $transaction->reason,
-                    'product_name' => $transaction->orderItem?->product->name,
-                    'created_at' => $transaction->created_at->format('M j, Y H:i'),
-                ];
-            });
+            ->map(fn ($transaction): array => [
+                'id' => $transaction->id,
+                'ingredient_name' => $transaction->ingredient->name,
+                'transaction_type' => $transaction->transaction_type,
+                'quantity_change' => $transaction->quantity_change,
+                'previous_stock' => $transaction->previous_stock,
+                'new_stock' => $transaction->new_stock,
+                'reason' => $transaction->reason,
+                'product_name' => $transaction->orderItem?->product->name,
+                'created_at' => $transaction->created_at->format('M j, Y H:i'),
+            ]);
     }
 
     private function getStockStatus($inventory): string
@@ -200,11 +188,11 @@ final class ReportingService
     {
         return Ingredient::with('inventory')
             ->where('is_trackable', true)
-            ->whereHas('inventory', function ($query) {
+            ->whereHas('inventory', function ($query): void {
                 $query->whereColumn('current_stock', '<=', 'min_stock_level');
             })
             ->get()
-            ->map(function ($ingredient) {
+            ->map(function ($ingredient): array {
                 $inventory = $ingredient->inventory;
 
                 return [

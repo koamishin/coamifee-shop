@@ -222,7 +222,7 @@ final class ProductForm
                                 ->columnSpanFull(),
                         ])
                         ->columns(3)
-                        ->itemLabel(function ($state): string {
+                        ->itemLabel(function (array $state): string {
                             if (
                                 isset($state['ingredient_id']) &&
                                 $state['ingredient_id']
@@ -241,7 +241,7 @@ final class ProductForm
                         ),
                 ])
                 ->columns(1)
-                ->collapsed(fn ($context) => $context === 'edit'),
+                ->collapsed(fn ($context): bool => $context === 'edit'),
         ]);
     }
 }

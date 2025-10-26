@@ -39,6 +39,7 @@ final class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->topbar(false)
             ->colors([
                 'primary' => Color::Amber,
             ])

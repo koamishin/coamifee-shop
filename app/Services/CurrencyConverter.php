@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\Currency;
 use App\Models\ExchangeRate;
+use Exception;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -19,17 +20,14 @@ final class CurrencyConverter
 
     private const BACKUP_CACHE_TTL = 86400; // 24 hours for offline cache
 
-    private const MAX_AGE_HOURS = 6; // Maximum age for considering rates fresh
+    private const MAX_AGE_HOURS = 6;
 
-    private ?string $apiKey;
-
-    private string $apiUrl;
+    private readonly string $apiUrl;
 
     private bool $forceOffline = false;
 
     public function __construct()
     {
-        $this->apiKey = config('services.exchange_rate_api.key') ?: null;
         $this->apiUrl =
             config(
                 'services.exchange_rate_api.url',
@@ -92,7 +90,7 @@ final class CurrencyConverter
         // Check database first for fresh rates
         if (ExchangeRate::hasFreshRates($base, self::MAX_AGE_HOURS)) {
             $dbRates = ExchangeRate::getStoredRates($base);
-            if (! empty($dbRates)) {
+            if ($dbRates !== []) {
                 return $dbRates;
             }
         }
@@ -109,13 +107,13 @@ final class CurrencyConverter
             $rates = $this->fetchExchangeRates($base);
 
             // Store in database for offline use
-            if (! empty($rates)) {
+            if ($rates !== []) {
                 $this->storeRatesInDatabase($base, $rates);
                 Cache::put($cacheKey, $rates, self::CACHE_TTL);
             }
 
             return $rates;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to fetch exchange rates', [
                 'base' => $base->value,
                 'error' => $e->getMessage(),
@@ -124,7 +122,7 @@ final class CurrencyConverter
 
             // Fallback to database
             $dbRates = ExchangeRate::getStoredRates($base);
-            if (! empty($dbRates)) {
+            if ($dbRates !== []) {
                 Cache::put($cacheKey, $dbRates, self::BACKUP_CACHE_TTL);
 
                 return $dbRates;
@@ -159,7 +157,7 @@ final class CurrencyConverter
             // Fetch fresh rates
             $rates = $this->fetchExchangeRates($base);
 
-            if (! empty($rates)) {
+            if ($rates !== []) {
                 $this->storeRatesInDatabase($base, $rates);
                 Cache::put($cacheKey, $rates, self::CACHE_TTL);
 
@@ -167,7 +165,7 @@ final class CurrencyConverter
             }
 
             return false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to refresh rates', [
                 'base' => $base->value,
                 'error' => $e->getMessage(),
@@ -201,7 +199,7 @@ final class CurrencyConverter
             'has_fresh_rates' => $hasFreshRates,
             'total_rates' => count($allRates),
             'last_updated' => $latestRate?->fetched_at?->format('Y-m-d H:i:s'),
-            'is_offline_capable' => ! empty($allRates),
+            'is_offline_capable' => $allRates !== [],
         ];
     }
 
@@ -223,7 +221,7 @@ final class CurrencyConverter
             ]);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to import backup rates', [
                 'base' => $base->value,
                 'error' => $e->getMessage(),
@@ -303,8 +301,8 @@ final class CurrencyConverter
         try {
             $rates = $this->getExchangeRates($currency);
 
-            return ! empty($rates);
-        } catch (Exception $e) {
+            return $rates !== [];
+        } catch (Exception) {
             return false;
         }
     }
@@ -335,7 +333,7 @@ final class CurrencyConverter
             ]);
 
             return $isAvailable;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('API availability check failed', [
                 'error' => $e->getMessage(),
             ]);
@@ -364,7 +362,7 @@ final class CurrencyConverter
                 $this->fetchExchangeRates($from);
 
                 return $this->getExchangeRateFromDatabase($from, $to);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 Log::warning('API failed, using stale rate from database', [
                     'from' => $from->value,
                     'to' => $to->value,
@@ -424,7 +422,7 @@ final class CurrencyConverter
                 'base' => $base->value,
                 'count' => count($rates),
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to store rates in database', [
                 'base' => $base->value,
                 'error' => $e->getMessage(),
@@ -437,9 +435,7 @@ final class CurrencyConverter
      */
     private function fetchExchangeRates(Currency $base): array
     {
-        if ($this->forceOffline) {
-            throw new \Exception('Forced offline mode - no API calls');
-        }
+        throw_if($this->forceOffline, Exception::class, 'Forced offline mode - no API calls');
 
         try {
             // Try to get from free API first
@@ -477,18 +473,14 @@ final class CurrencyConverter
      */
     private function fetchFromEcbApi(Currency $base): array
     {
-        if ($this->forceOffline) {
-            throw new \Exception('Forced offline mode - no API calls');
-        }
+        throw_if($this->forceOffline, Exception::class, 'Forced offline mode - no API calls');
 
         try {
             $response = Http::timeout(10)->get(
                 'https://data.ecb.europa.eu/api/statistics/v1/data/exrates/latest',
             );
 
-            if (! $response->successful()) {
-                throw new \Exception('ECB API request failed');
-            }
+            throw_unless($response->successful(), Exception::class, 'ECB API request failed');
 
             $data = $response->json();
             $rates = [];
@@ -510,7 +502,7 @@ final class CurrencyConverter
                 }
             }
 
-            if (! empty($rates)) {
+            if ($rates !== []) {
                 Log::info('Successfully fetched rates from ECB API', [
                     'base' => $base->value,
                     'count' => count($rates),
@@ -529,7 +521,7 @@ final class CurrencyConverter
                 'base' => $base->value,
                 'error' => $e->getMessage(),
             ]);
-            throw new \Exception('All APIs failed');
+            throw new Exception('All APIs failed', $e->getCode(), $e);
         }
     }
 
@@ -597,30 +589,5 @@ final class CurrencyConverter
         ];
 
         return $staticRates[$base->value] ?? [];
-    }
-
-    /**
-     * Update last updated timestamp
-     */
-    private function updateLastUpdated(): void
-    {
-        $cacheKey = self::EXCHANGE_RATE_CACHE_KEY.'_last_updated';
-        Cache::put($cacheKey, now(), self::CACHE_TTL);
-    }
-
-    /**
-     * Check if we have any cached data
-     */
-    private function hasCachedData(): bool
-    {
-        foreach (Currency::cases() as $currency) {
-            $cacheKey = self::EXCHANGE_RATE_CACHE_KEY.'_'.$currency->value;
-            if (Cache::has($cacheKey)) {
-                return true;
-            }
-        }
-
-        // Check database as well
-        return ExchangeRate::exists();
     }
 }

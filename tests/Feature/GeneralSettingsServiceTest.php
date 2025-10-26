@@ -9,12 +9,12 @@ use Joaopaulolndev\FilamentGeneralSettings\Models\GeneralSetting;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     // Clear any existing cache
     Cache::forget('general_settings');
 
     // Create a fresh settings record
-    GeneralSetting::create([
+    GeneralSetting::query()->create([
         'site_name' => 'Test Cafe',
         'site_description' => 'Test Description',
         'site_logo' => 'logo.png',
@@ -42,42 +42,42 @@ beforeEach(function () {
     ]);
 });
 
-afterEach(function () {
+afterEach(function (): void {
     Cache::forget('general_settings');
 });
 
-test('can get site name', function () {
+test('can get site name', function (): void {
     $service = new GeneralSettingsService();
     expect($service->getSiteName())->toBe('Test Cafe');
 });
 
-test('can get site description', function () {
+test('can get site description', function (): void {
     $service = new GeneralSettingsService();
     expect($service->getSiteDescription())->toBe('Test Description');
 });
 
-test('can get site logo', function () {
+test('can get site logo', function (): void {
     $service = new GeneralSettingsService();
     expect($service->getSiteLogo())->toBe('logo.png');
 });
 
-test('can get theme color', function () {
+test('can get theme color', function (): void {
     $service = new GeneralSettingsService();
     expect($service->getThemeColor())->toBe('#000000');
 });
 
-test('can get support email and phone', function () {
+test('can get support email and phone', function (): void {
     $service = new GeneralSettingsService();
     expect($service->getSupportEmail())->toBe('test@example.com');
     expect($service->getSupportPhone())->toBe('+1234567890');
 });
 
-test('can get google analytics id', function () {
+test('can get google analytics id', function (): void {
     $service = new GeneralSettingsService();
     expect($service->getGoogleAnalyticsId())->toBe('GA-123456');
 });
 
-test('can get seo configuration', function () {
+test('can get seo configuration', function (): void {
     $service = new GeneralSettingsService();
     $seoConfig = $service->getSeoConfig();
 
@@ -91,7 +91,7 @@ test('can get seo configuration', function () {
     expect($seoConfig['metadata'])->toBe(['meta1' => 'value1']);
 });
 
-test('can get social networks', function () {
+test('can get social networks', function (): void {
     $service = new GeneralSettingsService();
     $networks = $service->getSocialNetworks();
 
@@ -101,7 +101,7 @@ test('can get social networks', function () {
     expect($networks['twitter'])->toBe('https://twitter.com/test');
 });
 
-test('can get specific social network', function () {
+test('can get specific social network', function (): void {
     $service = new GeneralSettingsService();
     expect($service->getSocialNetwork('facebook'))->toBe(
         'https://facebook.com/test',
@@ -109,7 +109,7 @@ test('can get specific social network', function () {
     expect($service->getSocialNetwork('nonexistent'))->toBeNull();
 });
 
-test('can get email settings', function () {
+test('can get email settings', function (): void {
     $service = new GeneralSettingsService();
     $settings = $service->getEmailSettings();
 
@@ -119,13 +119,13 @@ test('can get email settings', function () {
     expect($settings['smtp_port'])->toBe('587');
 });
 
-test('can get email from address and name', function () {
+test('can get email from address and name', function (): void {
     $service = new GeneralSettingsService();
     expect($service->getEmailFromAddress())->toBe('from@example.com');
     expect($service->getEmailFromName())->toBe('Test From Name');
 });
 
-test('can get more configs', function () {
+test('can get more configs', function (): void {
     $service = new GeneralSettingsService();
     $configs = $service->getMoreConfigs();
 
@@ -135,12 +135,12 @@ test('can get more configs', function () {
     expect($configs['TimeZone'])->toBe('UTC');
 });
 
-test('can get currency', function () {
+test('can get currency', function (): void {
     $service = new GeneralSettingsService();
     expect($service->getCurrency())->toBe('USD');
 });
 
-test('can get contact info', function () {
+test('can get contact info', function (): void {
     $service = new GeneralSettingsService();
     $contact = $service->getContactInfo();
 
@@ -150,7 +150,7 @@ test('can get contact info', function () {
     expect($contact['phone'])->toBe('+1234567890');
 });
 
-test('can get analytics config', function () {
+test('can get analytics config', function (): void {
     $service = new GeneralSettingsService();
     $analytics = $service->getAnalyticsConfig();
 
@@ -160,7 +160,7 @@ test('can get analytics config', function () {
     expect($analytics['posthog_html_snippet'])->toBeNull();
 });
 
-test('can get branding config', function () {
+test('can get branding config', function (): void {
     $service = new GeneralSettingsService();
     $branding = $service->getBrandingConfig();
 
@@ -175,7 +175,7 @@ test('can get branding config', function () {
     expect($branding['theme_color'])->toBe('#000000');
 });
 
-test('has analytics detection works', function () {
+test('has analytics detection works', function (): void {
     $service = new GeneralSettingsService();
 
     expect($service->hasAnalytics())->toBeTrue();
@@ -183,29 +183,29 @@ test('has analytics detection works', function () {
     expect($service->hasPostHog())->toBeFalse();
 });
 
-test('has social networks detection works', function () {
+test('has social networks detection works', function (): void {
     $service = new GeneralSettingsService();
     expect($service->hasSocialNetworks())->toBeTrue();
 });
 
-test('has email settings detection works', function () {
+test('has email settings detection works', function (): void {
     $service = new GeneralSettingsService();
     expect($service->hasEmailSettings())->toBeTrue();
 });
 
-test('has contact info detection works', function () {
+test('has contact info detection works', function (): void {
     $service = new GeneralSettingsService();
     expect($service->hasContactInfo())->toBeTrue();
 });
 
-test('cache works correctly', function () {
+test('cache works correctly', function (): void {
     $service = new GeneralSettingsService();
 
     // First call should hit database
     $firstCall = $service->getSiteName();
 
     // Update database directly
-    GeneralSetting::first()->update(['site_name' => 'Updated Name']);
+    GeneralSetting::query()->first()->update(['site_name' => 'Updated Name']);
 
     // Second call should return cached value
     $secondCall = $service->getSiteName();
@@ -217,7 +217,7 @@ test('cache works correctly', function () {
     expect($thirdCall)->toBe('Updated Name');
 });
 
-test('handles missing settings gracefully', function () {
+test('handles missing settings gracefully', function (): void {
     // Delete all settings
     GeneralSetting::query()->delete();
     Cache::forget('general_settings');
@@ -232,7 +232,7 @@ test('handles missing settings gracefully', function () {
     expect($service->hasSocialNetworks())->toBeFalse();
 });
 
-test('can get all settings as array', function () {
+test('can get all settings as array', function (): void {
     $service = new GeneralSettingsService();
     $allSettings = $service->getAllSettings();
 

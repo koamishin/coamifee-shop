@@ -209,8 +209,8 @@ final class GeneralSettingsService
     public function getContactInfo(): array
     {
         return [
-            'email' => $this->getSupportEmail(),
-            'phone' => $this->getSupportPhone(),
+            'email' => $this->getSettings()->support_email,
+            'phone' => $this->getSettings()->support_phone,
         ];
     }
 
@@ -220,8 +220,8 @@ final class GeneralSettingsService
     public function getAnalyticsConfig(): array
     {
         return [
-            'google_analytics_id' => $this->getGoogleAnalyticsId(),
-            'posthog_html_snippet' => $this->getPosthogHtmlSnippet(),
+            'google_analytics_id' => $this->getSettings()->google_analytics_id,
+            'posthog_html_snippet' => $this->getSettings()->posthog_html_snippet,
         ];
     }
 
@@ -231,9 +231,9 @@ final class GeneralSettingsService
     public function getSeoConfig(): array
     {
         return [
-            'title' => $this->getSeoTitle() ?: $this->getSiteName(),
-            'description' => $this->getSiteDescription() ?: $this->getSeoTitle(),
-            'keywords' => $this->getSeoKeywords(),
+            'title' => $this->getSettings()->seo_title ?: $this->getSiteName(),
+            'description' => $this->getSettings()->site_description ?: $this->getSettings()->seo_title,
+            'keywords' => $this->getSettings()->seo_keywords,
             'metadata' => $this->getSeoMetadata(),
         ];
     }
@@ -245,10 +245,10 @@ final class GeneralSettingsService
     {
         return [
             'site_name' => $this->getSiteName(),
-            'site_description' => $this->getSiteDescription(),
-            'site_logo' => $this->getSiteLogo(),
-            'site_favicon' => $this->getSiteFavicon(),
-            'theme_color' => $this->getThemeColor(),
+            'site_description' => $this->getSettings()->site_description,
+            'site_logo' => $this->getSettings()->site_logo,
+            'site_favicon' => $this->getSettings()->site_favicon,
+            'theme_color' => $this->getSettings()->theme_color,
         ];
     }
 
@@ -257,7 +257,7 @@ final class GeneralSettingsService
      */
     public function hasAnalytics(): bool
     {
-        return ! empty($this->getGoogleAnalyticsId()) || ! empty($this->getPosthogHtmlSnippet());
+        return ! empty($this->getSettings()->google_analytics_id) || ! empty($this->getSettings()->posthog_html_snippet);
     }
 
     /**
@@ -265,7 +265,7 @@ final class GeneralSettingsService
      */
     public function hasGoogleAnalytics(): bool
     {
-        return ! empty($this->getGoogleAnalyticsId());
+        return ! empty($this->getSettings()->google_analytics_id);
     }
 
     /**
@@ -273,7 +273,7 @@ final class GeneralSettingsService
      */
     public function hasPostHog(): bool
     {
-        return ! empty($this->getPosthogHtmlSnippet());
+        return ! empty($this->getSettings()->posthog_html_snippet);
     }
 
     /**
@@ -281,7 +281,7 @@ final class GeneralSettingsService
      */
     public function hasSocialNetworks(): bool
     {
-        return ! empty(array_filter($this->getSocialNetworks()));
+        return array_filter($this->getSocialNetworks()) !== [];
     }
 
     /**
@@ -289,7 +289,7 @@ final class GeneralSettingsService
      */
     public function hasEmailSettings(): bool
     {
-        return ! empty(array_filter($this->getEmailSettings()));
+        return array_filter($this->getEmailSettings()) !== [];
     }
 
     /**
@@ -297,7 +297,7 @@ final class GeneralSettingsService
      */
     public function hasContactInfo(): bool
     {
-        return ! empty($this->getSupportEmail()) || ! empty($this->getSupportPhone());
+        return ! empty($this->getSettings()->support_email) || ! empty($this->getSettings()->support_phone);
     }
 
     /**
@@ -305,26 +305,24 @@ final class GeneralSettingsService
      */
     private function getSettings(): GeneralSetting
     {
-        return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, function () {
-            return GeneralSetting::firstOrCreate([], [
-                'site_name' => config('app.name', 'My Application'),
-                'site_description' => null,
-                'site_logo' => null,
-                'site_favicon' => null,
-                'theme_color' => null,
-                'support_email' => null,
-                'support_phone' => null,
-                'google_analytics_id' => null,
-                'posthog_html_snippet' => null,
-                'seo_title' => null,
-                'seo_keywords' => null,
-                'seo_metadata' => [],
-                'social_network' => [],
-                'email_settings' => [],
-                'email_from_name' => null,
-                'email_from_address' => null,
-                'more_configs' => [],
-            ]);
-        });
+        return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, fn () => GeneralSetting::query()->firstOrCreate([], [
+            'site_name' => config('app.name', 'My Application'),
+            'site_description' => null,
+            'site_logo' => null,
+            'site_favicon' => null,
+            'theme_color' => null,
+            'support_email' => null,
+            'support_phone' => null,
+            'google_analytics_id' => null,
+            'posthog_html_snippet' => null,
+            'seo_title' => null,
+            'seo_keywords' => null,
+            'seo_metadata' => [],
+            'social_network' => [],
+            'email_settings' => [],
+            'email_from_name' => null,
+            'email_from_address' => null,
+            'more_configs' => [],
+        ]));
     }
 }

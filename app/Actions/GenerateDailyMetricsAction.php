@@ -8,8 +8,9 @@ use App\Models\Product;
 use App\Services\MetricsService;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Support\Facades\Date;
 
-final class GenerateDailyMetricsAction
+final readonly class GenerateDailyMetricsAction
 {
     public function __construct(
         private MetricsService $metricsService,
@@ -17,7 +18,7 @@ final class GenerateDailyMetricsAction
 
     public function execute(?Carbon $date = null): array
     {
-        $date ??= Carbon::yesterday();
+        $date ??= Date::yesterday();
 
         $products = Product::all();
         $processedProducts = [];

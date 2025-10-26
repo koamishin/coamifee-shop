@@ -145,7 +145,7 @@ final class OrderForm
                         Grid::make(4)->schema([
                             Placeholder::make('order_summary')
                                 ->label('Order Summary')
-                                ->content(function ($record) {
+                                ->content(function ($record): string {
                                     if (! $record) {
                                         return 'New Order';
                                     }
@@ -171,7 +171,7 @@ final class OrderForm
 
                             Placeholder::make('order_type_display')
                                 ->label('Order Type')
-                                ->content(function ($record) {
+                                ->content(function ($record): string {
                                     if (! $record) {
                                         return 'Not Set';
                                     }
@@ -189,7 +189,7 @@ final class OrderForm
 
                             Placeholder::make('payment_display')
                                 ->label('Payment')
-                                ->content(function ($record) {
+                                ->content(function ($record): string {
                                     if (! $record) {
                                         return 'Not Set';
                                     }
@@ -208,19 +208,19 @@ final class OrderForm
 
                             Placeholder::make('total_formatted')
                                 ->label('Total')
-                                ->content(function ($record) {
+                                ->content(function ($record): string {
                                     if (! $record) {
-                                        return static::formatCurrency(0);
+                                        return self::formatCurrency(0);
                                     }
 
-                                    return static::formatCurrency(
+                                    return self::formatCurrency(
                                         $record->total,
                                     );
                                 })
                                 ->columnSpan(1),
                         ]),
                     ])
-                    ->visible(fn ($record) => $record !== null),
+                    ->visible(fn ($record): bool => $record !== null),
             ])
             ->columns(1);
     }

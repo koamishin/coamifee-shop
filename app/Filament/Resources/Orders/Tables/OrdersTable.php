@@ -7,10 +7,12 @@ namespace App\Filament\Resources\Orders\Tables;
 use App\Filament\Concerns\CurrencyAware;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -45,14 +47,14 @@ final class OrdersTable
                     ->placeholder('Guest Customer')
                     ->badge()
                     ->color(
-                        fn ($record) => $record->customer_id
+                        fn ($record): string => $record->customer_id
                             ? 'success'
                             : 'gray',
                     )
                     ->searchable()
                     ->sortable()
                     ->formatStateUsing(
-                        fn ($state) => $state ? 'Registered' : 'Guest',
+                        fn ($state): string => $state ? 'Registered' : 'Guest',
                     ),
 
                 TextColumn::make('order_type')
@@ -60,7 +62,7 @@ final class OrdersTable
                     ->description('Order fulfillment type')
                     ->badge()
                     ->icon(
-                        fn ($state) => match ($state) {
+                        fn ($state): string => match ($state) {
                             'dine-in' => 'heroicon-o-restaurant',
                             'takeaway' => 'heroicon-o-briefcase',
                             'delivery' => 'heroicon-o-truck',
@@ -68,7 +70,7 @@ final class OrdersTable
                         },
                     )
                     ->color(
-                        fn ($state) => match ($state) {
+                        fn ($state): string => match ($state) {
                             'dine-in' => 'success',
                             'takeaway' => 'info',
                             'delivery' => 'warning',
@@ -76,11 +78,11 @@ final class OrdersTable
                         },
                     )
                     ->formatStateUsing(
-                        fn ($state) => match ($state) {
+                        fn ($state): string => match ($state) {
                             'dine-in' => 'Dine In',
                             'takeaway' => 'Takeaway',
                             'delivery' => 'Delivery',
-                            default => ucfirst($state),
+                            default => ucfirst((string) $state),
                         },
                     )
                     ->searchable()
@@ -91,7 +93,7 @@ final class OrdersTable
                     ->description('Current order status')
                     ->badge()
                     ->icon(
-                        fn ($state) => match ($state) {
+                        fn ($state): string => match ($state) {
                             'pending' => 'heroicon-o-clock',
                             'confirmed' => 'heroicon-o-check-circle',
                             'preparing' => 'heroicon-o-arrow-path',
@@ -103,7 +105,7 @@ final class OrdersTable
                         },
                     )
                     ->color(
-                        fn ($state) => match ($state) {
+                        fn ($state): string => match ($state) {
                             'pending' => 'warning',
                             'confirmed' => 'info',
                             'preparing' => 'primary',
@@ -115,7 +117,7 @@ final class OrdersTable
                         },
                     )
                     ->formatStateUsing(
-                        fn ($state) => match ($state) {
+                        fn ($state): string => match ($state) {
                             'pending' => 'Pending',
                             'confirmed' => 'Confirmed',
                             'preparing' => 'Preparing',
@@ -123,7 +125,7 @@ final class OrdersTable
                             'served' => 'Served',
                             'completed' => 'Completed',
                             'cancelled' => 'Cancelled',
-                            default => ucfirst($state),
+                            default => ucfirst((string) $state),
                         },
                     )
                     ->searchable()
@@ -134,7 +136,7 @@ final class OrdersTable
                     ->description('Payment method used')
                     ->badge()
                     ->icon(
-                        fn ($state) => match ($state) {
+                        fn ($state): string => match ($state) {
                             'cash' => 'heroicon-o-banknotes',
                             'card' => 'heroicon-o-credit-card',
                             'digital' => 'heroicon-o-device-phone-mobile',
@@ -143,7 +145,7 @@ final class OrdersTable
                         },
                     )
                     ->color(
-                        fn ($state) => match ($state) {
+                        fn ($state): string => match ($state) {
                             'cash' => 'warning',
                             'card' => 'success',
                             'digital' => 'primary',
@@ -152,7 +154,7 @@ final class OrdersTable
                         },
                     )
                     ->formatStateUsing(
-                        fn ($state) => match ($state) {
+                        fn ($state): string => match ($state) {
                             'cash' => 'Cash',
                             'card' => 'Card',
                             'digital' => 'Digital',
@@ -173,7 +175,7 @@ final class OrdersTable
                     ->searchable()
                     ->sortable()
                     ->visible(
-                        fn ($record) => $record?->order_type === 'dine-in',
+                        fn ($record): bool => $record?->order_type === 'dine-in',
                     ),
 
                 TextColumn::make('total')
@@ -249,7 +251,7 @@ final class OrdersTable
                         ->label('Update Status')
                         ->icon('heroicon-o-arrow-path')
                         ->form([
-                            \Filament\Forms\Components\Select::make('status')
+                            Select::make('status')
                                 ->label('New Status')
                                 ->options([
                                     'pending' => 'Pending',
@@ -262,11 +264,11 @@ final class OrdersTable
                                 ])
                                 ->required(),
                         ])
-                        ->action(function (array $data, $record) {
+                        ->action(function (array $data, $record): void {
                             $record->update(['status' => $data['status']]);
                         })
                         ->visible(
-                            fn ($record) => ! in_array($record->status, [
+                            fn ($record): bool => ! in_array($record->status, [
                                 'completed',
                                 'cancelled',
                             ]),
@@ -299,7 +301,7 @@ final class OrdersTable
                 'Create your first order or adjust your filters to see results',
             )
             ->emptyStateActions([
-                \Filament\Actions\CreateAction::make()
+                CreateAction::make()
                     ->label('Create Order')
                     ->icon('heroicon-o-plus'),
             ])

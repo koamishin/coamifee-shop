@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\OrderItem>
+ * @extends Factory<OrderItem>
  */
 final class OrderItemFactory extends Factory
 {
@@ -19,8 +22,8 @@ final class OrderItemFactory extends Factory
     public function definition(): array
     {
         return [
-            'order_id' => \App\Models\Order::factory(),
-            'product_id' => \App\Models\Product::factory(),
+            'order_id' => Order::factory(),
+            'product_id' => Product::factory(),
             'quantity' => fake()->numberBetween(1, 5),
             'price' => fake()->randomFloat(2, 2.00, 25.00),
             'notes' => fake()->optional(0.2)->sentence(),

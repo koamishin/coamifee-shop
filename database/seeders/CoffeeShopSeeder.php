@@ -46,10 +46,7 @@ final class CoffeeShopSeeder extends Seeder
         $createdCategories = [];
         foreach ($categories as $category) {
             // FIX: Use firstOrCreate to prevent duplicates
-            $createdCategories[$category['name']] = Category::firstOrCreate(
-                ['name' => $category['name']],
-                $category,
-            );
+            $createdCategories[$category['name']] = Category::query()->firstOrCreate(['name' => $category['name']], $category);
         }
 
         $coffeeCategory = $createdCategories['Coffee'];
@@ -164,15 +161,13 @@ final class CoffeeShopSeeder extends Seeder
 
         $createdIngredients = [];
         foreach ($ingredients as $ingredient) {
-            $createdIngredients[$ingredient['name']] = Ingredient::create(
-                $ingredient,
-            );
+            $createdIngredients[$ingredient['name']] = Ingredient::query()->create($ingredient);
         }
 
         // Create Ingredient Inventory for trackable ingredients
         foreach ($createdIngredients as $ingredient) {
             if ($ingredient->is_trackable) {
-                IngredientInventory::create([
+                IngredientInventory::query()->create([
                     'ingredient_id' => $ingredient->id,
                     'current_stock' => $ingredient->current_stock,
                     'min_stock_level' => $ingredient->unit_type === 'grams' ? 500 : 1000,
@@ -316,7 +311,7 @@ final class CoffeeShopSeeder extends Seeder
 
         $createdProducts = [];
         foreach ($products as $product) {
-            $createdProducts[$product['name']] = Product::create($product);
+            $createdProducts[$product['name']] = Product::query()->create($product);
         }
 
         // Create Product Ingredients (Recipes)
@@ -481,7 +476,7 @@ final class CoffeeShopSeeder extends Seeder
         foreach ($recipes as $productName => $ingredients) {
             $product = $createdProducts[$productName];
             foreach ($ingredients as $ingredient) {
-                ProductIngredient::create([
+                ProductIngredient::query()->create([
                     'product_id' => $product->id,
                     'ingredient_id' => $ingredient['ingredient_id'],
                     'quantity_required' => $ingredient['quantity_required'],
