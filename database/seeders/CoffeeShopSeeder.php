@@ -17,15 +17,39 @@ final class CoffeeShopSeeder extends Seeder
     {
         // Create Categories with proper structure
         $categories = [
-            ['name' => 'Coffee', 'description' => 'Hot and cold coffee beverages', 'is_active' => true, 'sort_order' => 1],
-            ['name' => 'Tea', 'description' => 'Various tea selections', 'is_active' => true, 'sort_order' => 2],
-            ['name' => 'Food', 'description' => 'Pastries, sandwiches, and meals', 'is_active' => true, 'sort_order' => 3],
-            ['name' => 'Desserts', 'description' => 'Sweet treats and desserts', 'is_active' => true, 'sort_order' => 4],
+            [
+                'name' => 'Coffee',
+                'description' => 'Hot and cold coffee beverages',
+                'is_active' => true,
+                'sort_order' => 1,
+            ],
+            [
+                'name' => 'Tea',
+                'description' => 'Various tea selections',
+                'is_active' => true,
+                'sort_order' => 2,
+            ],
+            [
+                'name' => 'Food',
+                'description' => 'Pastries, sandwiches, and meals',
+                'is_active' => true,
+                'sort_order' => 3,
+            ],
+            [
+                'name' => 'Desserts',
+                'description' => 'Sweet treats and desserts',
+                'is_active' => true,
+                'sort_order' => 4,
+            ],
         ];
 
         $createdCategories = [];
         foreach ($categories as $category) {
-            $createdCategories[$category['name']] = Category::create($category);
+            // FIX: Use firstOrCreate to prevent duplicates
+            $createdCategories[$category['name']] = Category::firstOrCreate(
+                ['name' => $category['name']],
+                $category,
+            );
         }
 
         $coffeeCategory = $createdCategories['Coffee'];
@@ -36,27 +60,113 @@ final class CoffeeShopSeeder extends Seeder
         // Create Ingredients
         $ingredients = [
             // Trackable Ingredients
-            ['name' => 'Coffee Beans (Espresso)', 'unit_type' => 'grams', 'is_trackable' => true, 'unit_cost' => 0.02, 'current_stock' => 5000],
-            ['name' => 'Whole Milk', 'unit_type' => 'ml', 'is_trackable' => true, 'unit_cost' => 0.001, 'current_stock' => 10000],
-            ['name' => 'Oat Milk', 'unit_type' => 'ml', 'is_trackable' => true, 'unit_cost' => 0.002, 'current_stock' => 5000],
-            ['name' => 'Vanilla Syrup', 'unit_type' => 'ml', 'is_trackable' => true, 'unit_cost' => 0.005, 'current_stock' => 2000],
-            ['name' => 'Caramel Syrup', 'unit_type' => 'ml', 'is_trackable' => true, 'unit_cost' => 0.005, 'current_stock' => 2000],
-            ['name' => 'Chocolate Sauce', 'unit_type' => 'ml', 'is_trackable' => true, 'unit_cost' => 0.008, 'current_stock' => 1500],
-            ['name' => 'Whipped Cream', 'unit_type' => 'grams', 'is_trackable' => true, 'unit_cost' => 0.01, 'current_stock' => 2000],
-            ['name' => 'Ice Cubes', 'unit_type' => 'pieces', 'is_trackable' => true, 'unit_cost' => 0.001, 'current_stock' => 5000],
+            [
+                'name' => 'Coffee Beans (Espresso)',
+                'unit_type' => 'grams',
+                'is_trackable' => true,
+                'unit_cost' => 0.02,
+                'current_stock' => 5000,
+            ],
+            [
+                'name' => 'Whole Milk',
+                'unit_type' => 'ml',
+                'is_trackable' => true,
+                'unit_cost' => 0.001,
+                'current_stock' => 10000,
+            ],
+            [
+                'name' => 'Oat Milk',
+                'unit_type' => 'ml',
+                'is_trackable' => true,
+                'unit_cost' => 0.002,
+                'current_stock' => 5000,
+            ],
+            [
+                'name' => 'Vanilla Syrup',
+                'unit_type' => 'ml',
+                'is_trackable' => true,
+                'unit_cost' => 0.005,
+                'current_stock' => 2000,
+            ],
+            [
+                'name' => 'Caramel Syrup',
+                'unit_type' => 'ml',
+                'is_trackable' => true,
+                'unit_cost' => 0.005,
+                'current_stock' => 2000,
+            ],
+            [
+                'name' => 'Chocolate Sauce',
+                'unit_type' => 'ml',
+                'is_trackable' => true,
+                'unit_cost' => 0.008,
+                'current_stock' => 1500,
+            ],
+            [
+                'name' => 'Whipped Cream',
+                'unit_type' => 'grams',
+                'is_trackable' => true,
+                'unit_cost' => 0.01,
+                'current_stock' => 2000,
+            ],
+            [
+                'name' => 'Ice Cubes',
+                'unit_type' => 'pieces',
+                'is_trackable' => true,
+                'unit_cost' => 0.001,
+                'current_stock' => 5000,
+            ],
 
             // Untrackable Ingredients
-            ['name' => 'Beef Patty', 'unit_type' => 'grams', 'is_trackable' => false, 'unit_cost' => 0.015, 'current_stock' => 0],
-            ['name' => 'Chicken Breast', 'unit_type' => 'grams', 'is_trackable' => false, 'unit_cost' => 0.012, 'current_stock' => 0],
-            ['name' => 'Bacon', 'unit_type' => 'grams', 'is_trackable' => false, 'unit_cost' => 0.025, 'current_stock' => 0],
-            ['name' => 'Lettuce', 'unit_type' => 'grams', 'is_trackable' => false, 'unit_cost' => 0.003, 'current_stock' => 0],
-            ['name' => 'Tomato', 'unit_type' => 'grams', 'is_trackable' => false, 'unit_cost' => 0.004, 'current_stock' => 0],
-            ['name' => 'Cheese Slice', 'unit_type' => 'pieces', 'is_trackable' => false, 'unit_cost' => 0.05, 'current_stock' => 0],
+            [
+                'name' => 'Beef Patty',
+                'unit_type' => 'grams',
+                'is_trackable' => false,
+                'unit_cost' => 0.015,
+                'current_stock' => 0,
+            ],
+            [
+                'name' => 'Chicken Breast',
+                'unit_type' => 'grams',
+                'is_trackable' => false,
+                'unit_cost' => 0.012,
+                'current_stock' => 0,
+            ],
+            [
+                'name' => 'Bacon',
+                'unit_type' => 'grams',
+                'is_trackable' => false,
+                'unit_cost' => 0.025,
+                'current_stock' => 0,
+            ],
+            [
+                'name' => 'Lettuce',
+                'unit_type' => 'grams',
+                'is_trackable' => false,
+                'unit_cost' => 0.003,
+                'current_stock' => 0,
+            ],
+            [
+                'name' => 'Tomato',
+                'unit_type' => 'grams',
+                'is_trackable' => false,
+                'unit_cost' => 0.004,
+                'current_stock' => 0,
+            ],
+            [
+                'name' => 'Cheese Slice',
+                'unit_type' => 'pieces',
+                'is_trackable' => false,
+                'unit_cost' => 0.05,
+                'current_stock' => 0,
+            ],
         ];
 
         $createdIngredients = [];
         foreach ($ingredients as $ingredient) {
-            $createdIngredients[$ingredient['name']] = Ingredient::create($ingredient);
+            $createdIngredients[$ingredient['name']] = Ingredient::create(
+                $ingredient,
+            );
         }
 
         // Create Ingredient Inventory for trackable ingredients
@@ -76,32 +186,132 @@ final class CoffeeShopSeeder extends Seeder
         // Create Products
         $products = [
             // Coffee Products
-            ['name' => 'Espresso', 'price' => 2.50, 'category_id' => $coffeeCategory->id, 'preparation_time' => 2],
-            ['name' => 'Cappuccino', 'price' => 3.50, 'category_id' => $coffeeCategory->id, 'preparation_time' => 4],
-            ['name' => 'Latte', 'price' => 4.00, 'category_id' => $coffeeCategory->id, 'preparation_time' => 5],
-            ['name' => 'Vanilla Latte', 'price' => 4.50, 'category_id' => $coffeeCategory->id, 'preparation_time' => 5],
-            ['name' => 'Caramel Macchiato', 'price' => 5.00, 'category_id' => $coffeeCategory->id, 'preparation_time' => 6],
-            ['name' => 'Mocha', 'price' => 4.50, 'category_id' => $coffeeCategory->id, 'preparation_time' => 6],
-            ['name' => 'Iced Coffee', 'price' => 3.00, 'category_id' => $coffeeCategory->id, 'preparation_time' => 3],
+            [
+                'name' => 'Espresso',
+                'price' => 2.5,
+                'category_id' => $coffeeCategory->id,
+                'preparation_time' => 2,
+            ],
+            [
+                'name' => 'Cappuccino',
+                'price' => 3.5,
+                'category_id' => $coffeeCategory->id,
+                'preparation_time' => 4,
+            ],
+            [
+                'name' => 'Latte',
+                'price' => 4.0,
+                'category_id' => $coffeeCategory->id,
+                'preparation_time' => 5,
+            ],
+            [
+                'name' => 'Vanilla Latte',
+                'price' => 4.5,
+                'category_id' => $coffeeCategory->id,
+                'preparation_time' => 5,
+            ],
+            [
+                'name' => 'Caramel Macchiato',
+                'price' => 5.0,
+                'category_id' => $coffeeCategory->id,
+                'preparation_time' => 6,
+            ],
+            [
+                'name' => 'Mocha',
+                'price' => 4.5,
+                'category_id' => $coffeeCategory->id,
+                'preparation_time' => 6,
+            ],
+            [
+                'name' => 'Iced Coffee',
+                'price' => 3.0,
+                'category_id' => $coffeeCategory->id,
+                'preparation_time' => 3,
+            ],
 
             // Tea Products
-            ['name' => 'Green Tea', 'price' => 2.00, 'category_id' => $teaCategory->id, 'preparation_time' => 3],
-            ['name' => 'Earl Grey Tea', 'price' => 2.00, 'category_id' => $teaCategory->id, 'preparation_time' => 3],
-            ['name' => 'Iced Tea', 'price' => 2.50, 'category_id' => $teaCategory->id, 'preparation_time' => 3],
-            ['name' => 'Chamomile Tea', 'price' => 2.25, 'category_id' => $teaCategory->id, 'preparation_time' => 3],
+            [
+                'name' => 'Green Tea',
+                'price' => 2.0,
+                'category_id' => $teaCategory->id,
+                'preparation_time' => 3,
+            ],
+            [
+                'name' => 'Earl Grey Tea',
+                'price' => 2.0,
+                'category_id' => $teaCategory->id,
+                'preparation_time' => 3,
+            ],
+            [
+                'name' => 'Iced Tea',
+                'price' => 2.5,
+                'category_id' => $teaCategory->id,
+                'preparation_time' => 3,
+            ],
+            [
+                'name' => 'Chamomile Tea',
+                'price' => 2.25,
+                'category_id' => $teaCategory->id,
+                'preparation_time' => 3,
+            ],
 
             // Food Products
-            ['name' => 'Beef Burger', 'price' => 8.50, 'category_id' => $foodCategory->id, 'preparation_time' => 12],
-            ['name' => 'Chicken Sandwich', 'price' => 7.50, 'category_id' => $foodCategory->id, 'preparation_time' => 10],
-            ['name' => 'Bacon Burger', 'price' => 9.00, 'category_id' => $foodCategory->id, 'preparation_time' => 13],
-            ['name' => 'Caesar Salad', 'price' => 6.50, 'category_id' => $foodCategory->id, 'preparation_time' => 8],
-            ['name' => 'Grilled Cheese Sandwich', 'price' => 5.50, 'category_id' => $foodCategory->id, 'preparation_time' => 7],
+            [
+                'name' => 'Beef Burger',
+                'price' => 8.5,
+                'category_id' => $foodCategory->id,
+                'preparation_time' => 12,
+            ],
+            [
+                'name' => 'Chicken Sandwich',
+                'price' => 7.5,
+                'category_id' => $foodCategory->id,
+                'preparation_time' => 10,
+            ],
+            [
+                'name' => 'Bacon Burger',
+                'price' => 9.0,
+                'category_id' => $foodCategory->id,
+                'preparation_time' => 13,
+            ],
+            [
+                'name' => 'Caesar Salad',
+                'price' => 6.5,
+                'category_id' => $foodCategory->id,
+                'preparation_time' => 8,
+            ],
+            [
+                'name' => 'Grilled Cheese Sandwich',
+                'price' => 5.5,
+                'category_id' => $foodCategory->id,
+                'preparation_time' => 7,
+            ],
 
             // Dessert Products
-            ['name' => 'Chocolate Cake', 'price' => 4.50, 'category_id' => $dessertCategory->id, 'preparation_time' => 2],
-            ['name' => 'Cheesecake', 'price' => 5.00, 'category_id' => $dessertCategory->id, 'preparation_time' => 2],
-            ['name' => 'Apple Pie', 'price' => 4.00, 'category_id' => $dessertCategory->id, 'preparation_time' => 2],
-            ['name' => 'Ice Cream Sundae', 'price' => 3.50, 'category_id' => $dessertCategory->id, 'preparation_time' => 3],
+            [
+                'name' => 'Chocolate Cake',
+                'price' => 4.5,
+                'category_id' => $dessertCategory->id,
+                'preparation_time' => 2,
+            ],
+            [
+                'name' => 'Cheesecake',
+                'price' => 5.0,
+                'category_id' => $dessertCategory->id,
+                'preparation_time' => 2,
+            ],
+            [
+                'name' => 'Apple Pie',
+                'price' => 4.0,
+                'category_id' => $dessertCategory->id,
+                'preparation_time' => 2,
+            ],
+            [
+                'name' => 'Ice Cream Sundae',
+                'price' => 3.5,
+                'category_id' => $dessertCategory->id,
+                'preparation_time' => 3,
+            ],
         ];
 
         $createdProducts = [];
@@ -113,59 +323,158 @@ final class CoffeeShopSeeder extends Seeder
         $recipes = [
             // Coffee Recipes
             'Espresso' => [
-                ['ingredient_id' => $createdIngredients['Coffee Beans (Espresso)']->id, 'quantity_required' => 18],
+                [
+                    'ingredient_id' => $createdIngredients['Coffee Beans (Espresso)']->id,
+                    'quantity_required' => 18,
+                ],
             ],
             'Cappuccino' => [
-                ['ingredient_id' => $createdIngredients['Coffee Beans (Espresso)']->id, 'quantity_required' => 18],
-                ['ingredient_id' => $createdIngredients['Whole Milk']->id, 'quantity_required' => 150],
-                ['ingredient_id' => $createdIngredients['Whipped Cream']->id, 'quantity_required' => 10],
+                [
+                    'ingredient_id' => $createdIngredients['Coffee Beans (Espresso)']->id,
+                    'quantity_required' => 18,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Whole Milk']->id,
+                    'quantity_required' => 150,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Whipped Cream']->id,
+                    'quantity_required' => 10,
+                ],
             ],
             'Latte' => [
-                ['ingredient_id' => $createdIngredients['Coffee Beans (Espresso)']->id, 'quantity_required' => 18],
-                ['ingredient_id' => $createdIngredients['Whole Milk']->id, 'quantity_required' => 200],
+                [
+                    'ingredient_id' => $createdIngredients['Coffee Beans (Espresso)']->id,
+                    'quantity_required' => 18,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Whole Milk']->id,
+                    'quantity_required' => 200,
+                ],
             ],
             'Vanilla Latte' => [
-                ['ingredient_id' => $createdIngredients['Coffee Beans (Espresso)']->id, 'quantity_required' => 18],
-                ['ingredient_id' => $createdIngredients['Whole Milk']->id, 'quantity_required' => 200],
-                ['ingredient_id' => $createdIngredients['Vanilla Syrup']->id, 'quantity_required' => 15],
+                [
+                    'ingredient_id' => $createdIngredients['Coffee Beans (Espresso)']->id,
+                    'quantity_required' => 18,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Whole Milk']->id,
+                    'quantity_required' => 200,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Vanilla Syrup']->id,
+                    'quantity_required' => 15,
+                ],
             ],
             'Caramel Macchiato' => [
-                ['ingredient_id' => $createdIngredients['Coffee Beans (Espresso)']->id, 'quantity_required' => 18],
-                ['ingredient_id' => $createdIngredients['Whole Milk']->id, 'quantity_required' => 180],
-                ['ingredient_id' => $createdIngredients['Vanilla Syrup']->id, 'quantity_required' => 10],
-                ['ingredient_id' => $createdIngredients['Caramel Syrup']->id, 'quantity_required' => 15],
-                ['ingredient_id' => $createdIngredients['Whipped Cream']->id, 'quantity_required' => 15],
+                [
+                    'ingredient_id' => $createdIngredients['Coffee Beans (Espresso)']->id,
+                    'quantity_required' => 18,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Whole Milk']->id,
+                    'quantity_required' => 180,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Vanilla Syrup']->id,
+                    'quantity_required' => 10,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Caramel Syrup']->id,
+                    'quantity_required' => 15,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Whipped Cream']->id,
+                    'quantity_required' => 15,
+                ],
             ],
             'Mocha' => [
-                ['ingredient_id' => $createdIngredients['Coffee Beans (Espresso)']->id, 'quantity_required' => 18],
-                ['ingredient_id' => $createdIngredients['Whole Milk']->id, 'quantity_required' => 200],
-                ['ingredient_id' => $createdIngredients['Chocolate Sauce']->id, 'quantity_required' => 20],
-                ['ingredient_id' => $createdIngredients['Whipped Cream']->id, 'quantity_required' => 10],
+                [
+                    'ingredient_id' => $createdIngredients['Coffee Beans (Espresso)']->id,
+                    'quantity_required' => 18,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Whole Milk']->id,
+                    'quantity_required' => 200,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Chocolate Sauce']->id,
+                    'quantity_required' => 20,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Whipped Cream']->id,
+                    'quantity_required' => 10,
+                ],
             ],
             'Iced Coffee' => [
-                ['ingredient_id' => $createdIngredients['Coffee Beans (Espresso)']->id, 'quantity_required' => 18],
-                ['ingredient_id' => $createdIngredients['Ice Cubes']->id, 'quantity_required' => 6],
-                ['ingredient_id' => $createdIngredients['Whole Milk']->id, 'quantity_required' => 100],
+                [
+                    'ingredient_id' => $createdIngredients['Coffee Beans (Espresso)']->id,
+                    'quantity_required' => 18,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Ice Cubes']->id,
+                    'quantity_required' => 6,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Whole Milk']->id,
+                    'quantity_required' => 100,
+                ],
             ],
 
             // Food Recipes
             'Beef Burger' => [
-                ['ingredient_id' => $createdIngredients['Beef Patty']->id, 'quantity_required' => 200],
-                ['ingredient_id' => $createdIngredients['Lettuce']->id, 'quantity_required' => 30],
-                ['ingredient_id' => $createdIngredients['Tomato']->id, 'quantity_required' => 25],
-                ['ingredient_id' => $createdIngredients['Cheese Slice']->id, 'quantity_required' => 1],
+                [
+                    'ingredient_id' => $createdIngredients['Beef Patty']->id,
+                    'quantity_required' => 200,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Lettuce']->id,
+                    'quantity_required' => 30,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Tomato']->id,
+                    'quantity_required' => 25,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Cheese Slice']->id,
+                    'quantity_required' => 1,
+                ],
             ],
             'Chicken Sandwich' => [
-                ['ingredient_id' => $createdIngredients['Chicken Breast']->id, 'quantity_required' => 150],
-                ['ingredient_id' => $createdIngredients['Lettuce']->id, 'quantity_required' => 20],
-                ['ingredient_id' => $createdIngredients['Tomato']->id, 'quantity_required' => 15],
+                [
+                    'ingredient_id' => $createdIngredients['Chicken Breast']->id,
+                    'quantity_required' => 150,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Lettuce']->id,
+                    'quantity_required' => 20,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Tomato']->id,
+                    'quantity_required' => 15,
+                ],
             ],
             'Bacon Burger' => [
-                ['ingredient_id' => $createdIngredients['Beef Patty']->id, 'quantity_required' => 200],
-                ['ingredient_id' => $createdIngredients['Bacon']->id, 'quantity_required' => 50],
-                ['ingredient_id' => $createdIngredients['Lettuce']->id, 'quantity_required' => 30],
-                ['ingredient_id' => $createdIngredients['Tomato']->id, 'quantity_required' => 25],
-                ['ingredient_id' => $createdIngredients['Cheese Slice']->id, 'quantity_required' => 1],
+                [
+                    'ingredient_id' => $createdIngredients['Beef Patty']->id,
+                    'quantity_required' => 200,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Bacon']->id,
+                    'quantity_required' => 50,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Lettuce']->id,
+                    'quantity_required' => 30,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Tomato']->id,
+                    'quantity_required' => 25,
+                ],
+                [
+                    'ingredient_id' => $createdIngredients['Cheese Slice']->id,
+                    'quantity_required' => 1,
+                ],
             ],
         ];
 

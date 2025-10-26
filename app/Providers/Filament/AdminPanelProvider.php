@@ -12,7 +12,6 @@ use App\Filament\Widgets\OrderStatusWidget;
 use App\Filament\Widgets\SalesTrendsWidget;
 use App\Filament\Widgets\TopProductsWidget;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
-use Coolsam\Modules\ModulesPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -42,12 +41,19 @@ final class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
-            ->pages([
-                Dashboard::class,
-            ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
+            ->discoverResources(
+                in: app_path('Filament/Resources'),
+                for: "App\Filament\Resources",
+            )
+            ->discoverPages(
+                in: app_path('Filament/Pages'),
+                for: "App\Filament\Pages",
+            )
+            ->pages([Dashboard::class])
+            ->discoverWidgets(
+                in: app_path('Filament/Widgets'),
+                for: "App\Filament\Widgets",
+            )
             ->widgets([
                 CoffeeShopOverviewWidget::class,
                 SalesTrendsWidget::class,
@@ -73,11 +79,7 @@ final class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
-            ->plugins([
-                FilamentShieldPlugin::make(),
-            ])
-            ->authMiddleware([
-                Authenticate::class,
-            ]);
+            ->plugins([FilamentShieldPlugin::make()])
+            ->authMiddleware([Authenticate::class]);
     }
 }
