@@ -13,7 +13,6 @@ use App\Models\Product;
 use App\Services\InventoryService;
 use App\Services\OrderProcessingService;
 use App\Services\ReportingService;
-use Illuminate\View\View;
 use Livewire\Component;
 
 final class Pos extends Component
@@ -76,6 +75,12 @@ final class Pos extends Component
 
     public bool $showPaymentPanel = false;
 
+    public bool $showPaymentConfirmationModal = false;
+
+    public array $paymentConfirmationData = [];
+
+    public array $receiptData = [];
+
     // Coffee shop specific features
     public array $quickAddItems = [];
 
@@ -87,7 +92,7 @@ final class Pos extends Component
 
     public array $customizations = [];
 
-    public $selectedProductId;
+    public $selectedProductId = null;
 
     public $selectedProductIds = [];
 
@@ -111,7 +116,7 @@ final class Pos extends Component
         $this->posCheckoutAction = $posCheckoutAction;
     }
 
-    public function toggleSelectProduct($productId): void
+    public function toggleSelectProduct($productId)
     {
         if (in_array($productId, $this->selectedProductIds)) {
             // Remove if already selected
@@ -129,9 +134,8 @@ final class Pos extends Component
 
     public function confirmPayment(): void
     {
-        if ($this->cart === []) {
-            $this->dispatch('cart-empty', ['message' => 'Cart is empty']);
-
+        if (empty($this->cart)) {
+            $this->dispatch('show-alert', 'Cart is empty!');
             return;
         }
 
@@ -149,9 +153,45 @@ final class Pos extends Component
         $result = $this->posCheckoutAction->execute($this->cart, $orderData);
 
         if ($result['success']) {
-            $this->clearCart();
-            $this->showPaymentModal = false;
+            // Store cart count and items before clearing
+            $cartCount = count($this->cart);
+            $cartItems = $this->cart;
 
+            // Store receipt data BEFORE clearing cart (since clearCart resets calculated values)
+            $this->receiptData = [
+                'order_number' => $result['order_number'],
+                'customer_name' => $this->customerName ?: 'Guest',
+                'order_type' => $this->orderType,
+                'table_number' => $this->tableNumber,
+                'cart_items' => $cartItems,
+                'add_ons' => $this->addOns,
+                'subtotal' => $this->subtotal,
+                'discount_amount' => $this->discountAmount,
+                'discount_percentage' => $this->discountPercentage,
+                'discount_applied' => $this->discountApplied,
+                'total' => $result['total'],
+                'instructions' => $this->otherNote,
+                'payment_method' => $this->paymentMethod,
+            ];
+
+            $this->clearCart();
+            $this->showPaymentPanel = false;
+
+            // Prepare confirmation data for the modal
+            $this->paymentConfirmationData = [
+                'order_number' => $result['order_number'],
+                'total' => $result['total'],
+                'payment_method' => $this->paymentMethod,
+                'customer_name' => $this->customerName ?: 'Guest',
+                'order_type' => $this->orderType,
+                'table_number' => $this->tableNumber,
+                'items_count' => $cartCount,
+            ];
+
+            // Show the confirmation modal
+            $this->showPaymentConfirmationModal = true;
+
+            // Dispatch event for any additional handling
             $this->dispatch('payment-confirmed', [
                 'message' => $result['message'],
                 'order_id' => $result['order_id'],
@@ -163,7 +203,7 @@ final class Pos extends Component
             $this->checkLowStock();
             $this->updateProductAvailability();
         } else {
-            $this->dispatch('order-failed', ['message' => $result['message']]);
+            $this->dispatch('show-alert', 'Order failed: ' . $result['message']);
         }
     }
 
@@ -182,7 +222,7 @@ final class Pos extends Component
         $this->loadQuickAddItems();
     }
 
-    public function render(): View
+    public function render(): \Illuminate\View\View
     {
         // Load products with availability info
         $this->products = Product::with(['category', 'ingredients.ingredient'])
@@ -192,10 +232,12 @@ final class Pos extends Component
 
         // Load best sellers based on actual metrics data
         $this->bestSellers = $this->reportingService->getTopProducts(5, 'daily', 7)
-            ->map(fn ($metric) => $metric->product);
+            ->map(function ($metric) {
+                return $metric->product;
+            });
 
         // Load categories for sidebar navigation
-        $this->categories = Category::query()->where('is_active', true)->orderBy('name')->get();
+        $this->categories = Category::where('is_active', true)->orderBy('name')->get();
 
         // Load recent orders for dashboard
         $this->recentOrders = Order::with('items.product')
@@ -204,12 +246,12 @@ final class Pos extends Component
             ->get();
 
         // Calculate today's orders and sales
-        $this->todayOrders = Order::query()->whereDate('created_at', today())->count();
-        $this->todaySales = Order::query()->whereDate('created_at', today())->sum('total');
+        $this->todayOrders = Order::whereDate('created_at', today())->count();
+        $this->todaySales = Order::whereDate('created_at', today())->sum('total');
 
         // For POS functionality (when used as POS component)
-        if ($this->customerSearch !== '' && $this->customerSearch !== '0') {
-            $this->customers = Customer::query()->where('name', 'like', '%'.$this->customerSearch.'%')
+        if (! empty($this->customerSearch)) {
+            $this->customers = Customer::where('name', 'like', '%'.$this->customerSearch.'%')
                 ->orWhere('phone', 'like', '%'.$this->customerSearch.'%')
                 ->limit(5)
                 ->get();
@@ -226,22 +268,24 @@ final class Pos extends Component
     public function loadQuickAddItems(): void
     {
         // Load popular coffee items for quick access
-        $this->quickAddItems = Product::query()->where('is_active', true)
-            ->whereHas('category', function ($query): void {
+        $this->quickAddItems = Product::where('is_active', true)
+            ->whereHas('category', function ($query) {
                 $query->whereIn('name', ['Coffee', 'Espresso', 'Latte']);
             })
             ->orderBy('name')
             ->take(8)
             ->get()
-            ->map(fn ($product): array => [
-                'id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->price,
-                'image' => $product->image_url,
-                'category' => $product->category->name,
-                'can_produce' => $this->inventoryService->canProduceProduct($product->id, 1),
-            ])
-            ->all();
+            ->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'price' => $product->price,
+                    'image' => $product->image_url,
+                    'category' => $product->category->name,
+                    'can_produce' => $this->inventoryService->canProduceProduct($product->id, 1),
+                ];
+            })
+            ->toArray();
     }
 
     public function quickAddProduct(int $productId, string $size = 'medium', string $temperature = 'hot'): void
@@ -255,7 +299,7 @@ final class Pos extends Component
             return;
         }
 
-        $product = Product::query()->find($productId);
+        $product = Product::find($productId);
         if (! $product) {
             return;
         }
@@ -314,7 +358,7 @@ final class Pos extends Component
             $this->cart[$cartItemId]['customizations'] = $customizations;
 
             // Adjust price for customizations
-            $product = Product::query()->find($this->cart[$cartItemId]['id']);
+            $product = Product::find($this->cart[$cartItemId]['id']);
             if ($product) {
                 $basePrice = $product->price;
                 $customizationPrice = $this->calculateCustomizationPrice($customizations);
@@ -425,7 +469,7 @@ final class Pos extends Component
     // =============== CART METHODS ===============
     public function addToCart(int $productId): void
     {
-        $product = Product::query()->find($productId);
+        $product = Product::find($productId);
         if (! $product) {
             return;
         }
@@ -549,7 +593,7 @@ final class Pos extends Component
 
     public function selectCustomer(int $customerId): void
     {
-        $customer = Customer::query()->find($customerId);
+        $customer = Customer::find($customerId);
         if ($customer) {
             $this->customerName = $customer->name;
             $this->customerSearch = '';
@@ -646,7 +690,7 @@ final class Pos extends Component
 
     public function processPayment(): void
     {
-        if ($this->cart === []) {
+        if (empty($this->cart)) {
             $this->dispatch('cart-empty', ['message' => 'Cart is empty']);
 
             return;
@@ -655,15 +699,23 @@ final class Pos extends Component
         $this->showPaymentModal = true;
     }
 
+    public function closePaymentConfirmationModal(): void
+    {
+        $this->showPaymentConfirmationModal = false;
+        $this->paymentConfirmationData = [];
+    }
+
     private function checkLowStock(): void
     {
         $this->lowStockAlerts = $this->inventoryService->checkLowStock()
-            ->map(fn ($inventory): array => [
-                'ingredient_name' => $inventory->ingredient->name,
-                'current_stock' => $inventory->current_stock,
-                'min_stock_level' => $inventory->min_stock_level,
-                'unit_type' => $inventory->ingredient->unit_type,
-            ])
+            ->map(function ($inventory) {
+                return [
+                    'ingredient_name' => $inventory->ingredient->name,
+                    'current_stock' => $inventory->current_stock,
+                    'min_stock_level' => $inventory->min_stock_level,
+                    'unit_type' => $inventory->ingredient->unit_type,
+                ];
+            })
             ->toArray();
     }
 
@@ -687,7 +739,7 @@ final class Pos extends Component
             // Calculate total quantity in cart for this product (across all variants)
             $inCart = 0;
             foreach ($this->cart as $cartKey => $item) {
-                if (str_starts_with((string) $cartKey, $productId.'_')) {
+                if (str_starts_with((string)$cartKey, $productId.'_')) {
                     $inCart += $item['quantity'] ?? 0;
                 }
             }
@@ -705,7 +757,7 @@ final class Pos extends Component
 
     private function getMaxProducibleQuantity(int $productId): int
     {
-        $product = Product::query()->find($productId);
+        $product = Product::find($productId);
         if (! $product) {
             return 0;
         }
@@ -725,7 +777,7 @@ final class Pos extends Component
             }
         }
 
-        return $maxQuantities === [] ? 999 : min($maxQuantities);
+        return empty($maxQuantities) ? 999 : min($maxQuantities);
     }
 
     private function calculateCustomizationPrice(array $customizations): float
@@ -752,7 +804,7 @@ final class Pos extends Component
 
     private function loadRecentOrders(): void
     {
-        $this->recentOrders = Order::query()->latest()->take(5)->get();
+        $this->recentOrders = Order::latest()->take(5)->get();
     }
 
     private function calculateTotals(): void
