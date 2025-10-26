@@ -99,11 +99,22 @@ final class Pos extends Component
 
     public $selectedProductIds = [];
 
+    // Success state
+    public bool $showSuccessAnimation = false;
+
+    public ?array $completedOrder = null;
+
+    public float $amountTendered = 0;
+
     public array $lowStockAlerts = [];
 
     public array $productAvailability = [];
 
-    protected $listeners = ['productSelected' => 'addToCart', 'categorySelected' => 'selectCategory'];
+    protected $listeners = [
+        'productSelected' => 'addToCart',
+        'categorySelected' => 'selectCategory',
+        'searchChanged' => 'updateSearch',
+    ];
 
     public function boot(
         OrderProcessingService $orderProcessingService,
@@ -137,6 +148,11 @@ final class Pos extends Component
         $this->selectedCategory = $categoryId;
     }
 
+    public function updateSearch(string $search): void
+    {
+        $this->search = $search;
+    }
+
     public function selectPayment(string $method): void
     {
         $this->paymentMethod = $method;
@@ -149,6 +165,10 @@ final class Pos extends Component
 
             return;
         }
+
+        // Set processing state
+        $this->isProcessing = true;
+        $this->dispatch('processing-started');
 
         // Prepare order data
         $orderData = [
@@ -163,14 +183,17 @@ final class Pos extends Component
         // Process checkout
         $result = $this->posCheckoutAction->execute($this->cart, $orderData);
 
+        $this->isProcessing = false;
+
         if ($result['success']) {
             // Store cart count and items before clearing
             $cartCount = count($this->cart);
             $cartItems = $this->cart;
 
-            // Store receipt data BEFORE clearing cart (since clearCart resets calculated values)
-            $this->receiptData = [
+            // Store completed order data
+            $this->completedOrder = [
                 'order_number' => $result['order_number'],
+                'order_id' => $result['order_id'],
                 'customer_name' => $this->customerName ?: 'Guest',
                 'order_type' => $this->orderType,
                 'table_number' => $this->tableNumber,
@@ -183,10 +206,18 @@ final class Pos extends Component
                 'total' => $result['total'],
                 'instructions' => $this->otherNote,
                 'payment_method' => $this->paymentMethod,
+                'items_count' => $cartCount,
+                'amount_tendered' => $this->amountTendered,
+                'change' => $this->paymentMethod === 'cash' && $this->amountTendered > 0
+                    ? $this->amountTendered - $this->total
+                    : 0,
             ];
 
-            $this->clearCart();
-            $this->showPaymentPanel = false;
+            // Store receipt data BEFORE clearing cart
+            $this->receiptData = $this->completedOrder;
+
+            // Show success animation
+            $this->showSuccessAnimation = true;
 
             // Prepare confirmation data for the modal
             $this->paymentConfirmationData = [
@@ -202,18 +233,31 @@ final class Pos extends Component
             // Show the confirmation modal
             $this->showPaymentConfirmationModal = true;
 
-            // Dispatch event for any additional handling
-            $this->dispatch('payment-confirmed', [
+            // Dispatch success event
+            $this->dispatch('order-success', [
                 'message' => $result['message'],
                 'order_id' => $result['order_id'],
                 'order_number' => $result['order_number'],
             ]);
+
+            $this->dispatch('show-toast', [
+                'type' => 'success',
+                'message' => 'Order #'.$result['order_number'].' completed successfully!',
+            ]);
+
+            // Clear cart and reset workflow after a delay
+            $this->clearCart();
+            $this->showPaymentPanel = false;
 
             // Refresh data
             $this->loadRecentOrders();
             $this->checkLowStock();
             $this->updateProductAvailability();
         } else {
+            $this->dispatch('show-toast', [
+                'type' => 'error',
+                'message' => 'Order failed: '.$result['message'],
+            ]);
             $this->dispatch('show-alert', 'Order failed: '.$result['message']);
         }
     }
@@ -565,6 +609,15 @@ final class Pos extends Component
     public function getCartItemCount(): int
     {
         return array_sum(array_column($this->cart, 'quantity'));
+    }
+
+    public function getChangeAmount(): float
+    {
+        if ($this->paymentMethod === 'cash' && $this->amountTendered > 0) {
+            return max(0, $this->amountTendered - $this->total);
+        }
+
+        return 0;
     }
 
     public function toggleFavorite(int $productId): void

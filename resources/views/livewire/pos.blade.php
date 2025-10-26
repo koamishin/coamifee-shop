@@ -70,21 +70,41 @@
 
                 <!-- PRODUCTS -->
                 <section class="lg:col-span-2 space-y-4">
+                    <!-- Loading Indicator -->
+                    <div wire:loading wire:target="search,selectedCategory" class="flex justify-center items-center py-8">
+                        <div class="flex items-center gap-2 text-[#c17a4a]">
+                            <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-sm font-medium">Loading products...</span>
+                        </div>
+                    </div>
 
-                <div x-data="{ selected: @entangle('selectedProductId') }" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 gap-6 transition-all duration-300">
+                <div wire:loading.remove wire:target="search,selectedCategory" x-data="{ selected: @entangle('selectedProductId') }" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 gap-6 min-h-[200px]">
                         @foreach($products as $product)
                             <div
+                            wire:key="product-{{ $product->id }}"
+                            x-data="{ visible: false }"
+                            x-init="$nextTick(() => { visible = true })"
+                            x-show="visible"
+                            x-transition:enter="transition ease-in-out duration-300 transform"
+                            x-transition:enter-start="opacity-0 scale-90 -translate-y-2"
+                            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                            x-transition:leave="transition ease-in-out duration-200 transform"
+                            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                            x-transition:leave-end="opacity-0 scale-90 translate-y-2"
                             @click="$wire.addToCart({{ $product->id }}); selected = {{ $product->id }}"
                             :class="selected == {{ $product->id }}
-                            ? 'border-[#c17a4a] ring-2 ring-[#c17a4a]/50 scale-[1.02] shadow-xl animate-pulse'
+                            ? 'border-[#c17a4a] ring-2 ring-[#c17a4a]/50 scale-[1.02] shadow-xl'
                             : 'border-[#e8dcc8] dark:border-[#4d4540]'"
                             class="cursor-pointer group bg-gradient-to-br from-[#faf8f3] to-[#f0e6d2]
                             dark:from-[#3d3530] dark:to-[#2a2520] rounded-2xl p-4 border
                             hover:border-[#c17a4a] hover:shadow-2xl hover:shadow-[#c17a4a]/10
-                                    transition-all duration-500 active:scale-95 relative overflow-hidden
+                                    transition-all duration-300 active:scale-95 relative overflow-hidden
                                     before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent
                                     before:via-white/5 before:to-transparent before:translate-x-[-100%]
-                                    hover:before:translate-x-[100%] before:transition-transform before:duration-1000">
+                                    hover:before:translate-x-[100%] before:transition-transform before:duration-700">
                                 <!-- Favorite Button -->
                                 <button
                                     wire:click.stop="toggleFavorite({{ $product->id }})"
@@ -293,7 +313,7 @@
                             <div class="flex items-center gap-3 p-3 bg-gradient-to-r from-[#f0e6d2] to-[#ede3d0]
                             dark:from-[#3d3530] dark:to-[#454035] rounded-xl border border-[#e8dcc8] dark:border-[#4d4540]
                                                 hover:shadow-md transition-all duration-300 hover:scale-[1.01]">
-                                        <img src="{{ $item['image'] ? \Illuminate\Support\Facades\Storage::url($item['image']) : '/placeholder.png' }}"
+                                        <img src="{{ isset($item['image']) && $item['image'] ? \Illuminate\Support\Facades\Storage::url($item['image']) : '/placeholder.png' }}"
                                             class="w-10 h-10 rounded-lg object-cover flex-shrink-0">
 
                                         <div class="flex-1 min-w-0">
@@ -376,6 +396,89 @@
                                                 </button>
                                             @endforeach
                                         </div>
+                                    @endif
+                                </div>
+
+                                <!-- Payment Method Selection -->
+                                <div x-data="{ expanded: false }">
+                                    <label class="block text-xs font-semibold text-[#2c2416] dark:text-[#f5f1e8] mb-2 uppercase tracking-wide">
+                                        Payment Method
+                                    </label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <button wire:click="$set('paymentMethod', 'cash')"
+                                                class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 transition-all duration-300
+                                                       {{ $paymentMethod === 'cash'
+                                                          ? 'border-[#c17a4a] bg-[#c17a4a]/10 text-[#c17a4a] shadow-md'
+                                                          : 'border-[#e8dcc8] dark:border-[#3d3530] text-[#8b7355] dark:text-[#b8a892] hover:border-[#c17a4a]/50' }}">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                            </svg>
+                                            <span class="text-xs font-semibold">Cash</span>
+                                        </button>
+
+                                        <button wire:click="$set('paymentMethod', 'card')"
+                                                class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 transition-all duration-300
+                                                       {{ $paymentMethod === 'card'
+                                                          ? 'border-[#c17a4a] bg-[#c17a4a]/10 text-[#c17a4a] shadow-md'
+                                                          : 'border-[#e8dcc8] dark:border-[#3d3530] text-[#8b7355] dark:text-[#b8a892] hover:border-[#c17a4a]/50' }}">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                            </svg>
+                                            <span class="text-xs font-semibold">Card</span>
+                                        </button>
+
+                                        <button wire:click="$set('paymentMethod', 'gcash')"
+                                                class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 transition-all duration-300
+                                                       {{ $paymentMethod === 'gcash'
+                                                          ? 'border-[#c17a4a] bg-[#c17a4a]/10 text-[#c17a4a] shadow-md'
+                                                          : 'border-[#e8dcc8] dark:border-[#3d3530] text-[#8b7355] dark:text-[#b8a892] hover:border-[#c17a4a]/50' }}">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                            </svg>
+                                            <span class="text-xs font-semibold">GCash</span>
+                                        </button>
+
+                                        <button wire:click="$set('paymentMethod', 'paypal')"
+                                                class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 transition-all duration-300
+                                                       {{ $paymentMethod === 'paypal'
+                                                          ? 'border-[#c17a4a] bg-[#c17a4a]/10 text-[#c17a4a] shadow-md'
+                                                          : 'border-[#e8dcc8] dark:border-[#3d3530] text-[#8b7355] dark:text-[#b8a892] hover:border-[#c17a4a]/50' }}">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                            </svg>
+                                            <span class="text-xs font-semibold">PayPal</span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Cash Amount Input (shown only for cash payment) -->
+                                    @if($paymentMethod === 'cash')
+                                    <div x-show="true"
+                                         x-transition:enter="transition ease-out duration-300"
+                                         x-transition:enter-start="opacity-0 -translate-y-2"
+                                         x-transition:enter-end="opacity-100 translate-y-0"
+                                         class="mt-3">
+                                        <label class="block text-xs font-semibold text-[#2c2416] dark:text-[#f5f1e8] mb-1">
+                                            Amount Tendered
+                                        </label>
+                                        <input type="number"
+                                               wire:model.live="amountTendered"
+                                               step="0.01"
+                                               min="0"
+                                               placeholder="0.00"
+                                               class="w-full text-sm border border-[#e8dcc8] dark:border-[#3d3530]
+                                                      rounded-lg px-3 py-2 dark:bg-[#1a1815] dark:text-[#f5f1e8]
+                                                      text-[#2c2416] placeholder-[#8b7355] dark:placeholder-[#6b5f52]
+                                                      focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent transition">
+                                        @if($amountTendered > 0 && $amountTendered >= $total)
+                                        <p class="text-xs text-green-600 dark:text-green-400 mt-1 font-semibold">
+                                            Change: ${{ number_format($this->getChangeAmount(), 2) }}
+                                        </p>
+                                        @elseif($amountTendered > 0 && $amountTendered < $total)
+                                        <p class="text-xs text-red-600 dark:text-red-400 mt-1">
+                                            Insufficient amount
+                                        </p>
+                                        @endif
+                                    </div>
                                     @endif
                                 </div>
 
@@ -520,7 +623,9 @@
 
                                 <!-- Checkout Button -->
                                 <button
-                                wire:click="$set('showPaymentPanel', true)"
+                                wire:click="confirmPayment"
+                                wire:loading.attr="disabled"
+                                @if(!$paymentMethod) disabled @endif
                                 class="w-full mt-3 bg-gradient-to-r from-[#c17a4a] via-[#d4956f] to-[#a86a3a]
                                 hover:from-[#d4956f] hover:via-[#e6b08a] hover:to-[#b87a4a]
                                 text-white font-bold text-sm py-3 rounded-2xl
@@ -530,13 +635,25 @@
                                 before:absolute before:inset-0 before:bg-gradient-to-r
                                 before:from-transparent before:via-white/20 before:to-transparent
                                 before:translate-x-[-100%] hover:before:translate-x-[100%]
-                                before:transition-transform before:duration-700">
+                                before:transition-transform before:duration-700
+                                disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
                                 <div class="flex items-center justify-center gap-2 relative z-10">
-                                        <svg class="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                 d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                                        </svg>
-                                        <span class="tracking-wide">Checkout Order</span>
+                                        <span wire:loading.remove wire:target="confirmPayment">
+                                            <svg class="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                     d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                        </span>
+                                        <span wire:loading wire:target="confirmPayment">
+                                            <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </span>
+                                        <span wire:loading.remove wire:target="confirmPayment" class="tracking-wide">
+                                            {{ !$paymentMethod ? 'Select Payment Method' : 'Complete Order' }}
+                                        </span>
+                                        <span wire:loading wire:target="confirmPayment" class="tracking-wide">Processing...</span>
                                     </div>
                                 </button>
                             </div>
@@ -544,77 +661,124 @@
                     </div>
                 </aside>
 
-                <!-- PAYMENT SLIDE PANEL -->
-                @if($showPaymentPanel)
-                <div
-                    x-show="true"
-                    x-transition:enter="transition ease-out duration-500"
-                    x-transition:enter-start="translate-x-full opacity-0"
-                    x-transition:enter-end="translate-x-0 opacity-100"
-                    x-transition:leave="transition ease-in duration-500"
-                    x-transition:leave-start="translate-x-0 opacity-100"
-                    x-transition:leave-end="translate-x-full opacity-0"
-                    class="fixed top-0 right-0 w-full sm:w-[450px] h-screen bg-white dark:bg-[#1a1815]
-                        shadow-2xl border-l border-[#e8dcc8] dark:border-[#3d3530] z-50 flex flex-col">
-
-                <!-- Header -->
-                    <div class="flex justify-between items-center p-4 border-b border-[#e8dcc8] dark:border-[#3d3530]">
-                        <h2 class="text-lg font-bold font-serif text-[#2c2416] dark:text-[#f5f1e8]">
-                            Select Payment Method
-                        </h2>
-                        <button wire:click="$set('showPaymentPanel', false)" class="text-[#8b7355] hover:text-[#c17a4a] transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
-                                stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
-
-                    <!-- Content -->
-                    <div class="p-6 space-y-3 overflow-y-auto flex-1">
-                        <button
-                            wire:click="selectPayment('cash')"
-                            class="w-full text-left px-4 py-3 rounded-lg border transition font-semibold
-                                {{ $paymentMethod === 'cash'
-                                    ? 'bg-[#c17a4a] text-white border-transparent shadow-md'
-                                    : 'border-[#e8dcc8] dark:border-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8] hover:bg-[#f4ede0] dark:hover:bg-[#2f2923]' }}">
-                            💵 Cash
-                        </button>
-
-                        <button
-                            wire:click="selectPayment('gcash')"
-                            class="w-full text-left px-4 py-3 rounded-lg border transition font-semibold
-                                {{ $paymentMethod === 'gcash'
-                                    ? 'bg-[#c17a4a] text-white border-transparent shadow-md'
-                                    : 'border-[#e8dcc8] dark:border-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8] hover:bg-[#f4ede0] dark:hover:bg-[#2f2923]' }}">
-                            📱 GCash
-                        </button>
-
-                        <button
-                            wire:click="selectPayment('card')"
-                            class="w-full text-left px-4 py-3 rounded-lg border transition font-semibold
-                                {{ $paymentMethod === 'card'
-                                    ? 'bg-[#c17a4a] text-white border-transparent shadow-md'
-                                    : 'border-[#e8dcc8] dark:border-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8] hover:bg-[#f4ede0] dark:hover:bg-[#2f2923]' }}">
-                            💳 Card
-                        </button>
-                    </div>
-
-
-                    <!-- Footer -->
-                    <div class="p-4 border-t border-[#e8dcc8] dark:border-[#3d3530]">
-                        <button wire:click="confirmPayment"
-                                class="w-full py-3 bg-[#c17a4a] hover:bg-[#a86a3a]
-                                    text-white rounded-lg font-semibold transition">
-                        Confirm Payment
-                        </button>
-                        </div>
-                        </div>
-                            @endif
             </div>
+
+
         </main>
     </div>
+
+    <!-- Success Slide Drawer -->
+    @if($showSuccessAnimation && $completedOrder)
+    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]" wire:click="$set('showSuccessAnimation', false)"></div>
+    <div x-data="{ show: true }"
+         x-show="show"
+         x-transition:enter="transition ease-out duration-500"
+         x-transition:enter-start="translate-x-full"
+         x-transition:enter-end="translate-x-0"
+         x-transition:leave="transition ease-in duration-300"
+         x-transition:leave-start="translate-x-0"
+         x-transition:leave-end="translate-x-full"
+         class="fixed top-0 right-0 w-full sm:w-[450px] h-screen bg-white dark:bg-[#1a1815]
+                shadow-2xl border-l-4 border-green-500 z-[70] flex flex-col overflow-hidden">
+
+        <!-- Header with Success Icon -->
+        <div class="bg-gradient-to-r from-green-500 to-green-600 p-6 text-white relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-green-400/20 to-transparent"></div>
+            <div class="relative flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold">Order Complete!</h2>
+                        <p class="text-sm text-green-50">Successfully processed</p>
+                    </div>
+                </div>
+                <button wire:click="$set('showSuccessAnimation', false)"
+                        class="text-white/80 hover:text-white transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+            <!-- Order Number Badge -->
+            <div class="bg-gradient-to-br from-[#faf8f3] to-[#f0e6d2] dark:from-[#3d3530] dark:to-[#2a2520]
+                        rounded-2xl p-6 border-2 border-[#c17a4a]/30 text-center">
+                <p class="text-sm text-[#8b7355] dark:text-[#b8a892] mb-2">Order Number</p>
+                <p class="text-4xl font-bold text-[#c17a4a]">#{{ $completedOrder['order_number'] ?? 'N/A' }}</p>
+            </div>
+
+            <!-- Order Details -->
+            <div class="space-y-3">
+                <h3 class="text-sm font-bold text-[#2c2416] dark:text-[#f5f1e8] uppercase tracking-wide">Order Details</h3>
+
+                <div class="bg-[#faf8f3] dark:bg-[#2a2520] rounded-xl p-4 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-[#8b7355] dark:text-[#b8a892]">Customer</span>
+                        <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">
+                            {{ $completedOrder['customer_name'] ?? 'Guest' }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-[#8b7355] dark:text-[#b8a892]">Items</span>
+                        <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">
+                            {{ $completedOrder['items_count'] ?? 0 }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-3 border-t border-[#e8dcc8] dark:border-[#3d3530]">
+                        <span class="text-lg font-bold text-[#2c2416] dark:text-[#f5f1e8]">Total</span>
+                        <span class="text-2xl font-bold text-[#c17a4a]">
+                            ${{ number_format($completedOrder['total'] ?? 0, 2) }}
+                        </span>
+                    </div>
+
+                    @if(($completedOrder['change'] ?? 0) > 0)
+                    <div class="flex justify-between items-center bg-green-50 dark:bg-green-900/20 p-3 rounded-lg mt-2">
+                        <span class="text-sm font-semibold text-green-700 dark:text-green-400">Change</span>
+                        <span class="text-lg font-bold text-green-700 dark:text-green-400">
+                            ${{ number_format($completedOrder['change'], 2) }}
+                        </span>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Success Message -->
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p class="text-sm text-green-700 dark:text-green-300">
+                        Your order has been sent to the kitchen and will be prepared shortly.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="p-6 border-t border-[#e8dcc8] dark:border-[#3d3530] space-y-3 bg-[#faf8f3] dark:bg-[#2a2520]">
+            <button wire:click="clearCart; $set('showSuccessAnimation', false)"
+                    class="w-full px-6 py-3 bg-gradient-to-r from-[#c17a4a] to-[#d4956f] hover:from-[#a86a3a] hover:to-[#c17a4a]
+                           text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
+                Start New Order
+            </button>
+            <button wire:click="$set('showReceiptModal', true)"
+                    class="w-full px-6 py-3 border-2 border-[#c17a4a] text-[#c17a4a] hover:bg-[#c17a4a] hover:text-white
+                           rounded-xl font-semibold transition-all duration-300">
+                View Receipt
+            </button>
+        </div>
+    </div>
+    @endif
 
     <!-- Payment Confirmation Modal -->
     @if($showPaymentConfirmationModal)
@@ -622,7 +786,7 @@
         <div class="bg-white dark:bg-[#2a2520] rounded-2xl shadow-2xl max-w-md w-full p-8 border border-[#e8dcc8] dark:border-[#3d3530] relative">
             <!-- Success Icon -->
             <div class="flex justify-center mb-4">
-                <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center animate-bounce">
                     <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
@@ -885,18 +1049,66 @@
 
 // Keyboard Shortcuts
 document.addEventListener('keydown', (e) => {
-// Number keys 1-9 for quick product selection
-if (e.key >= '1' && e.key <= '9' && !e.ctrlKey && !e.metaKey) {
-    const products = document.querySelectorAll('[wire\\:click*="openQuantityModal"]');
-    const index = parseInt(e.key) - 1;
-    if (products[index]) {
-    products[index].click();
-}
-}
-    // Ctrl+Enter or Cmd+Enter for checkout
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        const checkoutBtn = document.querySelector('[wire\\:click*="showPaymentModal"]');
-        if (checkoutBtn) checkoutBtn.click();
+    // Number keys 1-9 for quick product selection
+    if (e.key >= '1' && e.key <= '9' && !e.ctrlKey && !e.metaKey) {
+        const products = document.querySelectorAll('[wire\\:click*="openQuantityModal"]');
+        const index = parseInt(e.key) - 1;
+        if (products[index]) {
+            products[index].click();
+        }
     }
+
+    // Ctrl+Enter or Cmd+Enter for next step
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        @this.call('nextStep');
+    }
+
+    // Escape to go back
+    if (e.key === 'Escape') {
+        @this.call('previousStep');
+    }
+});
+
+// Toast notification system
+document.addEventListener('livewire:init', () => {
+    Livewire.on('show-toast', (event) => {
+        const toast = document.createElement('div');
+        const type = event.type || 'info';
+        const message = event.message || 'Notification';
+
+        const colors = {
+            success: 'from-green-500 to-green-600',
+            error: 'from-red-500 to-red-600',
+            warning: 'from-amber-500 to-amber-600',
+            info: 'from-blue-500 to-blue-600'
+        };
+
+        toast.className = `fixed top-20 right-4 z-[100] px-6 py-4 rounded-xl shadow-2xl text-white bg-gradient-to-r ${colors[type]} transform transition-all duration-300 translate-x-full`;
+        toast.innerHTML = `
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    ${type === 'success' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>' :
+                      type === 'error' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>' :
+                      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'}
+                </svg>
+                <span class="font-medium">${message}</span>
+            </div>
+        `;
+
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.transform = 'translateX(0)';
+        }, 10);
+
+        setTimeout(() => {
+            toast.style.transform = 'translateX(150%)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    });
+
+    Livewire.on('step-changed', (event) => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
 });
 </script>

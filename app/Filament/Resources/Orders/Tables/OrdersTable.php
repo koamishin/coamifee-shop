@@ -13,6 +13,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -62,11 +63,11 @@ final class OrdersTable
                     ->description('Order fulfillment type')
                     ->badge()
                     ->icon(
-                        fn ($state): string => match ($state) {
-                            'dine-in' => 'heroicon-o-restaurant',
-                            'takeaway' => 'heroicon-o-briefcase',
-                            'delivery' => 'heroicon-o-truck',
-                            default => 'heroicon-o-question-mark-circle',
+                        fn ($state): Heroicon => match ($state) {
+                            'dine-in' => Heroicon::ArrowTrendingDown,
+                            'takeaway' => Heroicon::ArrowTrendingUp,
+                            'delivery' => Heroicon::Truck,
+                            default => Heroicon::QuestionMarkCircle,
                         },
                     )
                     ->color(

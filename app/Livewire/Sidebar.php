@@ -19,8 +19,11 @@ final class Sidebar extends Component
     public array $productAvailability = [];
 
     protected $listeners = ['refreshInventory' => 'updateProductAvailability'];
+
     private InventoryService $inventoryService;
+
     private ReportingService $reportingService;
+
     private PosService $posService;
 
     public function selectCategory(int $categoryId): void
@@ -28,6 +31,12 @@ final class Sidebar extends Component
         $this->selectedCategory = $categoryId;
         // Dispatch event to notify Pos component
         $this->dispatch('categorySelected', $categoryId);
+    }
+
+    public function updatedSearch(): void
+    {
+        // Dispatch event to notify Pos component when search changes
+        $this->dispatch('searchChanged', $this->search);
     }
 
     public function boot(
