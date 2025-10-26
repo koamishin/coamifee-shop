@@ -11,32 +11,42 @@
 
     <!-- Search Bar -->
     <div class="relative mb-2">
-        <input
-        type="text"
-                    wire:model.live.debounce.300ms="search"
-                    placeholder="Search products..."
-                    class="w-full pl-8 pr-3 py-2 text-xs border border-[#e8dcc8] dark:border-[#3d3530] rounded-md
-                focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent dark:bg-[#1a1815] dark:text-[#f5f1e8]
-        placeholder-[#8b7355] dark:placeholder-[#6b5f52] transition">
-        <div class="absolute inset-y-0 left-2 flex items-center pointer-events-none">
-                <svg class="h-3 h-3 text-[#8b7355]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="relative">
+            <input
+                type="text"
+                            wire:model.live.debounce.200ms="search"
+                            placeholder="Search products..."
+                            class="w-full pl-8 pr-10 py-2 text-xs border border-[#e8dcc8] dark:border-[#3d3530] rounded-md
+                            focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent dark:bg-[#1a1815] dark:text-[#f5f1e8]
+                            placeholder-[#8b7355] dark:placeholder-[#6b5f52] transition-all duration-300">
+            >
+            <div class="absolute inset-y-0 left-2 flex items-center pointer-events-none">
+                <svg class="h-3 h-3 text-[#8b7355] transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
         </div>
-</div>
+
+        <!-- Search loading indicator -->
+        <div wire:loading wire:target="search" class="absolute inset-y-0 right-2 top-1/2 transform -translate-y-1/2">
+            <div class="flex items-center space-x-1">
+                <div class="w-2 h-2 bg-[#c17a4a] rounded-full animate-spin"></div>
+                <span class="text-xs text-[#8b7355] dark:text-[#b8a892]">Searching...</span>
+            </div>
+        </div>
+    </div>
 
 <!-- All Items Button -->
 <button
-wire:click="$set('selectedCategory', 0)"
-class="w-full px-2 py-2 rounded-md font-medium text-xs transition-all duration-300
+wire:click="selectCategory(0)"
+class="w-full px-2 py-2 rounded-md font-medium text-xs transition-all duration-300 transform hover:scale-105 active:scale-95
 {{ $selectedCategory == 0
-   ? 'bg-[#c17a4a] text-white shadow-md'
+   ? 'bg-[#c17a4a] text-white shadow-md ring-2 ring-white/20'
 : 'bg-[#f0e6d2] dark:bg-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8]
-      hover:bg-[#e8dcc8] dark:hover:bg-[#4d4540]' }}">
+      hover:bg-[#e8dcc8] dark:hover:bg-[#4d4540] hover:shadow-md' }}">
 <div class="flex items-center justify-between">
     <span>All Items</span>
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-3 h-3 transition-all duration-300 {{ $selectedCategory == 0 ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
         </svg>
     </div>
@@ -46,16 +56,16 @@ class="w-full px-2 py-2 rounded-md font-medium text-xs transition-all duration-3
 <nav class="space-y-1">
 @forelse($categories as $category)
 <button
-wire:click="$set('selectedCategory', {{ $category->id }})"
-class="w-full text-left px-2 py-1.5 rounded-md font-medium text-xs transition-all duration-300
+wire:click="selectCategory({{ $category->id }})"
+class="w-full text-left px-2 py-1.5 rounded-md font-medium text-xs transition-all duration-300 transform hover:scale-105 active:scale-95
 {{ $selectedCategory == $category->id
-? 'bg-[#c17a4a] text-white shadow-md'
+? 'bg-[#c17a4a] text-white shadow-md ring-2 ring-white/20'
 : 'text-[#2c2416] dark:text-[#f5f1e8]
-              hover:bg-[#f0e6d2] dark:hover:bg-[#3d3530]' }}">
+              hover:bg-[#f0e6d2] dark:hover:bg-[#3d3530] hover:shadow-md' }}">
 <div class="flex items-center justify-between">
 <span class="truncate text-xs">{{ $category->name }}</span>
 @if($selectedCategory == $category->id)
-<svg class="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+<svg class="w-3 h-3 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
     </svg>
     @endif
@@ -81,12 +91,13 @@ class="w-full text-left px-2 py-1.5 rounded-md font-medium text-xs transition-al
         <button
         wire:click="addToCart({{ $product->id }})"
         class="w-full text-left p-1.5 rounded-md border border-[#e8dcc8] dark:border-[#4d4540]
-        bg-[#faf8f3] dark:bg-[#3d3530] hover:border-[#c17a4a] transition-all duration-200 group"
+        bg-[#faf8f3] dark:bg-[#3d3530] hover:border-[#c17a4a] transition-all duration-200 group transform hover:scale-105 active:scale-95 overflow-hidden relative"
         >
+        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-500"></div>
         <div class="flex items-center gap-1.5">
-        <div class="w-6 h-6 rounded overflow-hidden bg-[#e8dcc8] dark:bg-[#4d4540] flex-shrink-0">
+        <div class="w-6 h-6 rounded overflow-hidden bg-[#e8dcc8] dark:bg-[#4d4540] flex-shrink-0 transition-all duration-300 group-hover:scale-110">
         @if($product->image_url)
-        <img src="{{ \Illuminate\Support\Facades\Storage::url($product->image_url) }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+        <img src="{{ \Illuminate\Support\Facades\Storage::url($product->image_url) }}" alt="{{ $product->name }}" class="w-full h-full object-cover transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg">
         @else
         <div class="w-full h-full flex items-center justify-center">
         <svg class="w-3 h-3 text-[#8b7355] dark:text-[#b8a892]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,16 +108,16 @@ class="w-full text-left px-2 py-1.5 rounded-md font-medium text-xs transition-al
         </div>
 
                         <div class="flex-1 min-w-0">
-        <p class="text-xs font-medium text-[#2c2416] dark:text-[#f5f1e8] truncate group-hover:text-[#c17a4a] transition-colors">
+        <p class="text-xs font-medium text-[#2c2416] dark:text-[#f5f1e8] truncate group-hover:text-[#c17a4a] transition-colors duration-300">
         {{ $product->name }}
         </p>
-        <p class="text-xs text-[#c17a4a] font-bold">
+        <p class="text-xs text-[#c17a4a] font-bold transition-all duration-300 group-hover:scale-105">
         ${{ number_format($product->price, 2) }}
         </p>
         </div>
 
                         <div class="flex-shrink-0">
-        <svg class="w-3 h-3 text-[#c17a4a] opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-3 h-3 text-[#c17a4a] opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
         </svg>
         </div>

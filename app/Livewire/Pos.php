@@ -6,12 +6,12 @@ namespace App\Livewire;
 
 use App\Actions\PosCheckoutAction;
 use App\Actions\ProcessOrderAction;
-use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
 use App\Services\InventoryService;
 use App\Services\OrderProcessingService;
+use App\Services\PosService;
 use App\Services\ReportingService;
 use Livewire\Component;
 
@@ -100,20 +100,22 @@ final class Pos extends Component
 
     public array $productAvailability = [];
 
-    protected $listeners = ['productSelected' => 'addToCart'];
+    protected $listeners = ['productSelected' => 'addToCart', 'categorySelected' => 'selectCategory'];
 
     public function boot(
         OrderProcessingService $orderProcessingService,
         InventoryService $inventoryService,
         ProcessOrderAction $processOrderAction,
         ReportingService $reportingService,
-        PosCheckoutAction $posCheckoutAction
+        PosCheckoutAction $posCheckoutAction,
+        PosService $posService
     ): void {
         $this->orderProcessingService = $orderProcessingService;
         $this->inventoryService = $inventoryService;
         $this->processOrderAction = $processOrderAction;
         $this->reportingService = $reportingService;
         $this->posCheckoutAction = $posCheckoutAction;
+        $this->posService = $posService;
     }
 
     public function toggleSelectProduct($productId)
@@ -127,6 +129,11 @@ final class Pos extends Component
         }
     }
 
+    public function selectCategory(int $categoryId): void
+    {
+        $this->selectedCategory = $categoryId;
+    }
+
     public function selectPayment(string $method): void
     {
         $this->paymentMethod = $method;
@@ -136,6 +143,7 @@ final class Pos extends Component
     {
         if (empty($this->cart)) {
             $this->dispatch('show-alert', 'Cart is empty!');
+
             return;
         }
 
@@ -203,17 +211,14 @@ final class Pos extends Component
             $this->checkLowStock();
             $this->updateProductAvailability();
         } else {
-            $this->dispatch('show-alert', 'Order failed: ' . $result['message']);
+            $this->dispatch('show-alert', 'Order failed: '.$result['message']);
         }
     }
 
     public function mount(): void
     {
         // Initialize products before using them
-        $this->products = Product::with(['category', 'ingredients.ingredient'])
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        $this->products = $this->posService->getFilteredProducts();
 
         $this->calculateTotals();
         $this->loadRecentOrders();
@@ -225,19 +230,13 @@ final class Pos extends Component
     public function render(): \Illuminate\View\View
     {
         // Load products with availability info
-        $this->products = Product::with(['category', 'ingredients.ingredient'])
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        $this->products = $this->posService->getFilteredProducts($this->selectedCategory, $this->search);
 
         // Load best sellers based on actual metrics data
-        $this->bestSellers = $this->reportingService->getTopProducts(5, 'daily', 7)
-            ->map(function ($metric) {
-                return $metric->product;
-            });
+        $this->bestSellers = $this->posService->getBestSellers();
 
         // Load categories for sidebar navigation
-        $this->categories = Category::where('is_active', true)->orderBy('name')->get();
+        $this->categories = $this->posService->getActiveCategories();
 
         // Load recent orders for dashboard
         $this->recentOrders = Order::with('items.product')
@@ -268,29 +267,12 @@ final class Pos extends Component
     public function loadQuickAddItems(): void
     {
         // Load popular coffee items for quick access
-        $this->quickAddItems = Product::where('is_active', true)
-            ->whereHas('category', function ($query) {
-                $query->whereIn('name', ['Coffee', 'Espresso', 'Latte']);
-            })
-            ->orderBy('name')
-            ->take(8)
-            ->get()
-            ->map(function ($product) {
-                return [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'price' => $product->price,
-                    'image' => $product->image_url,
-                    'category' => $product->category->name,
-                    'can_produce' => $this->inventoryService->canProduceProduct($product->id, 1),
-                ];
-            })
-            ->toArray();
+        $this->quickAddItems = $this->posService->getQuickAddItems();
     }
 
     public function quickAddProduct(int $productId, string $size = 'medium', string $temperature = 'hot'): void
     {
-        if (! $this->inventoryService->canProduceProduct($productId, 1)) {
+        if (! $this->posService->canAddToCart($productId)) {
             $this->dispatch('insufficient-inventory', [
                 'message' => 'Cannot add product: Insufficient ingredients',
                 'product_id' => $productId,
@@ -327,7 +309,7 @@ final class Pos extends Component
                 'customizations' => [],
             ];
         } else {
-            if (! $this->inventoryService->canProduceProduct($productId, $this->cart[$cartItemId]['quantity'] + 1)) {
+            if (! $this->posService->canAddToCart($productId)) {
                 $this->dispatch('insufficient-inventory', [
                     'message' => 'Cannot add more: Insufficient ingredients',
                     'product_id' => $productId,
@@ -361,7 +343,7 @@ final class Pos extends Component
             $product = Product::find($this->cart[$cartItemId]['id']);
             if ($product) {
                 $basePrice = $product->price;
-                $customizationPrice = $this->calculateCustomizationPrice($customizations);
+                $customizationPrice = $this->posService->calculateCustomizationPrice($customizations);
                 $this->cart[$cartItemId]['price'] = $basePrice + $customizationPrice;
             }
 
@@ -381,7 +363,7 @@ final class Pos extends Component
             $cartItemId = $item->product_id;
 
             // Check if we can produce this item
-            if (! $this->inventoryService->canProduceProduct($item->product_id, $item->quantity)) {
+            if (! $this->posService->canAddToCart($item->product_id)) {
                 $this->dispatch('insufficient-inventory', [
                     'message' => "Cannot duplicate order: Insufficient ingredients for {$item->product->name}",
                     'product_name' => $item->product->name,
@@ -475,7 +457,7 @@ final class Pos extends Component
         }
 
         // Check if product can be produced with current inventory
-        if (! $this->inventoryService->canProduceProduct($productId, 1)) {
+        if (! $this->posService->canAddToCart($productId)) {
             $this->dispatch('insufficient-inventory', [
                 'message' => "Cannot add {$product->name}: Insufficient ingredients",
                 'product_name' => $product->name,
@@ -494,7 +476,7 @@ final class Pos extends Component
             ];
         } else {
             // Check if we can add one more
-            if (! $this->inventoryService->canProduceProduct($productId, $this->cart[$productId]['quantity'] + 1)) {
+            if (! $this->posService->canAddToCart($productId)) {
                 $this->dispatch('insufficient-inventory', [
                     'message' => "Cannot add more {$product->name}: Insufficient ingredients",
                     'product_name' => $product->name,
@@ -523,7 +505,7 @@ final class Pos extends Component
     public function incrementQuantity(int $productId): void
     {
         if (isset($this->cart[$productId])) {
-            if (! $this->inventoryService->canProduceProduct($productId, $this->cart[$productId]['quantity'] + 1)) {
+            if (! $this->posService->canAddToCart($productId)) {
                 $this->dispatch('insufficient-inventory', [
                     'message' => 'Cannot increase quantity: Insufficient ingredients',
                     'product_id' => $productId,
@@ -707,99 +689,12 @@ final class Pos extends Component
 
     private function checkLowStock(): void
     {
-        $this->lowStockAlerts = $this->inventoryService->checkLowStock()
-            ->map(function ($inventory) {
-                return [
-                    'ingredient_name' => $inventory->ingredient->name,
-                    'current_stock' => $inventory->current_stock,
-                    'min_stock_level' => $inventory->min_stock_level,
-                    'unit_type' => $inventory->ingredient->unit_type,
-                ];
-            })
-            ->toArray();
+        $this->lowStockAlerts = $this->posService->getLowStockAlerts();
     }
 
     private function updateProductAvailability(): void
     {
-        $cartProductIds = [];
-        foreach (array_keys($this->cart) as $cartKey) {
-            // Extract the base product ID from cart keys like "1_large_hot"
-            $cartKey = (string) $cartKey; // Convert to string for explode
-            $parts = explode('_', $cartKey);
-            $cartProductIds[] = (int) $parts[0];
-        }
-
-        $allProductIds = array_merge(
-            $cartProductIds,
-            $this->products->pluck('id')->toArray()
-        );
-
-        $this->productAvailability = [];
-        foreach ($allProductIds as $productId) {
-            // Calculate total quantity in cart for this product (across all variants)
-            $inCart = 0;
-            foreach ($this->cart as $cartKey => $item) {
-                if (str_starts_with((string)$cartKey, $productId.'_')) {
-                    $inCart += $item['quantity'] ?? 0;
-                }
-            }
-
-            $canProduceOne = $this->inventoryService->canProduceProduct($productId, 1);
-            $canProduceMore = $this->inventoryService->canProduceProduct($productId, $inCart + 1);
-
-            $this->productAvailability[$productId] = [
-                'can_add' => $canProduceOne,
-                'can_increment' => $canProduceMore,
-                'max_quantity' => $this->getMaxProducibleQuantity($productId),
-            ];
-        }
-    }
-
-    private function getMaxProducibleQuantity(int $productId): int
-    {
-        $product = Product::find($productId);
-        if (! $product) {
-            return 0;
-        }
-
-        $ingredients = $product->ingredients()->with('ingredient.inventory')->get();
-        $maxQuantities = [];
-
-        foreach ($ingredients as $productIngredient) {
-            $ingredient = $productIngredient->ingredient;
-            if ($ingredient->is_trackable) {
-                $inventory = $ingredient->inventory;
-                if ($inventory) {
-                    $maxQuantities[] = (int) ($inventory->current_stock / $productIngredient->quantity_required);
-                } else {
-                    return 0; // No inventory means can't produce
-                }
-            }
-        }
-
-        return empty($maxQuantities) ? 999 : min($maxQuantities);
-    }
-
-    private function calculateCustomizationPrice(array $customizations): float
-    {
-        $price = 0.0;
-
-        // Add price for milk alternatives
-        if (isset($customizations['milk']) && in_array($customizations['milk'], ['oat', 'almond', 'soy'])) {
-            $price += 0.50;
-        }
-
-        // Add price for extra shots
-        if (isset($customizations['extra_shots'])) {
-            $price += $customizations['extra_shots'] * 0.75;
-        }
-
-        // Add price for syrups
-        if (isset($customizations['syrup']) && $customizations['syrup'] !== 'none') {
-            $price += 0.60;
-        }
-
-        return $price;
+        $this->productAvailability = $this->posService->getPosProductAvailability($this->products, $this->cart);
     }
 
     private function loadRecentOrders(): void
@@ -809,23 +704,10 @@ final class Pos extends Component
 
     private function calculateTotals(): void
     {
-        $subtotal = 0.0;
+        $totals = $this->posService->calculateCartTotals($this->cart, $this->addOns, $this->discountAmount);
 
-        foreach ($this->cart as $item) {
-            $subtotal += ($item['price'] * $item['quantity']);
-        }
-
-        // Add add-ons to subtotal
-        foreach ($this->addOns as $addOn) {
-            $subtotal += (float) ($addOn['amount'] ?? 0);
-        }
-
-        $this->subtotal = $subtotal;
-        $this->taxAmount = 0;
-        $this->total = $this->subtotal + $this->taxAmount;
-
-        if ($this->discountApplied) {
-            $this->total -= $this->discountAmount;
-        }
+        $this->subtotal = $totals['subtotal'];
+        $this->taxAmount = $totals['tax_amount'];
+        $this->total = $totals['total'];
     }
 }

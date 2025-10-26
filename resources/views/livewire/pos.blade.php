@@ -71,7 +71,7 @@
                 <!-- PRODUCTS -->
                 <section class="lg:col-span-2 space-y-4">
 
-                <div x-data="{ selected: @entangle('selectedProductId') }" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 gap-6">
+                <div x-data="{ selected: @entangle('selectedProductId') }" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 gap-6 transition-all duration-300">
                         @foreach($products as $product)
                             <div
                             @click="$wire.addToCart({{ $product->id }}); selected = {{ $product->id }}"
@@ -86,14 +86,14 @@
                                     before:via-white/5 before:to-transparent before:translate-x-[-100%]
                                     hover:before:translate-x-[100%] before:transition-transform before:duration-1000">
                                 <!-- Favorite Button -->
-                                <button 
+                                <button
                                     wire:click.stop="toggleFavorite({{ $product->id }})"
-                                    class="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white/80 
+                                    class="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white/80
                                         dark:bg-[#1a1815]/80 hover:bg-[#c17a4a] hover:text-white transition">
                                     <svg class="w-4 h-4 {{ in_array($product->id, $favorites ?? []) ? 'fill-[#c17a4a]' : 'text-[#8b7355]' }}" viewBox="0 0 24 24">
-                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 
+                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5
                                                 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09
-                                                C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 
+                                                C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42
                                                 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                                     </svg>
                                 </button>
@@ -127,13 +127,13 @@
                                 {{ $product->category->name ?? 'Uncategorized' }}
                                 </p>
 
-                                <div class="flex justify-between items-center">
+                                <div class="flex justify-between items-center transition-transform duration-300 group-hover:scale-105">
                                     <span class="text-[#c17a4a] font-bold text-xs">
                                         ${{ number_format($product->price, 2) }}
                                     </span>
                                     @if(($product->stock ?? 999) < 5)
-                                        <span class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 
-                                                    text-xs px-1.5 py-0.5 rounded font-semibold">
+                                        <span class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400
+                                                        text-xs px-1.5 py-0.5 rounded font-semibold animate-pulse">
                                             Low
                                         </span>
                                     @endif
@@ -147,7 +147,7 @@
                         <h3 class="text-lg font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8] mb-4">Recent Orders</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto">
                             @forelse($recentOrders ?? [] as $order)
-                                <button 
+                                <button
                                     wire:click="loadOrder({{ $order->id }})"
                                     class="text-left p-3 bg-[#f0e6d2] dark:bg-[#3d3530] rounded-lg border border-[#e8dcc8] dark:border-[#4d4540] hover:border-[#c17a4a] transition"
                                 >
@@ -225,8 +225,8 @@
 
                 <!-- CART -->
                 <aside class="lg:col-span-1">
-                    <div class="bg-white/70 dark:bg-[#2a2520]/70 backdrop-blur-lg rounded-2xl shadow-md sticky top-24 p-4 
-                                h-[calc(100vh-8rem)] border border-[#e8dcc8] dark:border-[#3d3530] 
+                    <div class="bg-white/70 dark:bg-[#2a2520]/70 backdrop-blur-lg rounded-2xl shadow-md sticky top-24 p-4
+                                h-[calc(100vh-8rem)] border border-[#e8dcc8] dark:border-[#3d3530]
                                 flex flex-col overflow-y-auto overflow-x-hidden">
 
                         <!-- Header -->
@@ -295,7 +295,7 @@
                                                 hover:shadow-md transition-all duration-300 hover:scale-[1.01]">
                                         <img src="{{ $item['image'] ? \Illuminate\Support\Facades\Storage::url($item['image']) : '/placeholder.png' }}"
                                             class="w-10 h-10 rounded-lg object-cover flex-shrink-0">
-                                        
+
                                         <div class="flex-1 min-w-0">
                                             <p class="text-xs font-semibold text-[#2c2416] dark:text-[#f5f1e8] truncate">
                                                 {{ $item['name'] }}
@@ -304,7 +304,7 @@
                                                 ${{ number_format($item['price'], 2) }}
                                             </p>
                                         </div>
-                                        
+
                                         <div class="flex items-center gap-1 flex-shrink-0 bg-[#f8f5f0] dark:bg-[#454035] rounded-lg p-1">
                                         <button wire:click="decrementQuantity({{ $item['id'] }})"
                                         class="w-6 h-6 flex items-center justify-center bg-[#e8dcc8] dark:bg-[#4d4540]
@@ -326,9 +326,9 @@
                                         </button>
 
                                             <button wire:click="removeItem({{ $item['id'] }})"
-                                                    class="p-1 text-[#a86a3a] hover:text-[#c17a4a] 
+                                                    class="p-1 text-[#a86a3a] hover:text-[#c17a4a]
                                                         dark:text-[#b8875c] dark:hover:text-[#d4956f] transition">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" 
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none"
                                                     viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                         d="M6 18L18 6M6 6l12 12"/>
@@ -340,7 +340,7 @@
                             @else
                                 <div class="text-center py-8 text-[#8b7355] dark:text-[#b8a892]">
                                     <svg class="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                                     </svg>
                                     <p class="text-xs font-medium">Cart is empty</p>
@@ -350,27 +350,27 @@
 
                         @if(!empty($cart))
                             <div class="border-t border-[#e8dcc8] dark:border-[#3d3530] pt-3 space-y-3 flex-1 overflow-y-visible">
-                                
+
                                 <!-- Customer Lookup -->
                                 <div>
                                     <label class="block text-xs font-semibold text-[#2c2416] dark:text-[#f5f1e8] mb-1 uppercase tracking-wide">
                                         Customer
                                     </label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         wire:model.live.debounce.300ms="customerSearch"
                                         placeholder="Name..."
-                                        class="w-full text-xs border border-[#e8dcc8] dark:border-[#3d3530] 
-                                            rounded-lg px-2 py-1.5 dark:bg-[#1a1815] dark:text-[#f5f1e8] 
-                                            text-[#2c2416] placeholder-[#8b7355] dark:placeholder-[#6b5f52] 
+                                        class="w-full text-xs border border-[#e8dcc8] dark:border-[#3d3530]
+                                            rounded-lg px-2 py-1.5 dark:bg-[#1a1815] dark:text-[#f5f1e8]
+                                            text-[#2c2416] placeholder-[#8b7355] dark:placeholder-[#6b5f52]
                                             focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent transition"
                                     >
                                     @if($customerSearch && $customers->count())
                                         <div class="mt-1 space-y-1 max-h-24 overflow-y-auto">
                                             @foreach($customers as $customer)
-                                                <button 
+                                                <button
                                                     wire:click="selectCustomer({{ $customer->id }})"
-                                                    class="w-full text-left px-2 py-1 text-xs bg-[#f0e6d2] dark:bg-[#3d3530] 
+                                                    class="w-full text-left px-2 py-1 text-xs bg-[#f0e6d2] dark:bg-[#3d3530]
                                                         rounded hover:bg-[#e8dcc8] dark:hover:bg-[#4d4540] transition">
                                                     {{ $customer->name }} ({{ $customer->phone ?? 'N/A' }})
                                                 </button>
@@ -384,14 +384,14 @@
                                     <label class="block text-xs font-semibold text-[#2c2416] dark:text-[#f5f1e8] mb-1 uppercase tracking-wide">
                                         Instructions
                                     </label>
-                                    <textarea 
-                                        wire:model.lazy="otherNote" 
+                                    <textarea
+                                        wire:model.lazy="otherNote"
                                         placeholder="e.g. no sugar..."
                                         rows="1"
-                                        class="w-full text-xs border border-[#e8dcc8] dark:border-[#3d3530] 
-                                            rounded-lg px-2 py-1.5 dark:bg-[#1a1815] dark:text-[#f5f1e8] 
-                                            text-[#2c2416] placeholder-[#8b7355] dark:placeholder-[#6b5f52] 
-                                            focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent 
+                                        class="w-full text-xs border border-[#e8dcc8] dark:border-[#3d3530]
+                                            rounded-lg px-2 py-1.5 dark:bg-[#1a1815] dark:text-[#f5f1e8]
+                                            text-[#2c2416] placeholder-[#8b7355] dark:placeholder-[#6b5f52]
+                                            focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent
                                             resize-none transition"
                                     ></textarea>
                                 </div>
@@ -542,7 +542,7 @@
                             </div>
                         @endif
                     </div>
-                </aside>    
+                </aside>
 
                 <!-- PAYMENT SLIDE PANEL -->
                 @if($showPaymentPanel)
@@ -563,7 +563,7 @@
                             Select Payment Method
                         </h2>
                         <button wire:click="$set('showPaymentPanel', false)" class="text-[#8b7355] hover:text-[#c17a4a] transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" 
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
                                 stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M6 18L18 6M6 6l12 12"/>
@@ -573,34 +573,34 @@
 
                     <!-- Content -->
                     <div class="p-6 space-y-3 overflow-y-auto flex-1">
-                        <button 
-                            wire:click="selectPayment('cash')" 
+                        <button
+                            wire:click="selectPayment('cash')"
                             class="w-full text-left px-4 py-3 rounded-lg border transition font-semibold
-                                {{ $paymentMethod === 'cash' 
-                                    ? 'bg-[#c17a4a] text-white border-transparent shadow-md' 
+                                {{ $paymentMethod === 'cash'
+                                    ? 'bg-[#c17a4a] text-white border-transparent shadow-md'
                                     : 'border-[#e8dcc8] dark:border-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8] hover:bg-[#f4ede0] dark:hover:bg-[#2f2923]' }}">
                             💵 Cash
                         </button>
-                    
-                        <button 
-                            wire:click="selectPayment('gcash')" 
+
+                        <button
+                            wire:click="selectPayment('gcash')"
                             class="w-full text-left px-4 py-3 rounded-lg border transition font-semibold
-                                {{ $paymentMethod === 'gcash' 
-                                    ? 'bg-[#c17a4a] text-white border-transparent shadow-md' 
+                                {{ $paymentMethod === 'gcash'
+                                    ? 'bg-[#c17a4a] text-white border-transparent shadow-md'
                                     : 'border-[#e8dcc8] dark:border-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8] hover:bg-[#f4ede0] dark:hover:bg-[#2f2923]' }}">
                             📱 GCash
                         </button>
-                    
-                        <button 
-                            wire:click="selectPayment('card')" 
+
+                        <button
+                            wire:click="selectPayment('card')"
                             class="w-full text-left px-4 py-3 rounded-lg border transition font-semibold
-                                {{ $paymentMethod === 'card' 
-                                    ? 'bg-[#c17a4a] text-white border-transparent shadow-md' 
+                                {{ $paymentMethod === 'card'
+                                    ? 'bg-[#c17a4a] text-white border-transparent shadow-md'
                                     : 'border-[#e8dcc8] dark:border-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8] hover:bg-[#f4ede0] dark:hover:bg-[#2f2923]' }}">
                             💳 Card
                         </button>
                     </div>
-                    
+
 
                     <!-- Footer -->
                     <div class="p-4 border-t border-[#e8dcc8] dark:border-[#3d3530]">
@@ -699,9 +699,9 @@
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white dark:bg-[#2a2520] rounded-2xl shadow-2xl max-w-md w-full p-8 border border-[#e8dcc8] dark:border-[#3d3530]">
             <h2 class="text-2xl font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8] mb-6">Select Payment Method</h2>
-            
+
             <div class="space-y-3 mb-6">
-                <button 
+                <button
                     wire:click="processPayment('cash')"
                     class="w-full p-4 border-2 border-[#e8dcc8] dark:border-[#3d3530] rounded-lg hover:border-[#c17a4a] hover:bg-[#f0e6d2] dark:hover:bg-[#3d3530] transition text-left"
                 >
@@ -709,7 +709,7 @@
                     <p class="text-sm text-[#8b7355] dark:text-[#b8a892]">Pay with cash</p>
                 </button>
 
-                <button 
+                <button
                     wire:click="processPayment('card')"
                     class="w-full p-4 border-2 border-[#e8dcc8] dark:border-[#3d3530] rounded-lg hover:border-[#c17a4a] hover:bg-[#f0e6d2] dark:hover:bg-[#3d3530] transition text-left"
                 >
@@ -717,7 +717,7 @@
                     <p class="text-sm text-[#8b7355] dark:text-[#b8a892]">Credit or debit card</p>
                 </button>
 
-                <button 
+                <button
                     wire:click="processPayment('mobile')"
                     class="w-full p-4 border-2 border-[#e8dcc8] dark:border-[#3d3530] rounded-lg hover:border-[#c17a4a] hover:bg-[#f0e6d2] dark:hover:bg-[#3d3530] transition text-left"
                 >
@@ -726,7 +726,7 @@
                 </button>
             </div>
 
-            <button 
+            <button
                 wire:click="$set('showPaymentModal', false)"
                 class="w-full px-4 py-2 bg-[#e8dcc8] dark:bg-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8] rounded-lg font-semibold hover:bg-[#d4c4b0] dark:hover:bg-[#4d4540] transition"
             >
@@ -741,7 +741,7 @@
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white dark:bg-[#2a2520] rounded-2xl shadow-2xl max-w-md w-full p-8 border border-[#e8dcc8] dark:border-[#3d3530] max-h-[80vh] overflow-y-auto">
             <h2 class="text-2xl font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8] mb-6 text-center">Order Receipt</h2>
-            
+
             <div class="space-y-4 mb-6 pb-6 border-b border-[#e8dcc8] dark:border-[#3d3530]">
             <div class="text-center mb-4">
             <p class="text-sm text-[#8b7355] dark:text-[#b8a892]">{{ now()->format('M j, Y • g:i A') }}</p>
@@ -848,13 +848,13 @@
             </div>
 
             <div class="flex gap-3">
-                <button 
+                <button
                     wire:click="$set('showReceiptModal', false)"
                     class="flex-1 px-4 py-3 bg-[#e8dcc8] dark:bg-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8] rounded-lg font-semibold hover:bg-[#d4c4b0] dark:hover:bg-[#4d4540] transition"
                 >
                     Back
                 </button>
-                <button 
+                <button
                     wire:click="printReceipt"
                     class="flex-1 px-4 py-3 bg-[#c17a4a] text-white rounded-lg font-semibold hover:bg-[#a86a3a] transition"
                 >
