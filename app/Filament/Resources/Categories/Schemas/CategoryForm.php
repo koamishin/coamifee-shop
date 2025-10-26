@@ -8,6 +8,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
+use Guava\IconPicker\Forms\Components\IconPicker;
 
 final class CategoryForm
 {
@@ -26,6 +27,10 @@ final class CategoryForm
                         str()->slug($state),
                     ),
                 ),
+
+            IconPicker::make('icon')
+                ->label('Icon')
+                ->placeholder('Select an icon'),
 
             Textarea::make('description')
                 ->label('Category Description')

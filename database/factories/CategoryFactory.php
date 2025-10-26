@@ -30,6 +30,13 @@ final class CategoryFactory extends Factory
                 'Beverages',
                 'Breakfast',
             ]),
+            'icon' => fake()->randomElement([
+                'heroicon-o-cake',
+                'heroicon-o-shopping-bag',
+                'heroicon-o-star',
+                'heroicon-o-heart',
+                'heroicon-o-sparkles',
+            ]),
             'description' => fake()->sentence(),
             'is_active' => fake()->boolean(90), // 90% chance of being active
             'sort_order' => fake()->numberBetween(1, 100),

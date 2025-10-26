@@ -10,6 +10,7 @@ use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Guava\IconPicker\Tables\Columns\IconColumn as GuavaIconColumn;
 
 final class CategoriesTable
 {
@@ -21,6 +22,11 @@ final class CategoriesTable
                     ->label('Category Name')
                     ->searchable()
                     ->sortable(),
+
+                GuavaIconColumn::make('icon')
+                    ->label('Icon')
+                    ->color('primary')
+                    ->alignCenter(),
 
                 TextColumn::make('products_count')
                     ->label('Products')

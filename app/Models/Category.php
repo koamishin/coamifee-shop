@@ -14,6 +14,7 @@ final class Category extends Model
 
     protected $fillable = [
         'name',
+        'icon',
         'description',
         'is_active',
         'sort_order',

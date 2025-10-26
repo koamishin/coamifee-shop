@@ -19,24 +19,28 @@ final class CoffeeShopSeeder extends Seeder
         $categories = [
             [
                 'name' => 'Coffee',
+                'icon' => 'css-coffee',
                 'description' => 'Hot and cold coffee beverages',
                 'is_active' => true,
                 'sort_order' => 1,
             ],
             [
                 'name' => 'Tea',
+                'icon' => 'heroicon-o-beaker',
                 'description' => 'Various tea selections',
                 'is_active' => true,
                 'sort_order' => 2,
             ],
             [
                 'name' => 'Food',
+                'icon' => 'heroicon-o-shopping-bag',
                 'description' => 'Pastries, sandwiches, and meals',
                 'is_active' => true,
                 'sort_order' => 3,
             ],
             [
                 'name' => 'Desserts',
+                'icon' => 'heroicon-o-cake',
                 'description' => 'Sweet treats and desserts',
                 'is_active' => true,
                 'sort_order' => 4,
