@@ -10,11 +10,11 @@ use App\Services\InventoryService;
 use App\Services\ReportingService;
 use Illuminate\Support\Collection;
 
-final class PosProductService
+final readonly class PosProductService
 {
     public function __construct(
-        private readonly InventoryService $inventoryService,
-        private readonly ReportingService $reportingService
+        private InventoryService $inventoryService,
+        private ReportingService $reportingService
     ) {}
 
     public function getCategories(): Collection
@@ -36,14 +36,14 @@ final class PosProductService
     {
         return Product::with(['category', 'ingredients.ingredient'])
             ->where('is_active', true)
-            ->when($categoryId && $categoryId > 0, function ($query) use ($categoryId) {
+            ->when($categoryId && $categoryId > 0, function ($query) use ($categoryId): void {
                 $query->where('category_id', $categoryId);
             })
-            ->when($search, function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
+            ->when($search, function ($query) use ($search): void {
+                $query->where(function ($q) use ($search): void {
                     $q->where('name', 'like', '%'.$search.'%')
                         ->orWhere('description', 'like', '%'.$search.'%')
-                        ->orWhereHas('category', function ($categoryQuery) use ($search) {
+                        ->orWhereHas('category', function ($categoryQuery) use ($search): void {
                             $categoryQuery->where('name', 'like', '%'.$search.'%');
                         });
                 });
@@ -74,7 +74,7 @@ final class PosProductService
 
     public function getMaxProducibleQuantity(int $productId): int
     {
-        $product = Product::find($productId);
+        $product = Product::query()->find($productId);
         if (! $product) {
             return 0;
         }

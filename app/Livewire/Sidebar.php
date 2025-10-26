@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
-use App\Models\Category;
 use App\Services\InventoryService;
 use App\Services\PosService;
 use App\Services\ReportingService;
@@ -20,6 +19,9 @@ final class Sidebar extends Component
     public array $productAvailability = [];
 
     protected $listeners = ['refreshInventory' => 'updateProductAvailability'];
+    private InventoryService $inventoryService;
+    private ReportingService $reportingService;
+    private PosService $posService;
 
     public function selectCategory(int $categoryId): void
     {

@@ -5,18 +5,16 @@ declare(strict_types=1);
 namespace App\Services\Pos;
 
 use App\Models\Product;
-use App\Services\InventoryService;
 
-final class PosCartService
+final readonly class PosCartService
 {
     public function __construct(
-        private readonly InventoryService $inventoryService,
-        private readonly PosProductService $productService
+        private PosProductService $productService
     ) {}
 
     public function addToCart(array $cart, int $productId, array $customizations = [], int $quantity = 1): array
     {
-        $product = Product::find($productId);
+        $product = Product::query()->find($productId);
         if (! $product) {
             return $cart;
         }
@@ -90,7 +88,7 @@ final class PosCartService
         return $this->updateQuantity($cart, $cartKey, $cart[$cartKey]['quantity'] - 1);
     }
 
-    public function clearCart(array $cart): array
+    public function clearCart(): array
     {
         return [];
     }
@@ -123,7 +121,7 @@ final class PosCartService
 
     public function hasItems(array $cart): bool
     {
-        return ! empty($cart);
+        return $cart !== [];
     }
 
     public function getCartItemCount(array $cart): int

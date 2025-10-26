@@ -8,7 +8,7 @@ use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Support\Collection;
 
-final class PosService
+final readonly class PosService
 {
     public function __construct(
         private InventoryService $inventoryService,
@@ -22,14 +22,14 @@ final class PosService
     {
         return Product::with(['category', 'ingredients.ingredient'])
             ->where('is_active', true)
-            ->when($selectedCategory && $selectedCategory > 0, function ($query) use ($selectedCategory) {
+            ->when($selectedCategory && $selectedCategory > 0, function ($query) use ($selectedCategory): void {
                 $query->where('category_id', $selectedCategory);
             })
-            ->when($search, function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
+            ->when($search, function ($query) use ($search): void {
+                $query->where(function ($q) use ($search): void {
                     $q->where('name', 'like', '%'.$search.'%')
                         ->orWhere('description', 'like', '%'.$search.'%')
-                        ->orWhereHas('category', function ($categoryQuery) use ($search) {
+                        ->orWhereHas('category', function ($categoryQuery) use ($search): void {
                             $categoryQuery->where('name', 'like', '%'.$search.'%');
                         });
                 });
@@ -43,7 +43,7 @@ final class PosService
      */
     public function getActiveCategories(): Collection
     {
-        return Category::where('is_active', true)->orderBy('name')->get();
+        return Category::query()->where('is_active', true)->orderBy('name')->get();
     }
 
     /**
@@ -60,23 +60,21 @@ final class PosService
      */
     public function getQuickAddItems(int $limit = 8): array
     {
-        return Product::where('is_active', true)
-            ->whereHas('category', function ($query) {
+        return Product::query()->where('is_active', true)
+            ->whereHas('category', function ($query): void {
                 $query->whereIn('name', ['Coffee', 'Espresso', 'Latte']);
             })
             ->orderBy('name')
             ->take($limit)
             ->get()
-            ->map(function ($product) {
-                return [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'price' => $product->price,
-                    'image' => $product->image_url,
-                    'category' => $product->category->name,
-                    'can_produce' => $this->inventoryService->canProduceProduct($product->id, 1),
-                ];
-            })
+            ->map(fn ($product): array => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->price,
+                'image' => $product->image_url,
+                'category' => $product->category->name,
+                'can_produce' => $this->inventoryService->canProduceProduct($product->id, 1),
+            ])
             ->toArray();
     }
 
@@ -93,7 +91,7 @@ final class PosService
      */
     public function getMaxProducibleQuantity(int $productId): int
     {
-        $product = Product::find($productId);
+        $product = Product::query()->find($productId);
         if (! $product) {
             return 0;
         }
@@ -113,7 +111,7 @@ final class PosService
             }
         }
 
-        return empty($maxQuantities) ? 999 : min($maxQuantities);
+        return $maxQuantities === [] ? 999 : min($maxQuantities);
     }
 
     /**
@@ -235,7 +233,7 @@ final class PosService
         }
 
         $taxAmount = 0;
-        $total = $subtotal + $taxAmount - $discountAmount;
+        $total = $subtotal - $discountAmount;
 
         return [
             'subtotal' => $subtotal,
@@ -250,14 +248,12 @@ final class PosService
     public function getLowStockAlerts(): array
     {
         return $this->inventoryService->checkLowStock()
-            ->map(function ($inventory) {
-                return [
-                    'ingredient_name' => $inventory->ingredient->name,
-                    'current_stock' => $inventory->current_stock,
-                    'min_stock_level' => $inventory->min_stock_level,
-                    'unit_type' => $inventory->ingredient->unit_type,
-                ];
-            })
-            ->toArray();
+            ->map(fn ($inventory): array => [
+                'ingredient_name' => $inventory->ingredient->name,
+                'current_stock' => $inventory->current_stock,
+                'min_stock_level' => $inventory->min_stock_level,
+                'unit_type' => $inventory->ingredient->unit_type,
+            ])
+            ->all();
     }
 }
