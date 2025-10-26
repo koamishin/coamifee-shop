@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace App\Filament\Widgets;
@@ -89,7 +88,7 @@ final class LowStockAlertWidget extends BaseWidget
             ->paginated([false]);
     }
 
-    private function getUrgencyLevel($record): string
+    private function getUrgencyLevel($record): HtmlString
     {
         $shortage = max(0, $record->min_stock_level - $record->current_stock);
         $percentage = ($shortage / $record->min_stock_level) * 100;

@@ -7,7 +7,7 @@
     'selectedCategory' => 'int',
     'isMobile' => 'bool'
 ])
-@php
+//@php
 @endphp
 
 <!-- Mobile-optimized Sidebar -->
