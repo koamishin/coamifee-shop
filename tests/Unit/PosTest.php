@@ -15,11 +15,11 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-test('pos component renders successfully', function () {
+test('pos component renders successfully', function (): void {
     Livewire::test(Pos::class)->assertStatus(200)->assertViewIs('livewire.pos');
 });
 
-test('can add product to cart', function () {
+test('can add product to cart', function (): void {
     Livewire::test(Pos::class)
         ->call('addToCart', $this->product->id)
         ->assertDispatched('productSelected', $this->product->id)
@@ -34,9 +34,9 @@ test('can add product to cart', function () {
         );
 });
 
-test('cannot add product with insufficient inventory', function () {
+test('cannot add product with insufficient inventory', function (): void {
     // Reduce inventory to insufficient levels
-    $inventory = IngredientInventory::where('ingredient_id', 1)->first();
+    $inventory = IngredientInventory::query()->where('ingredient_id', 1)->first();
     $inventory->update(['current_stock' => 10]); // Less than required 20g
 
     Livewire::test(Pos::class)
@@ -45,16 +45,16 @@ test('cannot add product with insufficient inventory', function () {
         ->assertSet('cart', []);
 });
 
-test('can increment cart item quantity', function () {
+test('can increment cart item quantity', function (): void {
     Livewire::test(Pos::class)
         ->call('addToCart', $this->product->id)
         ->call('incrementQuantity', $this->product->id)
         ->assertSet('cart.'.$this->product->id.'.quantity', 2);
 });
 
-test('cannot increment beyond available inventory', function () {
+test('cannot increment beyond available inventory', function (): void {
     // Set inventory to only allow 1 unit
-    $inventory = IngredientInventory::where('ingredient_id', 1)->first();
+    $inventory = IngredientInventory::query()->where('ingredient_id', 1)->first();
     $inventory->update(['current_stock' => 20]); // Exactly enough for 1
 
     Livewire::test(Pos::class)
@@ -64,7 +64,7 @@ test('cannot increment beyond available inventory', function () {
         ->assertSet('cart.'.$this->product->id.'.quantity', 1);
 });
 
-test('can decrement cart item quantity', function () {
+test('can decrement cart item quantity', function (): void {
     Livewire::test(Pos::class)
         ->call('addToCart', $this->product->id)
         ->call('incrementQuantity', $this->product->id)
@@ -72,28 +72,28 @@ test('can decrement cart item quantity', function () {
         ->assertSet('cart.'.$this->product->id.'.quantity', 1);
 });
 
-test('decrement to zero removes item', function () {
+test('decrement to zero removes item', function (): void {
     Livewire::test(Pos::class)
         ->call('addToCart', $this->product->id)
         ->call('decrementQuantity', $this->product->id)
         ->assertSet('cart.'.$this->product->id, null);
 });
 
-test('can remove item from cart', function () {
+test('can remove item from cart', function (): void {
     Livewire::test(Pos::class)
         ->call('addToCart', $this->product->id)
         ->call('removeFromCart', $this->product->id)
         ->assertSet('cart.'.$this->product->id, null);
 });
 
-test('can clear cart', function () {
+test('can clear cart', function (): void {
     Livewire::test(Pos::class)
         ->call('addToCart', $this->product->id)
         ->call('clearCart')
         ->assertSet('cart', []);
 });
 
-test('calculates totals correctly', function () {
+test('calculates totals correctly', function (): void {
     Livewire::test(Pos::class)
         ->call('addToCart', $this->product->id)
         ->call('incrementQuantity', $this->product->id)
@@ -101,7 +101,7 @@ test('calculates totals correctly', function () {
         ->assertSet('total', 9.0);
 });
 
-test('can apply discount', function () {
+test('can apply discount', function (): void {
     Livewire::test(Pos::class)
         ->call('addToCart', $this->product->id)
         ->set('discountPercentage', 10)
@@ -111,7 +111,7 @@ test('can apply discount', function () {
         ->assertSet('total', 4.05);
 });
 
-test('can quick add product with size', function () {
+test('can quick add product with size', function (): void {
     Livewire::test(Pos::class)
         ->call('quickAddProduct', $this->product->id, 'large', 'hot')
         ->assertSet('cart.'.$this->product->id.'_large_hot.size', 'large')
@@ -122,7 +122,7 @@ test('can quick add product with size', function () {
         ->assertSet('cart.'.$this->product->id.'_large_hot.price', 5.625); // 4.50 * 1.25
 });
 
-test('can apply customer discount code', function () {
+test('can apply customer discount code', function (): void {
     Livewire::test(Pos::class)
         ->call('addToCart', $this->product->id)
         ->call('applyCustomerDiscount', 'COFFEE10')
@@ -131,14 +131,14 @@ test('can apply customer discount code', function () {
         ->assertSet('total', 4.05);
 });
 
-test('invalid discount code is rejected', function () {
+test('invalid discount code is rejected', function (): void {
     Livewire::test(Pos::class)
         ->call('addToCart', $this->product->id)
         ->call('applyCustomerDiscount', 'INVALID')
         ->assertDispatched('discount-invalid');
 });
 
-test('can duplicate existing order', function () {
+test('can duplicate existing order', function (): void {
     // Create a completed order
     $order = Order::factory()->create([
         'customer_name' => 'John Doe',
@@ -159,7 +159,7 @@ test('can duplicate existing order', function () {
         ->assertSet('cart.'.$this->product->id.'.quantity', 2);
 });
 
-test('cannot duplicate order with insufficient inventory', function () {
+test('cannot duplicate order with insufficient inventory', function (): void {
     // Create order with 3 units
     $order = Order::factory()->create();
     OrderItem::factory()->create([
@@ -169,7 +169,7 @@ test('cannot duplicate order with insufficient inventory', function () {
     ]);
 
     // Reduce inventory to insufficient for 3 units
-    $inventory = IngredientInventory::where('ingredient_id', 1)->first();
+    $inventory = IngredientInventory::query()->where('ingredient_id', 1)->first();
     $inventory->update(['current_stock' => 40]); // Only enough for 2 units
 
     Livewire::test(Pos::class)
@@ -177,7 +177,7 @@ test('cannot duplicate order with insufficient inventory', function () {
         ->assertDispatched('insufficient-inventory');
 });
 
-test('can generate receipt', function () {
+test('can generate receipt', function (): void {
     Livewire::test(Pos::class)
         ->call('addToCart', $this->product->id)
         ->set('customerName', 'Test Customer')
@@ -185,7 +185,7 @@ test('can generate receipt', function () {
         ->assertDispatched('receipt-generated');
 });
 
-test('gets cart item count', function () {
+test('gets cart item count', function (): void {
     $result = Livewire::test(Pos::class)
         ->call('addToCart', $this->product->id)
         ->call('incrementQuantity', $this->product->id)
@@ -196,13 +196,13 @@ test('gets cart item count', function () {
     expect($cart[$this->product->id]['quantity'])->toBe(3);
 });
 
-test('process payment with empty cart fails', function () {
+test('process payment with empty cart fails', function (): void {
     Livewire::test(Pos::class)
         ->call('processPayment')
         ->assertDispatched('cart-empty');
 });
 
-test('can customize cart item', function () {
+test('can customize cart item', function (): void {
     Livewire::test(Pos::class)
         ->call('addToCart', $this->product->id)
         ->call('customizeCartItem', $this->product->id, [
@@ -216,7 +216,7 @@ test('can customize cart item', function () {
 });
 
 // Helper function to create test data
-beforeEach(function () {
+beforeEach(function (): void {
     // Create category
     $category = Category::factory()->create(['name' => 'Coffee']);
 

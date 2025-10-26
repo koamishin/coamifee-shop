@@ -2,26 +2,28 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\DashboardController;
+use App\Livewire\Pos;
 use App\Livewire\Settings\Appearance;
 use App\Livewire\Settings\Password;
 use App\Livewire\Settings\Profile;
 use App\Livewire\Settings\TwoFactor;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+Route::get('/', fn (): Factory|View => view('welcome'))->name('home');
 
-Route::get('dashboard', [App\Http\Controllers\DashboardController::class, 'index'])
+Route::get('dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
-Route::get('pos', App\Livewire\Pos::class)
+Route::get('pos', Pos::class)
     ->middleware(['auth'])
     ->name('pos');
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth'])->group(function (): void {
     Route::redirect('settings', 'settings/profile');
 
     Route::get('settings/profile', Profile::class)->name('profile.edit');

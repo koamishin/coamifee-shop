@@ -8,74 +8,70 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
-use App\Services\OrderProcessingService;
 use Exception;
 use Illuminate\Support\Facades\DB;
 
 final class PosCheckoutAction
 {
-    public function __construct(
-        private OrderProcessingService $orderProcessingService,
-    ) {}
-
     public function execute(array $cart, array $orderData): array
     {
         try {
-        DB::beginTransaction();
+            DB::beginTransaction();
 
-        // Validate cart
-        if (empty($cart)) {
-        DB::rollBack();
-        return [
-        'success' => false,
-        'message' => 'Cart is empty',
-        ];
-        }
-
-        // Create the order
-            $order = Order::create([
-            'customer_name' => $orderData['customer_name'] ?? 'Guest',
-            'customer_id' => $this->getCustomerId($orderData['customer_name'] ?? null),
-        'order_type' => $orderData['order_type'] ?? 'dine-in',
-        'payment_method' => $orderData['payment_method'] ?? 'cash',
-        'table_number' => $orderData['table_number'] ?? null,
-        'total' => $orderData['total'],
-        'status' => 'pending',
-        'notes' => $orderData['notes'] ?? null,
-        ]);
-
-        // Create order items
-            foreach ($cart as $productId => $item) {
-            $product = Product::find($productId);
-                if (! $product) {
+            // Validate cart
+            if ($cart === []) {
                 DB::rollBack();
 
-                    return [
+                return [
                     'success' => false,
-                    'message' => "Product with ID {$productId} not found",
+                    'message' => 'Cart is empty',
                 ];
+            }
+
+            // Create the order
+            $order = Order::query()->create([
+                'customer_name' => $orderData['customer_name'] ?? 'Guest',
+                'customer_id' => $this->getCustomerId($orderData['customer_name'] ?? null),
+                'order_type' => $orderData['order_type'] ?? 'dine-in',
+                'payment_method' => $orderData['payment_method'] ?? 'cash',
+                'table_number' => $orderData['table_number'] ?? null,
+                'total' => $orderData['total'],
+                'status' => 'pending',
+                'notes' => $orderData['notes'] ?? null,
+            ]);
+
+            // Create order items
+            foreach ($cart as $productId => $item) {
+                $product = Product::query()->find($productId);
+                if (! $product) {
+                    DB::rollBack();
+
+                    return [
+                        'success' => false,
+                        'message' => "Product with ID {$productId} not found",
+                    ];
                 }
 
-        OrderItem::create([
-                'order_id' => $order->id,
-                'product_id' => $productId,
+                OrderItem::query()->create([
+                    'order_id' => $order->id,
+                    'product_id' => $productId,
                     'quantity' => $item['quantity'],
-                'price' => $item['price'],
-        'notes' => $item['notes'] ?? null,
-        ]);
-        }
+                    'price' => $item['price'],
+                    'notes' => $item['notes'] ?? null,
+                ]);
+            }
 
             // Process the order with inventory deduction
-        $order->load(['items.product']);
+            $order->load(['items.product']);
             $result = app(ProcessOrderAction::class)->execute($order);
 
-        if (! $result['success']) {
-        DB::rollBack();
+            if (! $result['success']) {
+                DB::rollBack();
 
-        return [
-        'success' => false,
-            'message' => $result['message'],
-            ];
+                return [
+                    'success' => false,
+                    'message' => $result['message'],
+                ];
             }
 
             DB::commit();
@@ -126,7 +122,7 @@ final class PosCheckoutAction
             return null;
         }
 
-        $customer = Customer::where('name', $customerName)->first();
+        $customer = Customer::query()->where('name', $customerName)->first();
 
         return $customer?->id;
     }

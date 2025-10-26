@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ProductMetrics\Tables;
 
+use App\Filament\Concerns\CurrencyAware;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -16,6 +17,8 @@ use Illuminate\Support\HtmlString;
 
 final class ProductMetricsTable
 {
+    use CurrencyAware;
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -42,7 +45,7 @@ final class ProductMetricsTable
                     ->description('Time period type')
                     ->badge()
                     ->icon(
-                        fn ($state) => match ($state) {
+                        fn ($state): string => match ($state) {
                             'daily' => 'heroicon-o-calendar-days',
                             'weekly' => 'heroicon-o-calendar',
                             'monthly' => 'heroicon-o-chart-bar',
@@ -50,7 +53,7 @@ final class ProductMetricsTable
                         },
                     )
                     ->color(
-                        fn ($state) => match ($state) {
+                        fn ($state): string => match ($state) {
                             'daily' => 'info',
                             'weekly' => 'warning',
                             'monthly' => 'success',
@@ -58,11 +61,11 @@ final class ProductMetricsTable
                         },
                     )
                     ->formatStateUsing(
-                        fn ($state) => match ($state) {
+                        fn ($state): string => match ($state) {
                             'daily' => 'Daily',
                             'weekly' => 'Weekly',
                             'monthly' => 'Monthly',
-                            default => ucfirst($state),
+                            default => ucfirst((string) $state),
                         },
                     )
                     ->searchable()
@@ -79,13 +82,13 @@ final class ProductMetricsTable
                     ->badge()
                     ->color('primary')
                     ->formatStateUsing(
-                        fn ($state) => number_format((int) $state),
+                        fn ($state): string => number_format((int) $state),
                     ),
 
                 TextColumn::make('total_revenue')
                     ->label('Revenue')
                     ->description('Total revenue generated')
-                    ->money('USD')
+                    ->money(self::getMoneyConfig())
                     ->sortable()
                     ->alignRight()
                     ->weight('bold')
@@ -95,15 +98,15 @@ final class ProductMetricsTable
                 TextColumn::make('average_order_value')
                     ->label('AOV')
                     ->description('Average order value')
-                    ->money('USD')
+                    ->money(self::getMoneyConfig())
                     ->sortable()
                     ->alignRight()
-                    ->formatStateUsing(function ($record) {
+                    ->formatStateUsing(function ($record): string|HtmlString {
                         $orders = (int) $record->orders_count;
                         $revenue = (float) $record->total_revenue;
 
                         if ($orders === 0) {
-                            return '$0.00';
+                            return self::formatCurrency(0);
                         }
 
                         $aov = $revenue / $orders;
@@ -115,8 +118,8 @@ final class ProductMetricsTable
                                     : '#ef4444');
 
                         return new HtmlString(
-                            "<span style='color: {$color}; font-weight: 600;'>$".
-                                number_format($aov, 2).
+                            "<span style='color: {$color}; font-weight: 600;'>".
+                                self::formatCurrency($aov).
                                 '</span>',
                         );
                     }),
@@ -124,10 +127,10 @@ final class ProductMetricsTable
                 TextColumn::make('revenue_per_day')
                     ->label('Revenue/Day')
                     ->description('Revenue per day in period')
-                    ->money('USD')
+                    ->money(self::getMoneyConfig())
                     ->sortable()
                     ->alignRight()
-                    ->formatStateUsing(function ($record) {
+                    ->formatStateUsing(function ($record): float {
                         $revenue = (float) $record->total_revenue;
                         $period = $record->period_type ?? 'daily';
 
@@ -146,7 +149,7 @@ final class ProductMetricsTable
                     ->label('Performance')
                     ->description('Overall performance rating')
                     ->badge()
-                    ->formatStateUsing(function ($record) {
+                    ->formatStateUsing(function ($record): string {
                         $orders = (int) $record->orders_count;
                         $revenue = (float) $record->total_revenue;
 
@@ -167,10 +170,10 @@ final class ProductMetricsTable
                         return '🔴 Needs Attention';
                     })
                     ->color(
-                        fn ($state) => match (true) {
-                            str_contains($state, 'Excellent') => 'success',
-                            str_contains($state, 'Good') => 'warning',
-                            str_contains($state, 'No Activity') => 'gray',
+                        fn ($state): string => match (true) {
+                            str_contains((string) $state, 'Excellent') => 'success',
+                            str_contains((string) $state, 'Good') => 'warning',
+                            str_contains((string) $state, 'No Activity') => 'gray',
                             default => 'danger',
                         },
                     ),
@@ -210,7 +213,7 @@ final class ProductMetricsTable
                         'no_activity' => '⚪ No Activity',
                     ])
                     ->placeholder('Filter by performance')
-                    ->query(function ($query, $data) {
+                    ->query(function ($query, array $data) {
                         if (! $data['value']) {
                             return $query;
                         }
@@ -245,7 +248,7 @@ final class ProductMetricsTable
                     Action::make('duplicate')
                         ->label('Duplicate')
                         ->icon('heroicon-o-document-duplicate')
-                        ->action(function ($record) {
+                        ->action(function ($record): void {
                             $newRecord = $record->replicate();
                             $newRecord->metric_date = now();
                             $newRecord->save();
@@ -260,11 +263,11 @@ final class ProductMetricsTable
                     Action::make('export_data')
                         ->label('Export Data')
                         ->icon('heroicon-o-arrow-down-tray')
-                        ->action(function ($record) {
+                        ->action(fn ($record) =>
                             // Implementation for exporting single metric data
-                            return response()->streamDownload(function () use (
+                            response()->streamDownload(function () use (
                                 $record,
-                            ) {
+                            ): void {
                                 echo "Product,Date,Period,Orders,Revenue,AOV\n";
                                 echo "{$record->product->name},{$record->metric_date},{$record->period_type},{$record->orders_count},{$record->total_revenue},".
                                     ($record->orders_count > 0
@@ -272,8 +275,7 @@ final class ProductMetricsTable
                                             $record->orders_count
                                         : 0).
                                     "\n";
-                            }, "product-metric-{$record->id}.csv");
-                        })
+                            }, "product-metric-{$record->id}.csv"))
                         ->openUrlInNewTab(),
                 ])
                     ->label('Actions')
@@ -293,21 +295,19 @@ final class ProductMetricsTable
                 Action::make('export_bulk')
                     ->label('Export CSV')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->action(function ($records) {
-                        return response()->streamDownload(function () use (
-                            $records,
-                        ) {
-                            echo "Product,Date,Period,Orders,Revenue,AOV\n";
-                            foreach ($records as $record) {
-                                echo "{$record->product->name},{$record->metric_date},{$record->period_type},{$record->orders_count},{$record->total_revenue},".
-                                    ($record->orders_count > 0
-                                        ? $record->total_revenue /
-                                            $record->orders_count
-                                        : 0).
-                                    "\n";
-                            }
-                        }, 'product-metrics-bulk-'.now()->format('Y-m-d').'.csv');
-                    })
+                    ->action(fn ($records) => response()->streamDownload(function () use (
+                        $records,
+                    ): void {
+                        echo "Product,Date,Period,Orders,Revenue,AOV\n";
+                        foreach ($records as $record) {
+                            echo "{$record->product->name},{$record->metric_date},{$record->period_type},{$record->orders_count},{$record->total_revenue},".
+                                ($record->orders_count > 0
+                                    ? $record->total_revenue /
+                                        $record->orders_count
+                                    : 0).
+                                "\n";
+                        }
+                    }, 'product-metrics-bulk-'.now()->format('Y-m-d').'.csv'))
                     ->deselectRecordsAfterCompletion(),
             ])
             ->emptyStateHeading('No product metrics found')

@@ -9,7 +9,7 @@ use App\Models\Order;
 use App\Models\Product;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 
 final class CoffeeShopOverviewWidget extends BaseWidget
 {
@@ -19,24 +19,24 @@ final class CoffeeShopOverviewWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        $today = Carbon::today();
-        $thisWeek = Carbon::now()->startOfWeek();
-        $thisMonth = Carbon::now()->startOfMonth();
+        $today = Date::today();
+        Date::now()->startOfWeek();
+        Date::now()->startOfMonth();
 
         return [
-            Stat::make('Today\'s Orders', Order::whereDate('created_at', $today)->count())
+            Stat::make('Today\'s Orders', Order::query()->whereDate('created_at', $today)->count())
                 ->description('Orders placed today')
                 ->descriptionIcon('heroicon-m-arrow-trending-up')
                 ->color('success')
                 ->chart([0, 2, 5, 3, 8, 12, 15]),
 
-            Stat::make('Today\'s Revenue', Order::whereDate('created_at', $today)->sum('total'))
-                ->description('$'.number_format(Order::whereDate('created_at', $today)->sum('total'), 2))
+            Stat::make('Today\'s Revenue', Order::query()->whereDate('created_at', $today)->sum('total'))
+                ->description('$'.number_format(Order::query()->whereDate('created_at', $today)->sum('total'), 2))
                 ->description('Revenue from today')
                 ->descriptionIcon('heroicon-m-currency-dollar')
                 ->color('primary'),
 
-            Stat::make('Active Products', Product::count())
+            Stat::make('Active Products', Product::query()->count())
                 ->description('Total products available')
                 ->descriptionIcon('heroicon-m-shopping-bag')
                 ->color('info'),

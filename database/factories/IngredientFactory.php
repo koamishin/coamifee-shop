@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Models\Ingredient;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Ingredient>
+ * @extends Factory<Ingredient>
  */
 final class IngredientFactory extends Factory
 {
@@ -31,14 +32,14 @@ final class IngredientFactory extends Factory
 
     public function trackable(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'is_trackable' => true,
         ]);
     }
 
     public function untrackable(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'is_trackable' => false,
         ]);
     }

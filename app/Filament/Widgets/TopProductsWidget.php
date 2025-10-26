@@ -17,7 +17,7 @@ final class TopProductsWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $topProducts = OrderItem::selectRaw('
+        $topProducts = OrderItem::query()->selectRaw('
                 product_id,
                 SUM(quantity) as total_quantity,
                 SUM(quantity * price) as total_revenue,

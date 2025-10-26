@@ -17,7 +17,7 @@ final class OrderStatusWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $orderStats = Order::selectRaw('
+        $orderStats = Order::query()->selectRaw('
                 status,
                 COUNT(*) as count
             ')

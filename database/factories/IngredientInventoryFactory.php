@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Models\Ingredient;
+use App\Models\IngredientInventory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\IngredientInventory>
+ * @extends Factory<IngredientInventory>
  */
 final class IngredientInventoryFactory extends Factory
 {
@@ -19,7 +21,7 @@ final class IngredientInventoryFactory extends Factory
     public function definition(): array
     {
         return [
-            'ingredient_id' => \App\Models\Ingredient::factory()->trackable(),
+            'ingredient_id' => Ingredient::factory()->trackable(),
             'current_stock' => fake()->randomFloat(3, 0, 10000),
             'min_stock_level' => fake()->randomFloat(3, 100, 1000),
             'max_stock_level' => fake()->randomFloat(3, 1000, 50000),

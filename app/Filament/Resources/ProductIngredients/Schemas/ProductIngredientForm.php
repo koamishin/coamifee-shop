@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ProductIngredients\Schemas;
 
+use App\Filament\Concerns\CurrencyAware;
+use App\Models\Ingredient;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -14,6 +16,8 @@ use Illuminate\Support\HtmlString;
 
 final class ProductIngredientForm
 {
+    use CurrencyAware;
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -74,11 +78,11 @@ final class ProductIngredientForm
                                 ->helperText(
                                     'Amount of this ingredient needed per product',
                                 )
-                                ->suffix(fn ($get) => self::getUnitSuffix($get))
+                                ->suffix(self::getUnitSuffix(...))
                                 ->columnSpan(1),
                             Placeholder::make('unit_info')
                                 ->label('Measurement Unit')
-                                ->content(fn ($get) => self::getUnitInfo($get))
+                                ->content(self::getUnitInfo(...))
                                 ->columnSpan(1),
                         ]),
 
@@ -91,7 +95,7 @@ final class ProductIngredientForm
                             ->schema([
                                 Placeholder::make('cost_calculation')
                                     ->label('Cost per Product')
-                                    ->content(function ($get) {
+                                    ->content(function ($get): HtmlString {
                                         $quantity =
                                             (float) ($get(
                                                 'quantity_required',
@@ -104,9 +108,7 @@ final class ProductIngredientForm
                                             );
                                         }
 
-                                        $ingredient = \App\Models\Ingredient::find(
-                                            $ingredientId,
-                                        );
+                                        $ingredient = Ingredient::query()->find($ingredientId);
                                         if (! $ingredient) {
                                             return new HtmlString(
                                                 '<span style="color: #6b7280;">Ingredient not found</span>',
@@ -117,21 +119,10 @@ final class ProductIngredientForm
                                             $quantity * $ingredient->unit_cost;
                                         $unit = $ingredient->unit_type;
 
-                                        return new HtmlString(
-                                            "
-                                            <div style='display: flex; align-items: center; gap: 12px;'>
-                                                <span style='color: #374151; font-weight: 500;'>Cost per product:</span>
-                                                <span style='color: #10b981; font-weight: bold; font-size: 1.1em;'>$".
-                                                number_format($cost, 3).
-                                                "</span>
-                                                <span style='color: #6b7280; font-size: 0.9em;'>($quantity $unit × $".
-                                                number_format(
-                                                    $ingredient->unit_cost,
-                                                    3,
-                                                ).
-                                                "/$unit)</span>
-                                            </div>
-                                        ",
+                                        return self::formatCostCalculation(
+                                            $quantity,
+                                            $ingredient->unit_cost,
+                                            $unit,
                                         );
                                     })
                                     ->columnSpanFull(),
@@ -149,7 +140,7 @@ final class ProductIngredientForm
                                         ->label(
                                             'Products Possible with Current Stock',
                                         )
-                                        ->content(function ($get) {
+                                        ->content(function ($get): string|HtmlString {
                                             $quantityRequired =
                                                 (float) ($get(
                                                     'quantity_required',
@@ -165,7 +156,7 @@ final class ProductIngredientForm
                                                 return '-';
                                             }
 
-                                            $ingredient = \App\Models\Ingredient::with(
+                                            $ingredient = Ingredient::with(
                                                 'inventory',
                                             )->find($ingredientId);
                                             if (
@@ -200,7 +191,7 @@ final class ProductIngredientForm
                                         }),
                                     Placeholder::make('low_stock_warning')
                                         ->label('Stock Status')
-                                        ->content(function ($get) {
+                                        ->content(function ($get): HtmlString {
                                             $quantityRequired =
                                                 (float) ($get(
                                                     'quantity_required',
@@ -218,7 +209,7 @@ final class ProductIngredientForm
                                                 );
                                             }
 
-                                            $ingredient = \App\Models\Ingredient::with(
+                                            $ingredient = Ingredient::with(
                                                 'inventory',
                                             )->find($ingredientId);
                                             if (
@@ -272,7 +263,7 @@ final class ProductIngredientForm
             return null;
         }
 
-        $ingredient = \App\Models\Ingredient::find($ingredientId);
+        $ingredient = Ingredient::query()->find($ingredientId);
 
         if (! $ingredient) {
             return null;
@@ -289,7 +280,7 @@ final class ProductIngredientForm
             return 'Select ingredient first';
         }
 
-        $ingredient = \App\Models\Ingredient::find($ingredientId);
+        $ingredient = Ingredient::query()->find($ingredientId);
 
         if (! $ingredient) {
             return 'Ingredient not found';

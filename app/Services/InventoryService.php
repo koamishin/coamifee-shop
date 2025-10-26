@@ -33,7 +33,7 @@ final class InventoryService
 
         $inventory->update(['current_stock' => $newStock]);
 
-        InventoryTransaction::create([
+        InventoryTransaction::query()->create([
             'ingredient_id' => $ingredient->id,
             'transaction_type' => 'usage',
             'quantity_change' => -$quantity,
@@ -69,7 +69,7 @@ final class InventoryService
             'last_restocked_at' => now(),
         ]);
 
-        InventoryTransaction::create([
+        InventoryTransaction::query()->create([
             'ingredient_id' => $ingredient->id,
             'transaction_type' => 'restock',
             'quantity_change' => $quantity,
@@ -101,7 +101,7 @@ final class InventoryService
 
         $inventory->update(['current_stock' => $newQuantity]);
 
-        InventoryTransaction::create([
+        InventoryTransaction::query()->create([
             'ingredient_id' => $ingredient->id,
             'transaction_type' => 'adjustment',
             'quantity_change' => $quantityChange,
@@ -133,7 +133,7 @@ final class InventoryService
 
         $inventory->update(['current_stock' => $newStock]);
 
-        InventoryTransaction::create([
+        InventoryTransaction::query()->create([
             'ingredient_id' => $ingredient->id,
             'transaction_type' => 'waste',
             'quantity_change' => -$quantity,

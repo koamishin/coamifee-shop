@@ -6,7 +6,7 @@ namespace App\Filament\Widgets;
 
 use App\Models\Order;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 
 final class SalesTrendsWidget extends ChartWidget
 {
@@ -23,9 +23,9 @@ final class SalesTrendsWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $data = Order::selectRaw('DATE(created_at) as date, COUNT(*) as orders, SUM(total) as revenue')
-            ->where('created_at', '>=', Carbon::now()->subDays(6))
-            ->where('created_at', '<=', Carbon::now())
+        $data = Order::query()->selectRaw('DATE(created_at) as date, COUNT(*) as orders, SUM(total) as revenue')
+            ->where('created_at', '>=', Date::now()->subDays(6))
+            ->where('created_at', '<=', Date::now())
             ->groupBy('date')
             ->orderBy('date', 'asc')
             ->get();
@@ -35,8 +35,8 @@ final class SalesTrendsWidget extends ChartWidget
         $revenueData = [];
 
         // Fill in missing days with zeros
-        $startDate = Carbon::now()->subDays(6);
-        $endDate = Carbon::now();
+        $startDate = Date::now()->subDays(6);
+        $endDate = Date::now();
         $currentDate = $startDate->copy();
 
         $dataByDate = $data->keyBy('date');

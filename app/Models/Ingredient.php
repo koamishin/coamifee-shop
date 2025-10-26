@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 final class Ingredient extends Model
 {
@@ -33,7 +34,7 @@ final class Ingredient extends Model
         return $this->hasMany(ProductIngredient::class);
     }
 
-    public function inventory(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function inventory(): HasOne
     {
         return $this->hasOne(IngredientInventory::class);
     }

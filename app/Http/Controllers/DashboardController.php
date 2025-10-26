@@ -19,15 +19,15 @@ final class DashboardController extends Controller
             ->orderBy('name')
             ->get();
 
-        $categories = Category::where('is_active', true)->orderBy('name')->get();
+        $categories = Category::query()->where('is_active', true)->orderBy('name')->get();
 
         $recentOrders = Order::with('items.product')
             ->latest()
             ->take(5)
             ->get();
 
-        $todayOrders = Order::whereDate('created_at', today())->count();
-        $todaySales = Order::whereDate('created_at', today())->sum('total');
+        $todayOrders = Order::query()->whereDate('created_at', today())->count();
+        $todaySales = Order::query()->whereDate('created_at', today())->sum('total');
 
         // POS system variables (initialize empty)
         $cart = [];
@@ -57,38 +57,6 @@ final class DashboardController extends Controller
         $favorites = [];
         $customers = collect();
 
-        return view('dashboard', compact(
-            'products',
-            'categories',
-            'recentOrders',
-            'todayOrders',
-            'todaySales',
-            'cart',
-            'search',
-            'selectedCategory',
-            'customerName',
-            'orderType',
-            'paymentMethod',
-            'tableNumber',
-            'subtotal',
-            'taxRate',
-            'taxAmount',
-            'total',
-            'otherLabel',
-            'otherAmount',
-            'otherNote',
-            'couponCode',
-            'discountApplied',
-            'discountAmount',
-            'customerSearch',
-            'showFavoritesOnly',
-            'showPaymentModal',
-            'showReceiptModal',
-            'showPaymentPanel',
-            'selectedProductId',
-            'selectedProductIds',
-            'favorites',
-            'customers'
-        ));
+        return view('dashboard', ['products' => $products, 'categories' => $categories, 'recentOrders' => $recentOrders, 'todayOrders' => $todayOrders, 'todaySales' => $todaySales, 'cart' => $cart, 'search' => $search, 'selectedCategory' => $selectedCategory, 'customerName' => $customerName, 'orderType' => $orderType, 'paymentMethod' => $paymentMethod, 'tableNumber' => $tableNumber, 'subtotal' => $subtotal, 'taxRate' => $taxRate, 'taxAmount' => $taxAmount, 'total' => $total, 'otherLabel' => $otherLabel, 'otherAmount' => $otherAmount, 'otherNote' => $otherNote, 'couponCode' => $couponCode, 'discountApplied' => $discountApplied, 'discountAmount' => $discountAmount, 'customerSearch' => $customerSearch, 'showFavoritesOnly' => $showFavoritesOnly, 'showPaymentModal' => $showPaymentModal, 'showReceiptModal' => $showReceiptModal, 'showPaymentPanel' => $showPaymentPanel, 'selectedProductId' => $selectedProductId, 'selectedProductIds' => $selectedProductIds, 'favorites' => $favorites, 'customers' => $customers]);
     }
 }

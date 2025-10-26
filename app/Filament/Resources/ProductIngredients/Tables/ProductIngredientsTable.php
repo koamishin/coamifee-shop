@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ProductIngredients\Tables;
 
+use App\Filament\Concerns\CurrencyAware;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
@@ -19,6 +20,8 @@ use Illuminate\Support\HtmlString;
 
 final class ProductIngredientsTable
 {
+    use CurrencyAware;
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -47,7 +50,7 @@ final class ProductIngredientsTable
                     ->sortable()
                     ->alignRight()
                     ->formatStateUsing(
-                        fn ($state, $record) => new HtmlString("
+                        fn ($state, $record): HtmlString => new HtmlString("
                         <div style='display: flex; align-items: center; justify-content: flex-end; gap: 4px;'>
                             <span style='font-weight: 600;'>{$state}</span>
                             <span style='color: #6b7280; font-size: 0.85em;'>{$record->ingredient->unit_type}</span>
@@ -58,11 +61,11 @@ final class ProductIngredientsTable
                 TextColumn::make('cost_per_product')
                     ->label('Cost/Product')
                     ->description('Ingredient cost per product')
-                    ->money('USD')
+                    ->money(self::getMoneyConfig())
                     ->sortable()
                     ->alignRight()
                     ->formatStateUsing(
-                        fn ($record) => $record->quantity_required *
+                        fn ($record): int|float => $record->quantity_required *
                             $record->ingredient->unit_cost,
                     )
                     ->color('success'),
@@ -74,15 +77,15 @@ final class ProductIngredientsTable
                     ->sortable()
                     ->alignRight()
                     ->formatStateUsing(
-                        fn ($record) => self::formatStock($record),
+                        self::formatStock(...),
                     ),
 
                 IconColumn::make('stock_status')
                     ->label('Status')
-                    ->icon(fn ($record) => self::getStockStatusIcon($record))
-                    ->color(fn ($record) => self::getStockStatusColor($record))
+                    ->icon(self::getStockStatusIcon(...))
+                    ->color(self::getStockStatusColor(...))
                     ->tooltip(
-                        fn ($record) => self::getStockStatusTooltip($record),
+                        self::getStockStatusTooltip(...),
                     ),
 
                 TextColumn::make('products_possible')
@@ -93,10 +96,10 @@ final class ProductIngredientsTable
                     ->alignCenter()
                     ->badge()
                     ->color(
-                        fn ($record) => self::getProductsPossibleColor($record),
+                        self::getProductsPossibleColor(...),
                     )
                     ->formatStateUsing(
-                        fn ($record) => self::calculateProductsPossible($record),
+                        self::calculateProductsPossible(...),
                     ),
 
                 TextColumn::make('created_at')
@@ -146,7 +149,7 @@ final class ProductIngredientsTable
                     Action::make('duplicate')
                         ->label('Duplicate')
                         ->icon(Heroicon::DocumentDuplicate)
-                        ->action(function ($record) {
+                        ->action(function ($record): void {
                             $newRecord = $record->replicate();
                             $newRecord->save();
                         })
@@ -161,7 +164,7 @@ final class ProductIngredientsTable
                         ->label('View Ingredient')
                         ->icon('heroicon-o-cube')
                         ->url(
-                            fn ($record) => route(
+                            fn ($record): string => route(
                                 'filament.admin.resources.ingredients.view',
                                 $record->ingredient,
                             ),
@@ -172,13 +175,13 @@ final class ProductIngredientsTable
                         ->label('View Product')
                         ->icon('heroicon-o-shopping-bag')
                         ->url(
-                            fn ($record) => route(
+                            fn ($record): string => route(
                                 'filament.admin.resources.products.edit',
                                 $record->product,
                             ),
                         )
                         ->openUrlInNewTab()
-                        ->hidden(fn ($record) => ! $record->product),
+                        ->hidden(fn ($record): bool => ! $record->product),
 
                     DeleteAction::make()
                         ->label('Remove from Recipe')

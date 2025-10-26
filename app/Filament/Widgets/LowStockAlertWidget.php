@@ -16,7 +16,7 @@ final class LowStockAlertWidget extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected static ?string $maxHeight = '400px';
+    private static ?string $maxHeight = '400px';
 
     public function getHeading(): string
     {
@@ -44,7 +44,7 @@ final class LowStockAlertWidget extends BaseWidget
                     ->description('Available quantity')
                     ->numeric(decimalPlaces: 2)
                     ->alignRight()
-                    ->formatStateUsing(fn ($record) => new HtmlString("
+                    ->formatStateUsing(fn ($record): HtmlString => new HtmlString("
                         <span style='color: #dc2626; font-weight: bold;'>".
                         number_format($record->current_stock, 2).
                         "</span>
@@ -57,7 +57,7 @@ final class LowStockAlertWidget extends BaseWidget
                     ->description('Minimum stock level')
                     ->numeric(decimalPlaces: 2)
                     ->alignRight()
-                    ->formatStateUsing(fn ($record) => new HtmlString("
+                    ->formatStateUsing(fn ($record): HtmlString => new HtmlString("
                         <span style='color: #f59e0b; font-weight: bold;'>".
                         number_format($record->min_stock_level, 2).
                         "</span>
@@ -70,7 +70,7 @@ final class LowStockAlertWidget extends BaseWidget
                     ->description('Amount below minimum')
                     ->numeric(decimalPlaces: 2)
                     ->alignRight()
-                    ->formatStateUsing(fn ($record) => new HtmlString("
+                    ->formatStateUsing(fn ($record): HtmlString => new HtmlString("
                         <span style='color: #dc2626; font-weight: bold;'>".
                         number_format(max(0, $record->min_stock_level - $record->current_stock), 2).
                         "</span>
@@ -82,7 +82,7 @@ final class LowStockAlertWidget extends BaseWidget
                     ->label('Urgency')
                     ->description('Restock urgency level')
                     ->alignCenter()
-                    ->formatStateUsing(fn ($record) => $this->getUrgencyLevel($record)),
+                    ->formatStateUsing($this->getUrgencyLevel(...)),
             ])
             ->emptyStateHeading('No Low Stock Items')
             ->emptyStateDescription('All trackable ingredients are above minimum stock levels')

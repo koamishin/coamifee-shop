@@ -12,7 +12,7 @@ use App\Models\ProductIngredient;
 use Exception;
 use Illuminate\Support\Facades\DB;
 
-final class OrderProcessingService
+final readonly class OrderProcessingService
 {
     public function __construct(
         private InventoryService $inventoryService,
@@ -33,7 +33,7 @@ final class OrderProcessingService
             DB::commit();
 
             return true;
-        } catch (Exception $e) {
+        } catch (Exception) {
             DB::rollBack();
 
             return false;
@@ -79,7 +79,7 @@ final class OrderProcessingService
 
     private function recordIngredientUsage(OrderItem $orderItem, Ingredient $ingredient, float $quantity): void
     {
-        IngredientUsage::create([
+        IngredientUsage::query()->create([
             'order_item_id' => $orderItem->id,
             'ingredient_id' => $ingredient->id,
             'quantity_used' => $quantity,

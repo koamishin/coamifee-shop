@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
@@ -37,4 +36,11 @@ return [
         ],
     ],
 
+    'exchange_rate_api' => [
+        'key' => env('EXCHANGE_RATE_API_KEY'),
+        'url' => env(
+            'EXCHANGE_RATE_API_URL',
+            'https://api.exchangerate-api.com/v4/latest/',
+        ),
+    ],
 ];

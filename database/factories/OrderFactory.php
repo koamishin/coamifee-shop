@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Models\Customer;
+use App\Models\Order;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Order>
+ * @extends Factory<Order>
  */
 final class OrderFactory extends Factory
 {
@@ -20,7 +22,7 @@ final class OrderFactory extends Factory
     {
         return [
             'customer_name' => fake()->name(),
-            'customer_id' => \App\Models\Customer::factory(),
+            'customer_id' => Customer::factory(),
             'order_type' => fake()->randomElement(['dine-in', 'takeout', 'delivery']),
             'payment_method' => fake()->randomElement(['cash', 'card', 'gcash']),
             'total' => fake()->randomFloat(2, 5.00, 150.00),

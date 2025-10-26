@@ -28,6 +28,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Joaopaulolndev\FilamentGeneralSettings\FilamentGeneralSettingsPlugin;
 
 final class AdminPanelProvider extends PanelProvider
 {
@@ -38,6 +39,7 @@ final class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->topbar(false)
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -65,9 +67,7 @@ final class AdminPanelProvider extends PanelProvider
                 AccountWidget::class,
                 FilamentInfoWidget::class,
             ])
-            ->plugins([
-                // ModulesPlugin::make(),
-            ])
+
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -79,7 +79,15 @@ final class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
-            ->plugins([FilamentShieldPlugin::make()])
+            ->plugins([
+                FilamentShieldPlugin::make(),
+                FilamentGeneralSettingsPlugin::make()
+                    ->setSort(3)
+                    ->setIcon('heroicon-o-cog')
+                    ->setNavigationGroup('Settings')
+                    ->setTitle('General Settings')
+                    ->setNavigationLabel('General Settings'),
+            ])
             ->authMiddleware([Authenticate::class]);
     }
 }

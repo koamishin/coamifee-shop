@@ -7,7 +7,7 @@ namespace App\Actions;
 use App\Models\Ingredient;
 use App\Services\InventoryService;
 
-final class AdjustInventoryAction
+final readonly class AdjustInventoryAction
 {
     public function __construct(
         private InventoryService $inventoryService,
@@ -15,7 +15,7 @@ final class AdjustInventoryAction
 
     public function execute(int $ingredientId, float $newQuantity, string $reason): array
     {
-        $ingredient = Ingredient::find($ingredientId);
+        $ingredient = Ingredient::query()->find($ingredientId);
 
         if (! $ingredient) {
             return [
@@ -43,7 +43,7 @@ final class AdjustInventoryAction
 
     public function restock(int $ingredientId, float $quantity, string $reason): array
     {
-        $ingredient = Ingredient::find($ingredientId);
+        $ingredient = Ingredient::query()->find($ingredientId);
 
         if (! $ingredient) {
             return [
@@ -73,7 +73,7 @@ final class AdjustInventoryAction
 
     public function recordWaste(int $ingredientId, float $quantity, string $reason): array
     {
-        $ingredient = Ingredient::find($ingredientId);
+        $ingredient = Ingredient::query()->find($ingredientId);
 
         if (! $ingredient) {
             return [

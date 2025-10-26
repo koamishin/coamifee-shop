@@ -12,8 +12,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('ingredient creation and inventory tracking', function () {
-    $ingredient = Ingredient::create([
+test('ingredient creation and inventory tracking', function (): void {
+    $ingredient = Ingredient::query()->create([
         'name' => 'Test Coffee Beans',
         'unit_type' => 'grams',
         'is_trackable' => true,
@@ -35,16 +35,16 @@ test('ingredient creation and inventory tracking', function () {
     expect($inventory)->toBeInstanceOf(IngredientInventory::class);
 });
 
-test('product recipe ingredients', function () {
+test('product recipe ingredients', function (): void {
     $category = Category::factory()->create(['name' => 'Coffee']);
-    $product = Product::create([
+    $product = Product::query()->create([
         'name' => 'Test Latte',
         'price' => '4.0',
         'category_id' => $category->id,
         'preparation_time' => 5,
     ]);
 
-    $ingredient = Ingredient::create([
+    $ingredient = Ingredient::query()->create([
         'name' => 'Test Milk',
         'unit_type' => 'ml',
         'is_trackable' => true,
@@ -52,7 +52,7 @@ test('product recipe ingredients', function () {
         'unit_cost' => 0.001,
     ]);
 
-    $productIngredient = ProductIngredient::create([
+    $productIngredient = ProductIngredient::query()->create([
         'product_id' => $product->id,
         'ingredient_id' => $ingredient->id,
         'quantity_required' => '200',
@@ -64,8 +64,8 @@ test('product recipe ingredients', function () {
     expect($productIngredient->ingredient_id)->toBe($ingredient->id);
 });
 
-test('inventory service stock decrease', function () {
-    $ingredient = Ingredient::create([
+test('inventory service stock decrease', function (): void {
+    $ingredient = Ingredient::query()->create([
         'name' => 'Test Coffee',
         'unit_type' => 'grams',
         'is_trackable' => true,

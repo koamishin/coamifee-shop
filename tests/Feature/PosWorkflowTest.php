@@ -10,12 +10,13 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductIngredient;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     // Create categories
     $coffeeCategory = Category::factory()->create(['name' => 'Coffee']);
     $pastryCategory = Category::factory()->create(['name' => 'Pastry']);
@@ -90,10 +91,10 @@ beforeEach(function () {
         'quantity_required' => 150,
     ]);
 
-    $this->actingAs(App\Models\User::factory()->create());
+    $this->actingAs(User::factory()->create());
 });
 
-test('complete pos workflow', function () {
+test('complete pos workflow', function (): void {
     // Add products to cart using Livewire test
     $pos = Livewire::test('pos');
 
@@ -104,14 +105,14 @@ test('complete pos workflow', function () {
         ->call('confirmPayment');
 
     // Verify order was created
-    expect(Order::where('customer_name', 'Guest')->first())
+    expect(Order::query()->where('customer_name', 'Guest')->first())
         ->not->toBeNull()
         ->status->toBe('completed');
 });
 
-test('prevents order with insufficient inventory', function () {
+test('prevents order with insufficient inventory', function (): void {
     // Reduce inventory to insufficient levels
-    $inventory = IngredientInventory::where('ingredient_id', 1)->first();
+    $inventory = IngredientInventory::query()->where('ingredient_id', 1)->first();
     $inventory->update(['current_stock' => 10]); // Less than 18g needed for latte
 
     Livewire::test('sidebar')
@@ -134,10 +135,10 @@ test('prevents order with insufficient inventory', function () {
         ->assertDispatched('order-failed');
 
     // Verify no order was created
-    expect(Order::where('customer_name', 'John Doe')->first())->toBeNull();
+    expect(Order::query()->where('customer_name', 'John Doe')->first())->toBeNull();
 });
 
-test('handles customizations and variants', function () {
+test('handles customizations and variants', function (): void {
     Livewire::test('pos')
         ->call('quickAddProduct', $this->latte->id, 'large', 'iced')
         ->assertSet('cart.'.$this->latte->id.'_large_iced.size', 'large')
@@ -168,7 +169,7 @@ test('handles customizations and variants', function () {
         ]);
 });
 
-test('applies discounts correctly', function () {
+test('applies discounts correctly', function (): void {
     Livewire::test('pos')
         ->set('cart', [
             $this->latte->id => [
@@ -185,13 +186,13 @@ test('applies discounts correctly', function () {
         ->assertSet('total', 8.1);
 });
 
-test('rejects invalid discount code', function () {
+test('rejects invalid discount code', function (): void {
     Livewire::test('pos')
         ->call('applyCustomerDiscount', 'INVALID')
         ->assertDispatched('discount-invalid');
 });
 
-test('can duplicate previous order', function () {
+test('can duplicate previous order', function (): void {
     // Create a previous order
     $previousOrder = Order::factory()->create([
         'customer_name' => 'Jane Smith',
@@ -247,15 +248,13 @@ test('can duplicate previous order', function () {
     expect($pos->get('total'))->not->toBeNull();
 });
 
-test('filters products by category', function () {
+test('filters products by category', function (): void {
     Livewire::test('sidebar')
         ->set('selectedCategory', 1) // Assuming category 1 is Coffee
-        ->assertViewHas('products', function ($products) {
-            return $products->every('category.name', 'Coffee');
-        });
+        ->assertViewHas('products', fn ($products) => $products->every('category.name', 'Coffee'));
 });
 
-test('generates receipt with all details', function () {
+test('generates receipt with all details', function (): void {
     Livewire::test('pos')
         ->set('cart', [
             $this->latte->id => [
@@ -275,15 +274,13 @@ test('generates receipt with all details', function () {
         ->assertDispatched('receipt-generated');
 });
 
-test('searches products correctly', function () {
+test('searches products correctly', function (): void {
     Livewire::test('pos')
         ->set('search', 'Latte')
-        ->assertViewHas('products', function ($products) {
-            return $products->contains('name', 'Latte');
-        });
+        ->assertViewHas('products', fn ($products) => $products->contains('name', 'Latte'));
 });
 
-test('loads recent orders', function () {
+test('loads recent orders', function (): void {
     // Create some recent orders
     Order::factory()
         ->count(5)
@@ -291,12 +288,10 @@ test('loads recent orders', function () {
 
     Livewire::test('pos')
         ->assertViewHas('recentOrders')
-        ->assertSet('recentOrders', function ($orders) {
-            return $orders->count() <= 5;
-        });
+        ->assertSet('recentOrders', fn ($orders): bool => $orders->count() <= 5);
 });
 
-test('displays today statistics', function () {
+test('displays today statistics', function (): void {
     // Create some orders for today
     Order::factory()->create(['total' => 15.0, 'created_at' => now()]);
     Order::factory()->create(['total' => 25.0, 'created_at' => now()]);
@@ -310,14 +305,12 @@ test('displays today statistics', function () {
         ->assertSet('todaySales', 40.0); // 15.00 + 25.00
 });
 
-test('handles multiple customers', function () {
+test('handles multiple customers', function (): void {
     // Create multiple customers
     Customer::factory()->create(['name' => 'John Doe']);
     Customer::factory()->create(['name' => 'Jane Smith']);
 
     Livewire::test('pos')
         ->set('customerSearch', 'John')
-        ->assertViewHas('customers', function ($customers) {
-            return $customers->contains('name', 'John Doe');
-        });
+        ->assertViewHas('customers', fn ($customers) => $customers->contains('name', 'John Doe'));
 });

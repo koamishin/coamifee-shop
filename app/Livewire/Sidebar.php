@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Services\InventoryService;
 use App\Services\ReportingService;
+use Illuminate\View\View;
 use Livewire\Component;
 
 final class Sidebar extends Component
@@ -45,25 +46,23 @@ final class Sidebar extends Component
     public function mount(): void
     {
         // Load all products initially
-        $products = Product::where('is_active', true)->get();
+        $products = Product::query()->where('is_active', true)->get();
         $this->updateProductAvailability($products);
     }
 
-    public function render(): \Illuminate\View\View
+    public function render(): View
     {
         // Load categories for sidebar navigation
-        $categories = Category::where('is_active', true)->orderBy('name')->get();
+        $categories = Category::query()->where('is_active', true)->orderBy('name')->get();
 
         // Load best sellers based on actual metrics data
         $bestSellers = $this->reportingService->getTopProducts(5, 'daily', 7)
-            ->map(function ($metric) {
-                return $metric->product;
-            });
+            ->map(fn ($metric) => $metric->product);
 
         // Load products for selected category and search
         $products = Product::with(['category', 'ingredients.ingredient'])
             ->where('is_active', true)
-            ->when($this->selectedCategory > 0, function ($query) {
+            ->when($this->selectedCategory > 0, function ($query): void {
                 $query->where('category_id', $this->selectedCategory);
             })
             ->when($this->search, function ($query) {
@@ -81,19 +80,14 @@ final class Sidebar extends Component
         // Update availability for all products
         $this->updateProductAvailability($products);
 
-        return view('livewire.pos-sidebar', compact('categories', 'bestSellers', 'products'));
-    }
-
-    private function canAddToCart(int $productId): bool
-    {
-        return $this->inventoryService->canProduceProduct($productId, 1);
+        return view('livewire.pos-sidebar', ['categories' => $categories, 'bestSellers' => $bestSellers, 'products' => $products]);
     }
 
     public function updateProductAvailability($products = null): void
     {
         // If this is called from an event, we need to refresh all products
         if ($products === null) {
-            $products = Product::where('is_active', true)->get();
+            $products = Product::query()->where('is_active', true)->get();
             $this->productAvailability = [];
         }
 
@@ -106,9 +100,14 @@ final class Sidebar extends Component
         }
     }
 
+    private function canAddToCart(int $productId): bool
+    {
+        return $this->inventoryService->canProduceProduct($productId, 1);
+    }
+
     private function getMaxProducibleQuantity(int $productId): int
     {
-        $product = Product::find($productId);
+        $product = Product::query()->find($productId);
         if (! $product) {
             return 0;
         }
@@ -128,7 +127,7 @@ final class Sidebar extends Component
             }
         }
 
-        return empty($maxQuantities) ? 999 : min($maxQuantities);
+        return $maxQuantities === [] ? 999 : min($maxQuantities);
     }
 
     private function getStockStatus(int $productId): string

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Orders\Schemas;
 
+use App\Filament\Concerns\CurrencyAware;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -14,6 +15,8 @@ use Filament\Schemas\Schema;
 
 final class OrderForm
 {
+    use CurrencyAware;
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -110,7 +113,8 @@ final class OrderForm
                                 ->label('Total Amount')
                                 ->required()
                                 ->numeric()
-                                ->prefix('$')
+                                ->prefix(self::getCurrencyPrefix())
+                                ->suffix(self::getCurrencySuffix())
                                 ->step(0.01)
                                 ->placeholder('0.00')
                                 ->helperText('Total amount for this order')
@@ -141,7 +145,7 @@ final class OrderForm
                         Grid::make(4)->schema([
                             Placeholder::make('order_summary')
                                 ->label('Order Summary')
-                                ->content(function ($record) {
+                                ->content(function ($record): string {
                                     if (! $record) {
                                         return 'New Order';
                                     }
@@ -167,7 +171,7 @@ final class OrderForm
 
                             Placeholder::make('order_type_display')
                                 ->label('Order Type')
-                                ->content(function ($record) {
+                                ->content(function ($record): string {
                                     if (! $record) {
                                         return 'Not Set';
                                     }
@@ -185,7 +189,7 @@ final class OrderForm
 
                             Placeholder::make('payment_display')
                                 ->label('Payment')
-                                ->content(function ($record) {
+                                ->content(function ($record): string {
                                     if (! $record) {
                                         return 'Not Set';
                                     }
@@ -204,18 +208,19 @@ final class OrderForm
 
                             Placeholder::make('total_formatted')
                                 ->label('Total')
-                                ->content(function ($record) {
+                                ->content(function ($record): string {
                                     if (! $record) {
-                                        return '$0.00';
+                                        return self::formatCurrency(0);
                                     }
 
-                                    return '$'.
-                                        number_format($record->total, 2);
+                                    return self::formatCurrency(
+                                        $record->total,
+                                    );
                                 })
                                 ->columnSpan(1),
                         ]),
                     ])
-                    ->visible(fn ($record) => $record !== null),
+                    ->visible(fn ($record): bool => $record !== null),
             ])
             ->columns(1);
     }

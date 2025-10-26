@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Filament\Concerns\CurrencyAware;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -18,6 +20,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class ProductsTable
 {
+    use CurrencyAware;
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -32,7 +36,7 @@ final class ProductsTable
 
                 TextColumn::make('price')
                     ->label('Price')
-                    ->money('USD')
+                    ->money(self::getMoneyConfig())
                     ->sortable()
                     ->alignCenter()
                     ->description('Current selling price')
@@ -54,14 +58,14 @@ final class ProductsTable
                     ->alignCenter()
                     ->badge()
                     ->color(
-                        fn ($record) => $record->stock_quantity > 10
+                        fn ($record): string => $record->stock_quantity > 10
                             ? 'success'
                             : ($record->stock_quantity > 5
                                 ? 'warning'
                                 : 'danger'),
                     )
                     ->description('Available stock quantity')
-                    ->formatStateUsing(fn ($state) => $state.' units'),
+                    ->formatStateUsing(fn ($state): string => $state.' units'),
 
                 ImageColumn::make('image_url')
                     ->label('Image')
@@ -173,7 +177,7 @@ final class ProductsTable
             ->emptyStateHeading('No products found')
             ->emptyStateDescription('Create your first product to get started.')
             ->emptyStateActions([
-                \Filament\Actions\CreateAction::make()
+                CreateAction::make()
                     ->label('Create Product')
                     ->icon('heroicon-o-plus')
                     ->url(route('filament.admin.resources.products.create')),

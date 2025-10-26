@@ -28,7 +28,7 @@ final class CategoriesTable
                     ->sortable()
                     ->badge()
                     ->color(
-                        fn ($record) => $record->products_count > 0
+                        fn ($record): string => $record->products_count > 0
                             ? 'success'
                             : 'gray',
                     ),

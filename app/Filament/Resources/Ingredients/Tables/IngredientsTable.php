@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Ingredients\Tables;
 
+use App\Filament\Concerns\CurrencyAware;
 use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -15,6 +17,8 @@ use Filament\Tables\Table;
 
 final class IngredientsTable
 {
+    use CurrencyAware;
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -29,14 +33,16 @@ final class IngredientsTable
                     ->label('Unit')
                     ->description('Measurement unit')
                     ->badge()
-                    ->color(fn ($state) => match ($state) {
-                        'grams' => 'warning',
-                        'ml' => 'info',
-                        'pieces' => 'success',
-                        'liters' => 'primary',
-                        'kilograms' => 'danger',
-                        default => 'gray',
-                    })
+                    ->color(
+                        fn ($state): string => match ($state) {
+                            'grams' => 'warning',
+                            'ml' => 'info',
+                            'pieces' => 'success',
+                            'liters' => 'primary',
+                            'kilograms' => 'danger',
+                            default => 'gray',
+                        },
+                    )
                     ->searchable()
                     ->sortable(),
                 IconColumn::make('is_trackable')
@@ -53,11 +59,11 @@ final class IngredientsTable
                     ->sortable()
                     ->alignRight()
                     ->weight('medium')
-                    ->color(fn ($record) => self::getStockColor($record)),
+                    ->color(self::getStockColor(...)),
                 TextColumn::make('unit_cost')
                     ->label('Unit Cost')
                     ->description('Cost per unit')
-                    ->money('USD')
+                    ->money(self::getMoneyConfig())
                     ->sortable()
                     ->alignRight(),
                 TextColumn::make('supplier')
@@ -96,17 +102,28 @@ final class IngredientsTable
                 Action::make('View Inventory')
                     ->label('Inventory')
                     ->icon('heroicon-o-cube')
-                    ->url(fn ($record) => $record->is_trackable && $record->inventory ? route('filament.admin.resources.ingredient-inventories.index', ['ingredientId' => $record->id]) : null)
-                    ->hidden(fn ($record) => ! $record->is_trackable || ! $record->inventory)
+                    ->url(
+                        fn ($record): ?string => $record->is_trackable &&
+                        $record->inventory
+                            ? route(
+                                'filament.admin.resources.ingredient-inventories.index',
+                                ['ingredientId' => $record->id],
+                            )
+                            : null,
+                    )
+                    ->hidden(
+                        fn ($record): bool => ! $record->is_trackable ||
+                            ! $record->inventory,
+                    )
                     ->openUrlInNewTab(),
             ])
-            ->bulkActions([
-                DeleteBulkAction::make(),
-            ])
+            ->bulkActions([DeleteBulkAction::make()])
             ->emptyStateHeading('No ingredients found')
-            ->emptyStateDescription('Create your first ingredient to get started with inventory management')
+            ->emptyStateDescription(
+                'Create your first ingredient to get started with inventory management',
+            )
             ->emptyStateActions([
-                \Filament\Actions\CreateAction::make()
+                CreateAction::make()
                     ->label('Create Ingredient')
                     ->url(route('filament.admin.resources.ingredients.create')),
             ])
@@ -128,7 +145,10 @@ final class IngredientsTable
             return 'danger';
         }
 
-        if ($inventory->current_stock >= ($inventory->max_stock_level ?? PHP_FLOAT_MAX)) {
+        if (
+            $inventory->current_stock >=
+            ($inventory->max_stock_level ?? PHP_FLOAT_MAX)
+        ) {
             return 'warning';
         }
 

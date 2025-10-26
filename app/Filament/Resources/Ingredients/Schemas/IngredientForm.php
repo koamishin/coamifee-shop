@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Ingredients\Schemas;
 
+use App\Filament\Concerns\CurrencyAware;
+use App\Models\Ingredient;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -14,6 +16,8 @@ use Filament\Schemas\Schema;
 
 final class IngredientForm
 {
+    use CurrencyAware;
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -71,13 +75,7 @@ final class IngredientForm
                                 ->default(true)
                                 ->reactive()
                                 ->afterStateUpdated(
-                                    fn (
-                                        $state,
-                                        callable $set,
-                                    ) => self::updateStockFieldsVisibility(
-                                        $state,
-                                        $set,
-                                    ),
+                                    self::updateStockFieldsVisibility(...),
                                 )
                                 ->columnSpan(1),
                             TextInput::make('current_stock')
@@ -91,7 +89,8 @@ final class IngredientForm
                         Grid::make(2)->schema([
                             TextInput::make('unit_cost')
                                 ->label('Cost Per Unit')
-                                ->prefix('$')
+                                ->prefix(self::getCurrencyPrefix())
+                                ->suffix(self::getCurrencySuffix())
                                 ->numeric()
                                 ->step(0.001)
                                 ->placeholder('e.g., 0.020')
@@ -100,9 +99,7 @@ final class IngredientForm
                             Placeholder::make('stock_status')
                                 ->label('Stock Status')
                                 ->content(
-                                    fn ($record) => self::getStockStatus(
-                                        $record,
-                                    ),
+                                    self::getStockStatus(...),
                                 )
                                 ->columnSpan(1),
                         ]),

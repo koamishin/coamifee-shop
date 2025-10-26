@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Models\Product;
+use App\Models\ProductMetric;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ProductMetric>
+ * @extends Factory<ProductMetric>
  */
 final class ProductMetricFactory extends Factory
 {
@@ -19,7 +21,7 @@ final class ProductMetricFactory extends Factory
     public function definition(): array
     {
         return [
-            'product_id' => \App\Models\Product::factory(),
+            'product_id' => Product::factory(),
             'metric_date' => fake()->date(),
             'orders_count' => fake()->numberBetween(0, 100),
             'total_revenue' => fake()->randomFloat(2, 0, 1000),

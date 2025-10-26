@@ -13,7 +13,7 @@ uses(RefreshDatabase::class);
 
 it(
     'can access current_stock from ingredient and its inventory relationship',
-    function () {
+    function (): void {
         // Create an ingredient
         $ingredient = Ingredient::factory()->create([
             'current_stock' => 100.5,
@@ -38,7 +38,7 @@ it(
 
 test(
     'product ingredients table can access current_stock without errors',
-    function () {
+    function (): void {
         // Create related models
         $product = Product::factory()->create();
         $ingredient = Ingredient::factory()->create([
@@ -74,7 +74,7 @@ test(
 
 test(
     'product ingredient create form is accessible without TypeError',
-    function () {
+    function (): void {
         // Create necessary data for the form
         $product = Product::factory()->create();
         $ingredient = Ingredient::factory()->create();
@@ -97,7 +97,7 @@ test(
 
 test(
     'ingredient inventory create form is accessible without TypeError',
-    function () {
+    function (): void {
         // Create necessary data for the form
         $ingredient = Ingredient::factory()->create();
 

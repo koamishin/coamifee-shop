@@ -7,7 +7,7 @@ namespace App\Filament\Widgets;
 use App\Models\Order;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 
 final class FinancialSummaryWidget extends BaseWidget
 {
@@ -17,27 +17,27 @@ final class FinancialSummaryWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        $today = Carbon::today();
-        $thisWeek = Carbon::now()->startOfWeek();
-        $thisMonth = Carbon::now()->startOfMonth();
-        $lastMonth = Carbon::now()->subMonth()->startOfMonth();
+        Date::today();
+        Date::now()->startOfWeek();
+        $thisMonth = Date::now()->startOfMonth();
+        $lastMonth = Date::now()->subMonth()->startOfMonth();
 
         return [
             Stat::make('This Month Revenue',
-                Order::whereDate('created_at', '>=', $thisMonth)->sum('total'))
+                Order::query()->whereDate('created_at', '>=', $thisMonth)->sum('total'))
                 ->description('$'.number_format(
-                    Order::whereDate('created_at', '>=', $thisMonth)->sum('total'), 2))
+                    Order::query()->whereDate('created_at', '>=', $thisMonth)->sum('total'), 2))
                 ->description('Revenue from '.$thisMonth->format('F j'))
                 ->descriptionIcon('heroicon-m-arrow-trending-up')
                 ->color('success')
                 ->chart($this->getMonthlyChart()),
 
             Stat::make('Last Month Revenue',
-                Order::whereDate('created_at', '>=', $lastMonth)
+                Order::query()->whereDate('created_at', '>=', $lastMonth)
                     ->whereDate('created_at', '<', $thisMonth)
                     ->sum('total'))
                 ->description('$'.number_format(
-                    Order::whereDate('created_at', '>=', $lastMonth)
+                    Order::query()->whereDate('created_at', '>=', $lastMonth)
                         ->whereDate('created_at', '<', $thisMonth)
                         ->sum('total'), 2))
                 ->description($lastMonth->format('F'))
@@ -50,7 +50,7 @@ final class FinancialSummaryWidget extends BaseWidget
                 ->descriptionIcon('heroicon-m-calculator')
                 ->color('primary'),
 
-            Stat::make('Total Orders (Month)', Order::whereDate('created_at', '>=', $thisMonth)->count())
+            Stat::make('Total Orders (Month)', Order::query()->whereDate('created_at', '>=', $thisMonth)->count())
                 ->description('Orders this month')
                 ->descriptionIcon('heroicon-m-shopping-cart')
                 ->color('warning')
@@ -60,8 +60,8 @@ final class FinancialSummaryWidget extends BaseWidget
 
     private function getAverageOrderValue(): float
     {
-        $thisMonth = Carbon::now()->startOfMonth();
-        $orders = Order::whereDate('created_at', '>=', $thisMonth)
+        $thisMonth = Date::now()->startOfMonth();
+        $orders = Order::query()->whereDate('created_at', '>=', $thisMonth)
             ->where('total', '>', 0)
             ->get();
 
@@ -75,7 +75,7 @@ final class FinancialSummaryWidget extends BaseWidget
     private function getMonthlyChart(): array
     {
         // Get last 30 days of revenue
-        $data = Order::selectRaw('DATE(created_at) as date, SUM(total) as revenue')
+        $data = Order::query()->selectRaw('DATE(created_at) as date, SUM(total) as revenue')
             ->where('created_at', '>=', now()->subDays(29))
             ->groupBy('date')
             ->orderBy('date', 'asc')
@@ -94,7 +94,7 @@ final class FinancialSummaryWidget extends BaseWidget
     private function getOrdersChart(): array
     {
         // Get last 30 days of orders
-        $data = Order::selectRaw('DATE(created_at) as date, COUNT(*) as orders')
+        $data = Order::query()->selectRaw('DATE(created_at) as date, COUNT(*) as orders')
             ->where('created_at', '>=', now()->subDays(29))
             ->groupBy('date')
             ->orderBy('date', 'asc')
