@@ -15,12 +15,23 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 final class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static BackedEnum|string|null $navigationIcon = Heroicon::OutlinedShoppingBag;
+
+    protected static ?string $navigationLabel = 'Products';
+
+    protected static ?string $modelLabel = 'Product';
+
+    protected static ?string $pluralModelLabel = 'Products';
+
+    protected static UnitEnum|string|null $navigationGroup = 'Shop Management';
+
+    protected static ?int $navigationSort = 2;
 
     public static function form(Schema $schema): Schema
     {
@@ -44,7 +55,18 @@ final class ProductResource extends Resource
         return [
             'index' => ListProducts::route('/'),
             'create' => CreateProduct::route('/create'),
+            // "view" => ViewProduct::route("/{record}"),
             'edit' => EditProduct::route('/{record}/edit'),
         ];
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) self::getModel()::count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'primary';
     }
 }

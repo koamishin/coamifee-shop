@@ -17,12 +17,23 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 final class IngredientUsageResource extends Resource
 {
     protected static ?string $model = IngredientUsage::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static UnitEnum|string|null $navigationGroup = 'Inventory Management';
+
+    protected static ?string $navigationLabel = 'Ingredient Usages';
+
+    protected static ?string $modelLabel = 'Ingredient Usage';
+
+    protected static ?string $pluralModelLabel = 'Ingredient Usages';
+
+    protected static ?int $navigationSort = 3;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
     public static function form(Schema $schema): Schema
     {

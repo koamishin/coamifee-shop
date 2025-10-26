@@ -17,12 +17,23 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 final class InventoryTransactionResource extends Resource
 {
     protected static ?string $model = InventoryTransaction::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static UnitEnum|string|null $navigationGroup = 'Inventory Management';
+
+    protected static ?string $navigationLabel = 'Inventory Transactions';
+
+    protected static ?string $modelLabel = 'Inventory Transaction';
+
+    protected static ?string $pluralModelLabel = 'Inventory Transactions';
+
+    protected static ?int $navigationSort = 4;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowPath;
 
     public static function form(Schema $schema): Schema
     {

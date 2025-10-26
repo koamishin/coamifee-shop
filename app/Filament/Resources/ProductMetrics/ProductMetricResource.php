@@ -17,12 +17,23 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 final class ProductMetricResource extends Resource
 {
     protected static ?string $model = ProductMetric::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static UnitEnum|string|null $navigationGroup = 'Product Management';
+
+    protected static ?string $navigationLabel = 'Product Metrics';
+
+    protected static ?string $modelLabel = 'Product Metric';
+
+    protected static ?string $pluralModelLabel = 'Product Metrics';
+
+    protected static ?int $navigationSort = 3;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
     public static function form(Schema $schema): Schema
     {

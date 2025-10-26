@@ -19,12 +19,23 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use UnitEnum;
 
 final class IngredientResource extends Resource
 {
     protected static ?string $model = Ingredient::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static UnitEnum|string|null $navigationGroup = 'Inventory Management';
+
+    protected static ?string $navigationLabel = 'Ingredients';
+
+    protected static ?string $modelLabel = 'Ingredient';
+
+    protected static ?string $pluralModelLabel = 'Ingredients';
+
+    protected static ?int $navigationSort = 1;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
 
     public static function form(Schema $schema): Schema
     {
@@ -60,9 +71,8 @@ final class IngredientResource extends Resource
 
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
-        return parent::getRecordRouteBindingEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
+        return parent::getRecordRouteBindingEloquentQuery()->withoutGlobalScopes(
+            [SoftDeletingScope::class],
+        );
     }
 }
