@@ -102,13 +102,13 @@
                                 @if($product->image_url)
                                 <div class="relative mb-3">
                                 <img
-                                    src="{{ $product->image_url }}"
-                                    alt="{{ $product->name }}"
+                                src="{{ \Illuminate\Support\Facades\Storage::url($product->image_url) }}"
+                                alt="{{ $product->name }}"
                                 class="w-full h-28 object-cover rounded-xl shadow-sm
-                                            transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg
-                                                group-hover:shadow-[#c17a4a]/20">
-                                        <div class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                    </div>
+                                transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg
+                                group-hover:shadow-[#c17a4a]/20">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                </div>
                                 @else
                                     <div class="w-full h-28 bg-gradient-to-br from-[#e8dcc8] to-[#d4c4b0] dark:from-[#4d4540] dark:to-[#3d3530]
                                         rounded-xl mb-3 flex items-center justify-center shadow-sm">
@@ -293,7 +293,7 @@
                             <div class="flex items-center gap-3 p-3 bg-gradient-to-r from-[#f0e6d2] to-[#ede3d0]
                             dark:from-[#3d3530] dark:to-[#454035] rounded-xl border border-[#e8dcc8] dark:border-[#4d4540]
                                                 hover:shadow-md transition-all duration-300 hover:scale-[1.01]">
-                                        <img src="{{ $item['image'] ?? '/placeholder.png' }}" 
+                                        <img src="{{ $item['image'] ? \Illuminate\Support\Facades\Storage::url($item['image']) : '/placeholder.png' }}"
                                             class="w-10 h-10 rounded-lg object-cover flex-shrink-0">
                                         
                                         <div class="flex-1 min-w-0">
@@ -545,16 +545,16 @@
                 </aside>    
 
                 <!-- PAYMENT SLIDE PANEL -->
-                <div 
-                    x-data="{ open: @entangle('showPaymentPanel') }"
-                    x-show="open"
+                @if($showPaymentPanel)
+                <div
+                    x-show="true"
                     x-transition:enter="transition ease-out duration-500"
                     x-transition:enter-start="translate-x-full opacity-0"
                     x-transition:enter-end="translate-x-0 opacity-100"
                     x-transition:leave="transition ease-in duration-500"
                     x-transition:leave-start="translate-x-0 opacity-100"
                     x-transition:leave-end="translate-x-full opacity-0"
-                    class="fixed top-0 right-0 w-full sm:w-[450px] h-screen bg-white dark:bg-[#1a1815] 
+                    class="fixed top-0 right-0 w-full sm:w-[450px] h-screen bg-white dark:bg-[#1a1815]
                         shadow-2xl border-l border-[#e8dcc8] dark:border-[#3d3530] z-50 flex flex-col">
 
                 <!-- Header -->
@@ -562,7 +562,7 @@
                         <h2 class="text-lg font-bold font-serif text-[#2c2416] dark:text-[#f5f1e8]">
                             Select Payment Method
                         </h2>
-                        <button @click="open = false" class="text-[#8b7355] hover:text-[#c17a4a] transition">
+                        <button wire:click="$set('showPaymentPanel', false)" class="text-[#8b7355] hover:text-[#c17a4a] transition">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" 
                                 stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -605,15 +605,94 @@
                     <!-- Footer -->
                     <div class="p-4 border-t border-[#e8dcc8] dark:border-[#3d3530]">
                         <button wire:click="confirmPayment"
-                                class="w-full py-3 bg-[#c17a4a] hover:bg-[#a86a3a] 
+                                class="w-full py-3 bg-[#c17a4a] hover:bg-[#a86a3a]
                                     text-white rounded-lg font-semibold transition">
-                            Confirm Payment
+                        Confirm Payment
                         </button>
-                    </div>
-                </div>              
+                        </div>
+                        </div>
+                            @endif
             </div>
         </main>
     </div>
+
+    <!-- Payment Confirmation Modal -->
+    @if($showPaymentConfirmationModal)
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#2a2520] rounded-2xl shadow-2xl max-w-md w-full p-8 border border-[#e8dcc8] dark:border-[#3d3530] relative">
+            <!-- Success Icon -->
+            <div class="flex justify-center mb-4">
+                <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                    <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Header -->
+            <h2 class="text-2xl font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8] mb-2 text-center">Payment Confirmed!</h2>
+            <p class="text-sm text-[#8b7355] dark:text-[#b8a892] text-center mb-6">Your order has been successfully processed.</p>
+
+            <!-- Order Details -->
+            <div class="space-y-3 mb-6">
+                <div class="flex justify-between items-center py-2 border-b border-[#e8dcc8] dark:border-[#3d3530]">
+                    <span class="text-sm text-[#8b7355] dark:text-[#b8a892]">Order Number:</span>
+                    <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">{{ $paymentConfirmationData['order_number'] ?? 'N/A' }}</span>
+                </div>
+
+                <div class="flex justify-between items-center py-2 border-b border-[#e8dcc8] dark:border-[#3d3530]">
+                    <span class="text-sm text-[#8b7355] dark:text-[#b8a892]">Total Amount:</span>
+                    <span class="font-semibold text-[#c17a4a]">${{ number_format($paymentConfirmationData['total'] ?? 0, 2) }}</span>
+                </div>
+
+                <div class="flex justify-between items-center py-2 border-b border-[#e8dcc8] dark:border-[#3d3530]">
+                    <span class="text-sm text-[#8b7355] dark:text-[#b8a892]">Payment Method:</span>
+                    <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8] capitalize">{{ $paymentConfirmationData['payment_method'] ?? 'N/A' }}</span>
+                </div>
+
+                <div class="flex justify-between items-center py-2 border-b border-[#e8dcc8] dark:border-[#3d3530]">
+                    <span class="text-sm text-[#8b7355] dark:text-[#b8a892]">Customer:</span>
+                    <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">{{ $paymentConfirmationData['customer_name'] ?? 'Guest' }}</span>
+                </div>
+
+                @if($paymentConfirmationData['order_type'] ?? null)
+                <div class="flex justify-between items-center py-2 border-b border-[#e8dcc8] dark:border-[#3d3530]">
+                    <span class="text-sm text-[#8b7355] dark:text-[#b8a892]">Order Type:</span>
+                    <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8] capitalize">{{ $paymentConfirmationData['order_type'] }}</span>
+                </div>
+                @endif
+
+                @if($paymentConfirmationData['table_number'] ?? null)
+                <div class="flex justify-between items-center py-2 border-b border-[#e8dcc8] dark:border-[#3d3530]">
+                    <span class="text-sm text-[#8b7355] dark:text-[#b8a892]">Table:</span>
+                    <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">{{ $paymentConfirmationData['table_number'] }}</span>
+                </div>
+                @endif
+
+                <div class="flex justify-between items-center py-2">
+                    <span class="text-sm text-[#8b7355] dark:text-[#b8a892]">Items Ordered:</span>
+                    <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">{{ $paymentConfirmationData['items_count'] ?? 0 }}</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3">
+                <button
+                    wire:click="closePaymentConfirmationModal"
+                    class="flex-1 px-4 py-3 bg-[#e8dcc8] dark:bg-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8] rounded-lg font-semibold hover:bg-[#d4c4b0] dark:hover:bg-[#4d4540] transition"
+                >
+                    Continue Shopping
+                </button>
+                <button
+                    wire:click="$set('showReceiptModal', true); closePaymentConfirmationModal()"
+                    class="flex-1 px-4 py-3 bg-[#c17a4a] text-white rounded-lg font-semibold hover:bg-[#a86a3a] transition"
+                >
+                    View Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
 
     <!-- Payment Methods Modal -->
     @if($showPaymentModal)
@@ -664,45 +743,108 @@
             <h2 class="text-2xl font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8] mb-6 text-center">Order Receipt</h2>
             
             <div class="space-y-4 mb-6 pb-6 border-b border-[#e8dcc8] dark:border-[#3d3530]">
-                <div class="text-center">
-                    <p class="text-sm text-[#8b7355] dark:text-[#b8a892]">{{ now()->format('M j, Y • g:i A') }}</p>
-                    <p class="text-sm font-semibold text-[#2c2416] dark:text-[#f5f1e8]">{{ $tableNumber ?? 'Takeout' }}</p>
-                </div>
+            <div class="text-center mb-4">
+            <p class="text-sm text-[#8b7355] dark:text-[#b8a892]">{{ now()->format('M j, Y • g:i A') }}</p>
+            <p class="text-sm font-semibold text-[#2c2416] dark:text-[#f5f1e8]">{{ $receiptData['table_number'] ?? $receiptData['order_type'] ?? 'Takeout' }}</p>
+            @if($receiptData['customer_name'] ?? null)
+            <p class="text-xs text-[#8b7355] dark:text-[#b8a892]">Customer: {{ $receiptData['customer_name'] }}</p>
+            @endif
+            <p class="text-xs text-[#8b7355] dark:text-[#b8a892]">Order #{{ $receiptData['order_number'] }}</p>
+            </div>
 
-                <div class="space-y-2">
-                @foreach($cart as $item)
-                <div class="flex justify-between text-sm">
-                <span class="text-[#2c2416] dark:text-[#f5f1e8]">{{ $item['name'] }} x{{ $item['quantity'] }}</span>
-                <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">${{ number_format($item['price'] * $item['quantity'], 2) }}</span>
-                </div>
-                @endforeach
+            <div class="space-y-2">
+            @foreach($receiptData['cart_items'] ?? [] as $item)
+            <div class="flex items-center gap-3 text-sm mb-2">
+            @if($item['image'])
+            <img src="{{ \Illuminate\Support\Facades\Storage::url($item['image']) }}"
+            class="w-8 h-8 rounded object-cover flex-shrink-0">
+            @endif
+            <div class="flex-1">
+            <span class="text-[#2c2416] dark:text-[#f5f1e8]">{{ $item['name'] }} x{{ $item['quantity'] }}</span>
+            </div>
+            <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">${{ number_format($item['price'] * $item['quantity'], 2) }}</span>
+            </div>
+            @endforeach
 
-                    @foreach($addOns as $addOn)
-                        @if(!empty($addOn['label']) && $addOn['amount'] > 0)
-                            <div class="flex justify-between text-sm">
-                                <span class="text-[#2c2416] dark:text-[#f5f1e8]">{{ $addOn['label'] }}</span>
-                                <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">${{ number_format($addOn['amount'], 2) }}</span>
-                            </div>
-                        @endif
-                    @endforeach
-                </div>
+            @foreach($receiptData['add_ons'] ?? [] as $addOn)
+            @if(!empty($addOn['label']) && ($addOn['amount'] ?? 0) > 0)
+            <div class="flex justify-between text-sm">
+            <span class="text-[#2c2416] dark:text-[#f5f1e8]">{{ $addOn['label'] }}</span>
+            <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">${{ number_format($addOn['amount'], 2) }}</span>
+            </div>
+            @endif
+            @endforeach
+            </div>
+
+            @if(!empty(array_filter($receiptData['add_ons'] ?? [], fn($addOn) => !empty($addOn['label']) && ($addOn['amount'] ?? 0) > 0)))
+            <div class="mt-3 p-3 bg-[#f0e6d2] dark:bg-[#3d3530] rounded-lg border border-[#e8dcc8] dark:border-[#4d4540]">
+            <h4 class="text-sm font-semibold text-[#2c2416] dark:text-[#f5f1e8] mb-2">Add-on Details:</h4>
+            <div class="space-y-1">
+            @foreach($receiptData['add_ons'] ?? [] as $addOn)
+            @if(!empty($addOn['label']) && ($addOn['amount'] ?? 0) > 0)
+            <div class="flex justify-between text-sm">
+            <span class="text-[#8b7355] dark:text-[#b8a892]">{{ $addOn['label'] }}:</span>
+            <span class="text-[#2c2416] dark:text-[#f5f1e8]">${{ number_format($addOn['amount'], 2) }}</span>
+            </div>
+            @endif
+            @endforeach
+            </div>
+            </div>
+            @endif
+
+            @if($receiptData['instructions'] ?? null)
+            <div class="mt-3 p-3 bg-[#f8f5f0] dark:bg-[#2a2520] rounded-lg border border-[#e8dcc8] dark:border-[#3d3530]">
+            <h4 class="text-sm font-semibold text-[#2c2416] dark:text-[#f5f1e8] mb-2">Special Instructions:</h4>
+            <p class="text-sm text-[#8b7355] dark:text-[#b8a892]">{{ $receiptData['instructions'] }}</p>
+            </div>
+            @endif
             </div>
 
             <div class="space-y-2 mb-6">
-                <div class="flex justify-between text-sm">
-                    <span class="text-[#8b7355] dark:text-[#b8a892]">Subtotal:</span>
-                    <span class="text-[#2c2416] dark:text-[#f5f1e8]">${{ number_format($subtotal, 2) }}</span>
-                </div>
-                @if($discountAmount > 0)
-                <div class="flex justify-between text-sm">
-                <span class="text-[#8b7355] dark:text-[#b8a892]">Discount ({{ $discountPercentage }}%):</span>
-                <span class="text-green-600 dark:text-green-400">-${{ number_format($discountAmount, 2) }}</span>
-                </div>
-                @endif
-                <div class="flex justify-between text-lg font-bold pt-2 border-t border-[#e8dcc8] dark:border-[#3d3530]">
-                    <span class="text-[#2c2416] dark:text-[#f5f1e8]">Total:</span>
-                    <span class="text-[#c17a4a]">${{ number_format($total, 2) }}</span>
-                </div>
+            <div class="space-y-2 text-sm bg-[#faf8f3] dark:bg-[#2a2520] p-4 rounded-lg border border-[#e8dcc8] dark:border-[#3d3530]">
+            <h4 class="font-semibold text-[#2c2416] dark:text-[#f5f1e8] mb-3">Order Summary</h4>
+
+            <div class="space-y-1">
+            <div class="flex justify-between">
+            <span class="text-[#8b7355] dark:text-[#b8a892]">Items Subtotal:</span>
+            <span class="text-[#2c2416] dark:text-[#f5f1e8]">${{ number_format($receiptData['subtotal'] ?? 0, 2) }}</span>
+            </div>
+
+            @php
+                $addOnTotal = 0;
+                foreach($receiptData['add_ons'] ?? [] as $addOn) {
+                    if(!empty($addOn['label']) && ($addOn['amount'] ?? 0) > 0) {
+                        $addOnTotal += $addOn['amount'];
+                }
+            }
+            @endphp
+            @if($addOnTotal > 0)
+            <div class="flex justify-between">
+            <span class="text-[#8b7355] dark:text-[#b8a892]">Add-ons Total:</span>
+            <span class="text-[#2c2416] dark:text-[#f5f1e8]">${{ number_format($addOnTotal, 2) }}</span>
+            </div>
+            @endif
+
+            @if(($receiptData['discount_amount'] ?? 0) > 0)
+            <div class="flex justify-between text-green-600 dark:text-green-400 font-medium border-t border-green-200 dark:border-green-800 pt-1 mt-2">
+            <span>Discount Applied ({{ $receiptData['discount_percentage'] ?? 0 }}%):</span>
+            <span>-${{ number_format($receiptData['discount_amount'] ?? 0, 2) }}</span>
+            </div>
+            @endif
+
+            <div class="flex justify-between text-lg font-bold pt-3 mt-3 border-t-2 border-[#e8dcc8] dark:border-[#3d3530]">
+            <span class="text-[#2c2416] dark:text-[#f5f1e8]">Grand Total:</span>
+            <span class="text-[#c17a4a]">${{ number_format($receiptData['total'] ?? 0, 2) }}</span>
+            </div>
+            </div>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-[#e8dcc8] dark:border-[#3d3530]">
+            <div class="text-center text-xs text-[#8b7355] dark:text-[#b8a892]">
+            <p>Payment Method: {{ ucfirst($receiptData['payment_method'] ?? 'cash') }}</p>
+            <p class="mt-1">Thank you for visiting Goodland Café!</p>
+            </div>
+            </div>
             </div>
 
             <div class="flex gap-3">
@@ -743,14 +885,14 @@
 
 // Keyboard Shortcuts
 document.addEventListener('keydown', (e) => {
-    // Number keys 1-9 for quick product selection
-    if (e.key >= '1' && e.key <= '9' && !e.ctrlKey && !e.metaKey) {
-        const products = document.querySelectorAll('[wire\\:click*="openQuantityModal"]');
-        const index = parseInt(e.key) - 1;
-        if (products[index]) {
-            products[index].click();
-        }
-    }
+// Number keys 1-9 for quick product selection
+if (e.key >= '1' && e.key <= '9' && !e.ctrlKey && !e.metaKey) {
+    const products = document.querySelectorAll('[wire\\:click*="openQuantityModal"]');
+    const index = parseInt(e.key) - 1;
+    if (products[index]) {
+    products[index].click();
+}
+}
     // Ctrl+Enter or Cmd+Enter for checkout
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         const checkoutBtn = document.querySelector('[wire\\:click*="showPaymentModal"]');

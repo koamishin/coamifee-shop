@@ -57,6 +57,7 @@ final class OrderProcessingService
             ->where('product_id', $orderItem->product_id)
             ->get();
 
+        // Process ingredients if they exist
         foreach ($productIngredients as $productIngredient) {
             $ingredient = $productIngredient->ingredient;
             $quantityNeeded = $productIngredient->quantity_required * $orderItem->quantity;
@@ -91,6 +92,11 @@ final class OrderProcessingService
         $productIngredients = ProductIngredient::with('ingredient')
             ->where('product_id', $orderItem->product_id)
             ->get();
+
+        // If product has no ingredients defined, allow the order
+        if ($productIngredients->isEmpty()) {
+            return true;
+        }
 
         foreach ($productIngredients as $productIngredient) {
             $ingredient = $productIngredient->ingredient;

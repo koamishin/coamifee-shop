@@ -39,20 +39,34 @@ final class MetricsService
             }
         }
 
-        ProductMetric::updateOrCreate(
-            [
-                'product_id' => $productId,
-                'metric_date' => $date->toDateString(),
-                'period_type' => 'daily',
-            ],
-            [
-                'orders_count' => $totalOrders,
-                'total_revenue' => $totalRevenue,
-            ]
-        );
+        try {
+            ProductMetric::updateOrCreate(
+                [
+                    'product_id' => $productId,
+                    'metric_date' => $date->toDateString(),
+                    'period_type' => 'daily',
+                ],
+                [
+                    'orders_count' => $totalOrders,
+                    'total_revenue' => $totalRevenue,
+                ]
+            );
+        } catch (\Exception $e) {
+            // Log the error but don't fail the order processing
+            logger('Failed to update product metrics: ' . $e->getMessage());
+        }
 
-        $this->updateWeeklyMetrics($productId, $date);
-        $this->updateMonthlyMetrics($productId, $date);
+        try {
+            $this->updateWeeklyMetrics($productId, $date);
+        } catch (\Exception $e) {
+            logger('Failed to update weekly metrics: ' . $e->getMessage());
+        }
+
+        try {
+            $this->updateMonthlyMetrics($productId, $date);
+        } catch (\Exception $e) {
+            logger('Failed to update monthly metrics: ' . $e->getMessage());
+        }
     }
 
     public function getProductMetrics(int $productId, string $period = 'daily', int $days = 30): Collection

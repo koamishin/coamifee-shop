@@ -86,7 +86,7 @@ class="w-full text-left px-2 py-1.5 rounded-md font-medium text-xs transition-al
         <div class="flex items-center gap-1.5">
         <div class="w-6 h-6 rounded overflow-hidden bg-[#e8dcc8] dark:bg-[#4d4540] flex-shrink-0">
         @if($product->image_url)
-        <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+        <img src="{{ \Illuminate\Support\Facades\Storage::url($product->image_url) }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
         @else
         <div class="w-full h-full flex items-center justify-center">
         <svg class="w-3 h-3 text-[#8b7355] dark:text-[#b8a892]" fill="none" stroke="currentColor" viewBox="0 0 24 24">

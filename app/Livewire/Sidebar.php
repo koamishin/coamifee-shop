@@ -12,6 +12,8 @@ use Livewire\Component;
 
 final class Sidebar extends Component
 {
+    public string $search = '';
+
     public int $selectedCategory = 0;
 
     public array $productAvailability = [];
@@ -58,11 +60,20 @@ final class Sidebar extends Component
                 return $metric->product;
             });
 
-        // Load products for selected category
+        // Load products for selected category and search
         $products = Product::with(['category', 'ingredients.ingredient'])
             ->where('is_active', true)
             ->when($this->selectedCategory > 0, function ($query) {
                 $query->where('category_id', $this->selectedCategory);
+            })
+            ->when($this->search, function ($query) {
+                $query->where(function ($q) {
+                    $q->where('name', 'like', '%' . $this->search . '%')
+                      ->orWhere('description', 'like', '%' . $this->search . '%')
+                      ->orWhereHas('category', function ($categoryQuery) {
+                          $categoryQuery->where('name', 'like', '%' . $this->search . '%');
+                      });
+                });
             })
             ->orderBy('name')
             ->get();
