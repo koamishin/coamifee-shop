@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Filament\Concerns\CurrencyAware;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class ProductsTable
 {
+    use CurrencyAware;
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -32,7 +35,7 @@ final class ProductsTable
 
                 TextColumn::make('price')
                     ->label('Price')
-                    ->money('USD')
+                    ->money(self::getMoneyConfig())
                     ->sortable()
                     ->alignCenter()
                     ->description('Current selling price')

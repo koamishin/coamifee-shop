@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Orders\Schemas;
 
+use App\Filament\Concerns\CurrencyAware;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -14,6 +15,8 @@ use Filament\Schemas\Schema;
 
 final class OrderForm
 {
+    use CurrencyAware;
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -110,7 +113,8 @@ final class OrderForm
                                 ->label('Total Amount')
                                 ->required()
                                 ->numeric()
-                                ->prefix('$')
+                                ->prefix(self::getCurrencyPrefix())
+                                ->suffix(self::getCurrencySuffix())
                                 ->step(0.01)
                                 ->placeholder('0.00')
                                 ->helperText('Total amount for this order')
@@ -206,11 +210,12 @@ final class OrderForm
                                 ->label('Total')
                                 ->content(function ($record) {
                                     if (! $record) {
-                                        return '$0.00';
+                                        return static::formatCurrency(0);
                                     }
 
-                                    return '$'.
-                                        number_format($record->total, 2);
+                                    return static::formatCurrency(
+                                        $record->total,
+                                    );
                                 })
                                 ->columnSpan(1),
                         ]),

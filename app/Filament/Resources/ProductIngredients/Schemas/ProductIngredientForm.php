@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ProductIngredients\Schemas;
 
+use App\Filament\Concerns\CurrencyAware;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -14,6 +15,8 @@ use Illuminate\Support\HtmlString;
 
 final class ProductIngredientForm
 {
+    use CurrencyAware;
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -117,21 +120,10 @@ final class ProductIngredientForm
                                             $quantity * $ingredient->unit_cost;
                                         $unit = $ingredient->unit_type;
 
-                                        return new HtmlString(
-                                            "
-                                            <div style='display: flex; align-items: center; gap: 12px;'>
-                                                <span style='color: #374151; font-weight: 500;'>Cost per product:</span>
-                                                <span style='color: #10b981; font-weight: bold; font-size: 1.1em;'>$".
-                                                number_format($cost, 3).
-                                                "</span>
-                                                <span style='color: #6b7280; font-size: 0.9em;'>($quantity $unit × $".
-                                                number_format(
-                                                    $ingredient->unit_cost,
-                                                    3,
-                                                ).
-                                                "/$unit)</span>
-                                            </div>
-                                        ",
+                                        return static::formatCostCalculation(
+                                            $quantity,
+                                            $ingredient->unit_cost,
+                                            $unit,
                                         );
                                     })
                                     ->columnSpanFull(),

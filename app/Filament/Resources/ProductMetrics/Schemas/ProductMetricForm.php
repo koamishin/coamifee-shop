@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ProductMetrics\Schemas;
 
+use App\Filament\Concerns\CurrencyAware;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -15,6 +16,8 @@ use Illuminate\Support\HtmlString;
 
 final class ProductMetricForm
 {
+    use CurrencyAware;
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -109,7 +112,8 @@ final class ProductMetricForm
                                 ->minValue(0)
                                 ->step(0.01)
                                 ->default(0)
-                                ->prefix('$')
+                                ->prefix(self::getCurrencyPrefix())
+                                ->suffix(self::getCurrencySuffix())
                                 ->prefixIcon('heroicon-o-banknotes')
                                 ->placeholder('e.g., 150.00')
                                 ->helperText(
@@ -158,17 +162,20 @@ final class ProductMetricForm
                                                 return new HtmlString(
                                                     '<span style="font-weight: bold; font-size: 1.1em; color: '.
                                                         $color.
-                                                        ';">$'.
-                                                        number_format(
+                                                        ';">'.
+                                                        static::formatCurrency(
                                                             $average,
-                                                            2,
                                                         ).
                                                         '</span>',
                                                 );
                                             }
 
                                             return new HtmlString(
-                                                '<span style="color: #6b7280;">$0.00</span>',
+                                                '<span style="color: #6b7280;">'.
+                                                    static::formatCurrency(
+                                                        0.0,
+                                                    ).
+                                                    '</span>',
                                             );
                                         })
                                         ->helperText('Revenue ÷ Orders')
@@ -194,10 +201,9 @@ final class ProductMetricForm
                                             $revenuePerDay = $revenue / $days;
 
                                             return new HtmlString(
-                                                '<span style="font-weight: 600; color: #3b82f6;">$'.
-                                                    number_format(
+                                                '<span style="font-weight: 600; color: #3b82f6;">'.
+                                                    static::formatCurrency(
                                                         $revenuePerDay,
-                                                        2,
                                                     ).
                                                     '</span>',
                                             );

@@ -10,6 +10,7 @@
         "bezhansalleh/filament-shield": "^4.0",
         "coolsam/modules": "^5.0",
         "filament/filament": "^4.1",
+        "joaopaulolndev/filament-general-settings": "^2.0",
         "laravel/fortify": "^1.30",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",

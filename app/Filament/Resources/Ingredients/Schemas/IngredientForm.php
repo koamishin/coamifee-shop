@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Ingredients\Schemas;
 
+use App\Filament\Concerns\CurrencyAware;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -14,6 +15,8 @@ use Filament\Schemas\Schema;
 
 final class IngredientForm
 {
+    use CurrencyAware;
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -91,7 +94,8 @@ final class IngredientForm
                         Grid::make(2)->schema([
                             TextInput::make('unit_cost')
                                 ->label('Cost Per Unit')
-                                ->prefix('$')
+                                ->prefix(self::getCurrencyPrefix())
+                                ->suffix(self::getCurrencySuffix())
                                 ->numeric()
                                 ->step(0.001)
                                 ->placeholder('e.g., 0.020')

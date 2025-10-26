@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Products\Schemas;
 
+use App\Filament\Concerns\CurrencyAware;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -16,6 +17,8 @@ use Filament\Schemas\Schema;
 
 final class ProductForm
 {
+    use CurrencyAware;
+
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
@@ -75,7 +78,8 @@ final class ProductForm
                     Grid::make(2)->schema([
                         TextInput::make('price')
                             ->label('Price')
-                            ->prefix('$')
+                            ->prefix(self::getCurrencyPrefix())
+                            ->suffix(self::getCurrencySuffix())
                             ->numeric()
                             ->required()
                             ->step(0.01)
@@ -84,7 +88,8 @@ final class ProductForm
 
                         TextInput::make('cost_price')
                             ->label('Cost Price')
-                            ->prefix('$')
+                            ->prefix(self::getCurrencyPrefix())
+                            ->suffix(self::getCurrencySuffix())
                             ->numeric()
                             ->step(0.01)
                             ->helperText('Your cost for this product')
@@ -208,9 +213,10 @@ final class ProductForm
 
                             TextInput::make('cost_per_unit')
                                 ->label('Cost per Unit')
+                                ->prefix(self::getCurrencyPrefix())
+                                ->suffix('g/ml')
                                 ->numeric()
                                 ->step(0.01)
-                                ->suffix('g/ml')
                                 ->helperText('Cost of this ingredient per unit')
                                 ->default(0)
                                 ->columnSpanFull(),

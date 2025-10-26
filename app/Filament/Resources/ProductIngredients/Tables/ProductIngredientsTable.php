@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ProductIngredients\Tables;
 
+use App\Filament\Concerns\CurrencyAware;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
@@ -19,6 +20,8 @@ use Illuminate\Support\HtmlString;
 
 final class ProductIngredientsTable
 {
+    use CurrencyAware;
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -58,7 +61,7 @@ final class ProductIngredientsTable
                 TextColumn::make('cost_per_product')
                     ->label('Cost/Product')
                     ->description('Ingredient cost per product')
-                    ->money('USD')
+                    ->money(self::getMoneyConfig())
                     ->sortable()
                     ->alignRight()
                     ->formatStateUsing(

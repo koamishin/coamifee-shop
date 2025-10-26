@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\IngredientInventories\Schemas;
 
+use App\Filament\Concerns\CurrencyAware;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -14,6 +15,8 @@ use Illuminate\Support\HtmlString;
 
 final class IngredientInventoryForm
 {
+    use CurrencyAware;
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -378,11 +381,7 @@ final class IngredientInventoryForm
 
         $totalValue = $current * $ingredient->unit_cost;
 
-        return new HtmlString(
-            "<span style='color: #10b981; font-weight: bold; font-size: 1.1em;'>$".
-                number_format($totalValue, 2).
-                '</span>',
-        );
+        return self::formatInventoryValue($current, $ingredient->unit_cost);
     }
 
     private static function getCostPerUnit(callable $get): HtmlString|string
@@ -398,11 +397,7 @@ final class IngredientInventoryForm
             return new HtmlString('<span style="color: #6b7280;">$0.00</span>');
         }
 
-        return new HtmlString(
-            "<span style='color: #3b82f6;'>$".
-                number_format($ingredient->unit_cost, 3).
-                '</span>',
-        );
+        return self::formatUnitCost($ingredient->unit_cost);
     }
 
     private static function getTurnoverRate(callable $get): HtmlString|string

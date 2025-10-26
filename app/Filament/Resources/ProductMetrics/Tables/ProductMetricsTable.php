@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ProductMetrics\Tables;
 
+use App\Filament\Concerns\CurrencyAware;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -16,6 +17,8 @@ use Illuminate\Support\HtmlString;
 
 final class ProductMetricsTable
 {
+    use CurrencyAware;
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -85,7 +88,7 @@ final class ProductMetricsTable
                 TextColumn::make('total_revenue')
                     ->label('Revenue')
                     ->description('Total revenue generated')
-                    ->money('USD')
+                    ->money(self::getMoneyConfig())
                     ->sortable()
                     ->alignRight()
                     ->weight('bold')
@@ -95,7 +98,7 @@ final class ProductMetricsTable
                 TextColumn::make('average_order_value')
                     ->label('AOV')
                     ->description('Average order value')
-                    ->money('USD')
+                    ->money(self::getMoneyConfig())
                     ->sortable()
                     ->alignRight()
                     ->formatStateUsing(function ($record) {
@@ -103,7 +106,7 @@ final class ProductMetricsTable
                         $revenue = (float) $record->total_revenue;
 
                         if ($orders === 0) {
-                            return '$0.00';
+                            return static::formatCurrency(0);
                         }
 
                         $aov = $revenue / $orders;
@@ -115,8 +118,8 @@ final class ProductMetricsTable
                                     : '#ef4444');
 
                         return new HtmlString(
-                            "<span style='color: {$color}; font-weight: 600;'>$".
-                                number_format($aov, 2).
+                            "<span style='color: {$color}; font-weight: 600;'>".
+                                static::formatCurrency($aov).
                                 '</span>',
                         );
                     }),
@@ -124,7 +127,7 @@ final class ProductMetricsTable
                 TextColumn::make('revenue_per_day')
                     ->label('Revenue/Day')
                     ->description('Revenue per day in period')
-                    ->money('USD')
+                    ->money(self::getMoneyConfig())
                     ->sortable()
                     ->alignRight()
                     ->formatStateUsing(function ($record) {

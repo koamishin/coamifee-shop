@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Orders\Tables;
 
+use App\Filament\Concerns\CurrencyAware;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
@@ -16,6 +17,8 @@ use Filament\Tables\Table;
 
 final class OrdersTable
 {
+    use CurrencyAware;
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -176,7 +179,7 @@ final class OrdersTable
                 TextColumn::make('total')
                     ->label('Total')
                     ->description('Order total amount')
-                    ->money('USD')
+                    ->money(self::getMoneyConfig())
                     ->sortable()
                     ->alignRight()
                     ->weight('bold')
