@@ -11,20 +11,19 @@
 
     <!-- Search Bar -->
     <div class="relative mb-2">
-<input
-type="text"
-            wire:model.live.debounce.300ms="search"
-            placeholder="Search products..."
-            class="w-full pl-8 pr-3 py-2 text-xs border border-[#e8dcc8] dark:border-[#3d3530] rounded-md
-           focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent dark:bg-[#1a1815] dark:text-[#f5f1e8]
- placeholder-[#8b7355] dark:placeholder-[#6b5f52] transition"
->
-<div class="absolute inset-y-0 left-2 flex items-center pointer-events-none">
-        <svg class="h-3 h-3 text-[#8b7355]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-    </svg>
-</div>
+        <input
+        type="text"
+                    wire:model.live.debounce.300ms="search"
+                    placeholder="Search products..."
+                    class="w-full pl-8 pr-3 py-2 text-xs border border-[#e8dcc8] dark:border-[#3d3530] rounded-md
+                focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent dark:bg-[#1a1815] dark:text-[#f5f1e8]
+        placeholder-[#8b7355] dark:placeholder-[#6b5f52] transition">
+        <div class="absolute inset-y-0 left-2 flex items-center pointer-events-none">
+                <svg class="h-3 h-3 text-[#8b7355]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+        </div>
 </div>
 
 <!-- All Items Button -->

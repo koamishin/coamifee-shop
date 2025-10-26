@@ -84,14 +84,12 @@
                                     transition-all duration-500 active:scale-95 relative overflow-hidden
                                     before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent
                                     before:via-white/5 before:to-transparent before:translate-x-[-100%]
-                                    hover:before:translate-x-[100%] before:transition-transform before:duration-1000"
-                            >
+                                    hover:before:translate-x-[100%] before:transition-transform before:duration-1000">
                                 <!-- Favorite Button -->
                                 <button 
                                     wire:click.stop="toggleFavorite({{ $product->id }})"
                                     class="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white/80 
-                                        dark:bg-[#1a1815]/80 hover:bg-[#c17a4a] hover:text-white transition"
-                                >
+                                        dark:bg-[#1a1815]/80 hover:bg-[#c17a4a] hover:text-white transition">
                                     <svg class="w-4 h-4 {{ in_array($product->id, $favorites ?? []) ? 'fill-[#c17a4a]' : 'text-[#8b7355]' }}" viewBox="0 0 24 24">
                                         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 
                                                 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09
@@ -108,8 +106,7 @@
                                     alt="{{ $product->name }}"
                                 class="w-full h-28 object-cover rounded-xl shadow-sm
                                             transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg
-                                                group-hover:shadow-[#c17a4a]/20"
-                                        >
+                                                group-hover:shadow-[#c17a4a]/20">
                                         <div class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                     </div>
                                 @else

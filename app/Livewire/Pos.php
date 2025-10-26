@@ -466,8 +466,6 @@ final class Pos extends Component
 
         $this->calculateTotals();
         $this->updateProductAvailability();
-        
-        $this->dispatch('productSelected', $productId);
     }
 
     public function removeFromCart(int $productId): void
