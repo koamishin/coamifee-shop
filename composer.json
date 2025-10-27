@@ -10,7 +10,11 @@
   "license": "MIT",
   "require": {
     "php": "^8.2",
+    "afatmustafa/blade-hugeicons": "^1.0",
+    "andreiio/blade-remix-icon": "^3.7",
     "bezhansalleh/filament-shield": "^4.0",
+    "codeat3/blade-element-plus-icons": "^1.1",
+    "codeat3/blade-majestic-icons": "^2.2",
     "coolsam/modules": "^5.0",
     "filament/filament": "^4.1",
     "guava/filament-icon-picker": "*",
@@ -21,7 +25,10 @@
     "laravel/tinker": "^2.10.1",
     "livewire/flux": "^2.1.1",
     "livewire/volt": "^1.7.0",
-    "nwidart/laravel-modules": "^12.0"
+    "mallardduck/blade-lucide-icons": "^1.23",
+    "nwidart/laravel-modules": "^12.0",
+    "owenvoke/blade-fontawesome": "^2.9",
+    "postare/blade-mdi": "^1.1"
   },
   "require-dev": {
     "driftingly/rector-laravel": "^2.1",
