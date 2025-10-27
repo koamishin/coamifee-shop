@@ -1,71 +1,187 @@
+# Nixpacks configuration for Laravel 12 application
+# Supports PHP 8.4, Livewire, Filament, and modern frontend tooling
+
 [phases.setup]
-nixPkgs = ["...", "python311Packages.supervisor"]
+nixPkgs = [
+    "php84",
+    "php84Packages.composer",
+    "nodejs_22",
+    "nginx",
+    "supervisor"
+]
 
 [phases.build]
 cmds = [
-    "mkdir -p /etc/supervisor/conf.d/",
-    "cp /assets/worker-*.conf /etc/supervisor/conf.d/",
-    "cp /assets/supervisord.conf /etc/supervisord.conf",
-    "chmod +x /assets/extra.sh",
-    "...",
-    "/assets/extra.sh",
+    # Install Composer dependencies
+    "composer install --no-dev --optimize-autoloader",
+
+    # Install Node.js dependencies and build frontend assets
+    "npm install",
+    "npm run build",
+
+    # Create necessary directories
+    "mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache",
+
+    # Set proper permissions
+    "chmod -R 775 storage bootstrap/cache",
+
+    # Create supervisor config directory
+    "mkdir -p /etc/supervisor/conf.d/"
 ]
 
 [phases.postbuild]
 cmds = [
-    "php /app/artisan optimize:clear",
-    "php /app/artisan migrate --force",
+    # Laravel optimizations
+    "php artisan config:cache",
+    "php artisan route:cache",
+    "php artisan view:cache",
+    "php artisan event:cache",
+
+    # Run database migrations (safe for production)
+    "php artisan migrate --force"
 ]
-dependsOn = ["build"]
 
 [staticAssets]
-"extra.sh" = '''
-#!/bin/bash
-
-# Enable OPcache (does this even work?)
-PHP_INI_PATH=$(php -i | grep '/php.ini' | awk '{print $6}')
-echo 'php path found: ' $PHP_INI_PATH
-# Enable opcache by adding to the bottom of the php.ini
-echo opcache.memory_consumption=256 >> "$PHP_INI_PATH"
-echo opcache.interned_strings_buffer=64 >> "$PHP_INI_PATH"
-echo opcache.max_accelerated_files=32531 >> "$PHP_INI_PATH"
-echo opcache.validate_timestamps=0 >> "$PHP_INI_PATH"
-echo opcache.enable_cli=1 >> "$PHP_INI_PATH"
-'''
-
+# Supervisor configuration for Laravel
 "supervisord.conf" = '''
-[unix_http_server]
-file=/assets/supervisor.sock
-
 [supervisord]
-logfile=/var/log/supervisord.log
-logfile_maxbytes=50MB
-logfile_backups=10
-loglevel=info
-pidfile=/assets/supervisord.pid
+logfile=/var/log/supervisor/supervisord.log
+pidfile=/var/run/supervisor/supervisord.pid
 nodaemon=false
-silent=false
 minfds=1024
 minprocs=200
 
-[rpcinterface:supervisor]
-supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
-
-[supervisorctl]
-serverurl=unix:///assets/supervisor.sock
-
-[include]
-files = /etc/supervisor/conf.d/*.conf
-'''
-
-"worker-laravel.conf" = '''
-[program:worker-laravel]
-process_name=%(program_name)s_%(process_num)02d
-command=bash -c 'exec php /app/artisan horizon'
+[program:php-fpm]
+command=php-fpm
 autostart=true
 autorestart=true
-startsecs=0
-stopwaitsecs=3600
-stdout_logfile=/app/storage/logs/worker-laravel.log
-stderr_logfile=/app/storage/logs/worker-laravel.log
+priority=5
+stdout_logfile=/var/log/supervisor/php-fpm.log
+stderr_logfile=/var/log/supervisor/php-fpm.log
+
+[program:nginx]
+command=nginx -g "daemon off;"
+autostart=true
+autorestart=true
+priority=10
+stdout_logfile=/var/log/supervisor/nginx.log
+stderr_logfile=/var/log/supervisor/nginx.log
+
+[program:laravel-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /app/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+numprocs=1
+priority=20
+stdout_logfile=/app/storage/logs/worker.log
+stderr_logfile=/app/storage/logs/worker.log
 '''
+
+# Nginx configuration for Laravel
+"nginx.conf" = '''
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+    worker_connections 768;
+}
+
+http {
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+
+    # Laravel application
+    server {
+        listen 8080;
+        server_name localhost;
+        root /app/public;
+        index index.php index.html index.htm;
+
+        # Security headers
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+
+        # Handle static files directly
+        location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+            try_files $uri =404;
+        }
+
+        # PHP-FPM configuration
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        location ~ \.php$ {
+            fastcgi_pass unix:/run/php/php-fpm.sock;
+            fastcgi_index index.php;
+            fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+            include fastcgi_params;
+            fastcgi_read_timeout 300;
+        }
+
+        # Handle Laravel's storage and other directories
+        location ~ /\.ht {
+            deny all;
+        }
+    }
+}
+'''
+
+# PHP-FPM configuration
+"php-fpm.conf" = '''
+[www]
+user = www-data
+group = www-data
+listen = /run/php/php-fpm.sock
+listen.owner = www-data
+listen.group = www-data
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 5
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+pm.max_requests = 500
+request_terminate_timeout = 300
+php_admin_value[opcache.memory_consumption] = 256
+php_admin_value[opcache.interned_strings_buffer] = 64
+php_admin_value[opcache.max_accelerated_files] = 32531
+php_admin_value[opcache.validate_timestamps] = 0
+php_admin_value[opcache.enable_cli] = 1
+'''
+
+# Startup script
+"start.sh" = '''
+#!/bin/bash
+
+# Set proper permissions
+chown -R www-data:www-data /app/storage /app/bootstrap/cache
+
+# Create PHP-FPM socket directory
+mkdir -p /run/php
+
+# Start supervisor
+exec /usr/bin/supervisord -c /etc/supervisord.conf
+'''
+
+[start]
+cmd = "bash /app/start.sh"
