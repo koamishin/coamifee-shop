@@ -12,33 +12,46 @@ nixPkgs = [
 
 [phases.build]
 cmds = [
-    # Install Composer dependencies
-    "composer install --no-dev --optimize-autoloader",
+    # Set environment variables for Composer
+    "export COMPOSER_ALLOW_SUPERUSER=1",
+    "export COMPOSER_NO_INTERACTION=1",
+
+    # Install Composer dependencies with specific flags for production
+    "composer install --no-dev --optimize-autoloader --no-progress --no-interaction --prefer-dist",
+
+    # Copy environment file if it doesn't exist
+    "test -f .env || cp .env.example .env",
+
+    # Generate app key if not set
+    "php artisan key:generate --force || true",
 
     # Install Node.js dependencies and build frontend assets
-    "npm install",
+    "npm install --no-audit --no-fund",
     "npm run build",
 
     # Create necessary directories
     "mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache",
 
-    # Set proper permissions
+    # Set proper permissions for Laravel directories
     "chmod -R 775 storage bootstrap/cache",
 
-    # Create supervisor config directory
-    "mkdir -p /etc/supervisor/conf.d/"
+    # Create supervisor config directories
+    "mkdir -p /etc/supervisor/conf.d/ /var/log/supervisor /var/run/supervisor /run/php"
 ]
 
 [phases.postbuild]
 cmds = [
-    # Laravel optimizations
+    # Laravel optimizations for production
     "php artisan config:cache",
     "php artisan route:cache",
     "php artisan view:cache",
     "php artisan event:cache",
 
-    # Run database migrations (safe for production)
-    "php artisan migrate --force"
+    # Clear any existing caches first
+    "php artisan optimize:clear",
+
+    # Run database migrations (safe for production, but wrapped in check)
+    "php artisan migrate --force || echo 'Migration failed or already completed'"
 ]
 
 [staticAssets]
@@ -50,26 +63,35 @@ pidfile=/var/run/supervisor/supervisord.pid
 nodaemon=false
 minfds=1024
 minprocs=200
+user=root
+
+[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
+[supervisorctl]
+serverurl=unix:///var/run/supervisor/supervisord.sock
 
 [program:php-fpm]
-command=php-fpm
+command=php-fpm -F -y /app/php-fpm.conf
 autostart=true
 autorestart=true
 priority=5
 stdout_logfile=/var/log/supervisor/php-fpm.log
 stderr_logfile=/var/log/supervisor/php-fpm.log
+user=root
 
 [program:nginx]
-command=nginx -g "daemon off;"
+command=nginx -g "daemon off; error_log /var/log/nginx/error.log; access_log /var/log/nginx/access.log;"
 autostart=true
 autorestart=true
 priority=10
 stdout_logfile=/var/log/supervisor/nginx.log
 stderr_logfile=/var/log/supervisor/nginx.log
+user=root
 
 [program:laravel-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=php /app/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+command=php /app/artisan queue:work --sleep=3 --tries=3 --max-time=3600 --memory=256
 autostart=true
 autorestart=true
 stopasgroup=true
@@ -78,6 +100,10 @@ numprocs=1
 priority=20
 stdout_logfile=/app/storage/logs/worker.log
 stderr_logfile=/app/storage/logs/worker.log
+user=www-data
+
+[include]
+files = /etc/supervisor/conf.d/*.conf
 '''
 
 # Nginx configuration for Laravel
@@ -85,32 +111,58 @@ stderr_logfile=/app/storage/logs/worker.log
 user www-data;
 worker_processes auto;
 pid /run/nginx.pid;
-include /etc/nginx/modules-enabled/*.conf;
+daemon off;
+error_log /var/log/nginx/error.log warn;
 
 events {
-    worker_connections 768;
+    worker_connections 1024;
+    use epoll;
+    multi_accept on;
 }
 
 http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    # Logging
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+    access_log /var/log/nginx/access.log main;
+
+    # Performance optimizations
     sendfile on;
     tcp_nopush on;
     tcp_nodelay on;
     keepalive_timeout 65;
     types_hash_max_size 2048;
-    include /etc/nginx/mime.types;
-    default_type application/octet-stream;
+    client_max_body_size 100M;
 
     # Gzip compression
     gzip on;
     gzip_vary on;
     gzip_proxied any;
     gzip_comp_level 6;
-    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+    gzip_types
+        text/plain
+        text/css
+        text/xml
+        text/javascript
+        application/javascript
+        application/xml+rss
+        application/json
+        image/svg+xml;
 
-    # Laravel application
+    # FastCGI cache settings
+    fastcgi_cache_path /var/cache/nginx levels=1:2 keys_zone=LARAVEL_CACHE:100m inactive=60m;
+    fastcgi_cache_key "$scheme$request_method$host$request_uri";
+    fastcgi_cache_use_stale error timeout invalid_header http_500;
+    fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
+
+    # Laravel application server block
     server {
-        listen 8080;
-        server_name localhost;
+        listen 8080 default_server;
+        server_name _;
         root /app/public;
         index index.php index.html index.htm;
 
@@ -118,30 +170,65 @@ http {
         add_header X-Frame-Options "SAMEORIGIN" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header X-XSS-Protection "1; mode=block" always;
+        add_header Referrer-Policy "no-referrer-when-downgrade" always;
+        add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
 
-        # Handle static files directly
-        location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
+        # Handle static files directly with long cache
+        location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot|map)$ {
             expires 1y;
             add_header Cache-Control "public, immutable";
+            add_header Vary Accept-Encoding;
             try_files $uri =404;
+            access_log off;
         }
 
-        # PHP-FPM configuration
+        # Health check endpoint
+        location /health {
+            access_log off;
+            return 200 "healthy\n";
+            add_header Content-Type text/plain;
+        }
+
+        # Main Laravel route handler
         location / {
             try_files $uri $uri/ /index.php?$query_string;
         }
 
+        # PHP-FPM configuration
         location ~ \.php$ {
+            try_files $uri =404;
+            fastcgi_split_path_info ^(.+\.php)(/.+)$;
             fastcgi_pass unix:/run/php/php-fpm.sock;
             fastcgi_index index.php;
-            fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
             include fastcgi_params;
             fastcgi_read_timeout 300;
+            fastcgi_send_timeout 300;
+            fastcgi_connect_timeout 300;
+            fastcgi_buffer_size 128k;
+            fastcgi_buffers 4 256k;
+            fastcgi_busy_buffers_size 256k;
+
+            # Enable FastCGI cache for GET requests
+            fastcgi_cache LARAVEL_CACHE;
+            fastcgi_cache_valid 200 60m;
+            fastcgi_cache_bypass $cookie_session;
+            fastcgi_no_cache $cookie_session;
+            add_header X-FastCGI-Cache $upstream_cache_status;
         }
 
-        # Handle Laravel's storage and other directories
-        location ~ /\.ht {
+        # Deny access to hidden files
+        location ~ /\. {
             deny all;
+            access_log off;
+            log_not_found off;
+        }
+
+        # Deny access to Laravel config and storage
+        location ~ ^/(config|storage|bootstrap|artisan|\.env) {
+            deny all;
+            access_log off;
+            log_not_found off;
         }
     }
 }
@@ -149,38 +236,86 @@ http {
 
 # PHP-FPM configuration
 "php-fpm.conf" = '''
+[global]
+pid = /run/php/php-fpm.pid
+error_log = /var/log/php8.4-fpm.log
+daemonize = no
+
 [www]
 user = www-data
 group = www-data
 listen = /run/php/php-fpm.sock
 listen.owner = www-data
 listen.group = www-data
+listen.mode = 0666
+
 pm = dynamic
 pm.max_children = 50
 pm.start_servers = 5
 pm.min_spare_servers = 5
 pm.max_spare_servers = 35
 pm.max_requests = 500
+
 request_terminate_timeout = 300
+request_slowlog_timeout = 30
+slowlog = /var/log/php8.4-fpm-slow.log
+
+; PHP OPcache settings for production
+php_admin_value[opcache.enable] = 1
 php_admin_value[opcache.memory_consumption] = 256
 php_admin_value[opcache.interned_strings_buffer] = 64
 php_admin_value[opcache.max_accelerated_files] = 32531
 php_admin_value[opcache.validate_timestamps] = 0
+php_admin_value[opcache.save_comments] = 1
+php_admin_value[opcache.load_comments] = 1
 php_admin_value[opcache.enable_cli] = 1
+
+; PHP settings for Laravel
+php_admin_value[max_execution_time] = 300
+php_admin_value[max_input_time] = 300
+php_admin_value[memory_limit] = 512M
+php_admin_value[post_max_size] = 100M
+php_admin_value[upload_max_filesize] = 100M
+php_admin_value[expose_php] = Off
+
+; Laravel specific
+php_admin_value[realpath_cache_size] = 4096K
+php_admin_value[realpath_cache_ttl] = 120
 '''
 
-# Startup script
+# Startup script with proper error handling
 "start.sh" = '''
 #!/bin/bash
+set -e
 
-# Set proper permissions
+echo "Starting Laravel application..."
+
+# Set proper ownership and permissions
+echo "Setting up file permissions..."
 chown -R www-data:www-data /app/storage /app/bootstrap/cache
+chmod -R 775 /app/storage /app/bootstrap/cache
 
-# Create PHP-FPM socket directory
-mkdir -p /run/php
+# Create necessary runtime directories
+mkdir -p /run/php /var/log/nginx /var/log/php8.4-fpm /var/cache/nginx
+chown www-data:www-data /var/cache/nginx
 
-# Start supervisor
-exec /usr/bin/supervisord -c /etc/supervisord.conf
+# Ensure log files are writable
+touch /var/log/php8.4-fpm.log /var/log/php8.4-fpm-slow.log
+chown www-data:www-data /var/log/php8.4-fpm.log /var/log/php8.4-fpm-slow.log
+
+# Test PHP-FPM configuration
+echo "Testing PHP-FPM configuration..."
+php-fpm -t -y /app/php-fpm.conf || exit 1
+
+# Test Nginx configuration
+echo "Testing Nginx configuration..."
+nginx -t -c /app/nginx.conf || exit 1
+
+# Clear any existing opcache
+php -d opcache.enable=1 -d opcache.enable_cli=1 -r "if (function_exists('opcache_reset')) opcache_reset();"
+
+echo "Starting services via Supervisor..."
+exec /usr/bin/supervisord -n -c /app/supervisord.conf
 '''
 
 [start]
