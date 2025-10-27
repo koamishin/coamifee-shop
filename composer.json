@@ -13,7 +13,7 @@
     "bezhansalleh/filament-shield": "^4.0",
     "coolsam/modules": "^5.0",
     "filament/filament": "^4.1",
-    "guava/filament-icon-picker": "^3.0",
+    "guava/filament-icon-picker": "*",
     "joaopaulolndev/filament-general-settings": "^2.0",
     "khatabwedaa/blade-css-icons": "^1.5",
     "laravel/fortify": "^1.30",
