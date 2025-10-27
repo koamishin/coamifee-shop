@@ -62,7 +62,8 @@ final readonly class OrderProcessingService
             $ingredient = $productIngredient->ingredient;
             $quantityNeeded = $productIngredient->quantity_required * $orderItem->quantity;
 
-            if ($ingredient->is_trackable) {
+            $inventory = $ingredient->inventory()->first();
+            if ($inventory) {
                 $this->inventoryService->decreaseIngredientStock(
                     $ingredient,
                     $quantityNeeded,
@@ -100,14 +101,11 @@ final readonly class OrderProcessingService
 
         foreach ($productIngredients as $productIngredient) {
             $ingredient = $productIngredient->ingredient;
+            $quantityNeeded = $productIngredient->quantity_required * $orderItem->quantity;
+            $inventory = $ingredient->inventory()->first();
 
-            if ($ingredient->is_trackable) {
-                $quantityNeeded = $productIngredient->quantity_required * $orderItem->quantity;
-                $inventory = $ingredient->inventory()->first();
-
-                if (! $inventory || $inventory->current_stock < $quantityNeeded) {
-                    return false;
-                }
+            if (! $inventory || $inventory->current_stock < $quantityNeeded) {
+                return false;
             }
         }
 

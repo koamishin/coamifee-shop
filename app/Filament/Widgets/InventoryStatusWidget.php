@@ -23,9 +23,9 @@ final class InventoryStatusWidget extends ChartWidget
 
     protected function getData(): array
     {
-        // Get trackable ingredients with inventory data
+        // Get ingredients with inventory data
         $ingredients = Ingredient::with('inventory')
-            ->where('is_trackable', true)
+            ->whereHas('inventory')
             ->get();
 
         $labels = [];

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->enum('unit_type', ['grams', 'ml', 'pieces', 'liters', 'kilograms']);
+            $table->enum('unit_type', ['grams', 'kilograms', 'ml', 'liters', 'pieces']);
             $table->boolean('is_trackable')->default(true);
             $table->decimal('current_stock', 10, 3)->default(0);
             $table->decimal('unit_cost', 8, 2)->nullable();

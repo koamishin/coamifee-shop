@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Ingredients\Tables;
 
+use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
@@ -23,122 +24,78 @@ final class IngredientsTable
     {
         return $table
             ->columns([
-                TextColumn::make('name')
-                    ->label('Ingredient')
-                    ->description('Name of the ingredient')
-                    ->searchable()
-                    ->sortable()
-                    ->weight('bold'),
-                TextColumn::make('unit_type')
-                    ->label('Unit')
-                    ->description('Measurement unit')
-                    ->badge()
-                    ->color(
-                        fn ($state): string => match ($state) {
-                            'grams' => 'warning',
-                            'ml' => 'info',
-                            'pieces' => 'success',
-                            'liters' => 'primary',
-                            'kilograms' => 'danger',
-                            default => 'gray',
-                        },
-                    )
-                    ->searchable()
-                    ->sortable(),
-                IconColumn::make('is_trackable')
-                    ->label('Tracking')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-check-circle')
-                    ->falseIcon('heroicon-o-x-circle')
-                    ->trueColor('success')
-                    ->falseColor('danger'),
-                TextColumn::make('current_stock')
-                    ->label('Stock')
-                    ->description('Current stock level')
-                    ->numeric(decimalPlaces: 2, thousandsSeparator: ',')
-                    ->sortable()
-                    ->alignRight()
-                    ->weight('medium')
-                    ->color(self::getStockColor(...)),
-                TextColumn::make('unit_cost')
-                    ->label('Unit Cost')
-                    ->description('Cost per unit')
-                    ->money(self::getMoneyConfig())
-                    ->sortable()
-                    ->alignRight(),
-                TextColumn::make('supplier')
-                    ->label('Supplier')
-                    ->description('Primary supplier')
-                    ->searchable()
-                    ->sortable()
-                    ->limit(30),
-                TextColumn::make('created_at')
-                    ->label('Added')
-                    ->description('Date ingredient was added')
-                    ->dateTime('M j, Y g:i A')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+
+                    TextColumn::make('name')
+                        ->label('Ingredient')
+                        ->description('Name of the ingredient')
+                        ->searchable()
+                        ->sortable()
+                        ->weight('bold'),
+                    TextColumn::make('unit_type')
+                        ->label('Unit')
+                        ->description('Measurement unit')
+                        ->badge()
+                        ->color(fn ($state) => $state?->getColor() ?? 'gray')
+                        ->icon(fn ($state) => $state?->getIcon())
+                        ->formatStateUsing(fn ($state) => $state?->getLabel())
+                        ->searchable()
+                        ->sortable(),
+                    TextColumn::make('inventory.current_stock')
+                        ->label('Stock')
+                        ->description('Current stock level')
+                        ->numeric(decimalPlaces: 2, thousandsSeparator: ',')
+                        ->sortable()
+                        ->alignRight()
+                        ->weight('medium')
+                        ->color(self::getStockColor(...))
+                        ->placeholder('No inventory'),
+                    TextColumn::make('created_at')
+                        ->label('Added')
+                        ->description('Date ingredient was added')
+                        ->dateTime('M j, Y')
+                        ->sortable()
+                        ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('unit_type')
                     ->label('Unit Type')
-                    ->options([
-                        'grams' => 'Grams',
-                        'ml' => 'Milliliters',
-                        'pieces' => 'Pieces',
-                        'liters' => 'Liters',
-                        'kilograms' => 'Kilograms',
-                    ]),
-                SelectFilter::make('is_trackable')
-                    ->label('Tracking')
-                    ->options([
-                        '1' => 'Trackable',
-                        '0' => 'Not Trackable',
-                    ]),
+                    ->options(UnitType::getOptions()),
+
             ])
             ->actions([
                 ViewAction::make(),
                 EditAction::make(),
-                Action::make('View Inventory')
-                    ->label('Inventory')
-                    ->icon('heroicon-o-cube')
+                Action::make('Manage Inventory')
+                    ->label('Manage Inventory')
+                    ->icon('heroicon-o-archive-box')
                     ->url(
-                        fn ($record): ?string => $record->is_trackable &&
-                        $record->inventory
-                            ? route(
-                                'filament.admin.resources.ingredient-inventories.index',
-                                ['ingredientId' => $record->id],
-                            )
-                            : null,
-                    )
-                    ->hidden(
-                        fn ($record): bool => ! $record->is_trackable ||
-                            ! $record->inventory,
+                        fn ($record): string => $record->inventory
+                            ? route('filament.admin.resources.ingredient-inventories.edit', $record->inventory)
+                            : route('filament.admin.resources.ingredient-inventories.create', ['ingredient_id' => $record->id]),
                     )
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([DeleteBulkAction::make()])
             ->emptyStateHeading('No ingredients found')
             ->emptyStateDescription(
-                'Create your first ingredient to get started with inventory management',
+                'Create your first ingredient or go directly to inventory management to add ingredients and their stock information',
             )
             ->emptyStateActions([
                 CreateAction::make()
                     ->label('Create Ingredient')
                     ->url(route('filament.admin.resources.ingredients.create')),
-            ])
-            ->poll('60s'); // Refresh every minute for real-time updates
+                \Filament\Actions\Action::make('manage_inventory')
+                    ->label('Manage Inventory')
+                    ->icon('heroicon-o-archive-box')
+                    ->url(route('filament.admin.resources.ingredient-inventories.create')),
+            ]);
     }
 
     private static function getStockColor($record): string
     {
-        if (! $record->is_trackable) {
-            return 'gray';
-        }
-
-        $inventory = $record->inventory()->first();
+        $inventory = $record->inventory;
         if (! $inventory) {
-            return 'danger';
+            return 'gray';
         }
 
         if ($inventory->current_stock <= ($inventory->min_stock_level ?? 0)) {

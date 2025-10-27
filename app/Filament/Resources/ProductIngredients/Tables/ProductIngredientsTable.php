@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ProductIngredients\Tables;
 
+use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -53,7 +54,7 @@ final class ProductIngredientsTable
                         fn ($state, $record): HtmlString => new HtmlString("
                         <div style='display: flex; align-items: center; justify-content: flex-end; gap: 4px;'>
                             <span style='font-weight: 600;'>{$state}</span>
-                            <span style='color: #6b7280; font-size: 0.85em;'>{$record->ingredient->unit_type}</span>
+                            <span style='color: #6b7280; font-size: 0.85em;'>{$record->ingredient->unit_type->getLabel()}</span>
                         </div>
                     "),
                     ),
@@ -226,13 +227,12 @@ final class ProductIngredientsTable
 
     private static function formatStock($record): string
     {
-        if (! $record->ingredient->is_trackable) {
-            return '<span style="color: #6b7280;">Not Tracked</span>';
+        $inventory = $record->ingredient->inventory;
+        if (! $inventory) {
+            return '<span style="color: #6b7280;">No Inventory</span>';
         }
 
-        $stock = (float) $record->ingredient->current_stock;
-
-        $inventory = $record->ingredient->inventory;
+        $stock = (float) $inventory->current_stock;
         $min = $inventory->min_stock_level ?? 0;
         $max = $inventory->max_stock_level ?? PHP_FLOAT_MAX;
 
@@ -243,18 +243,19 @@ final class ProductIngredientsTable
             $color = '#f59e0b'; // orange
         }
 
-        return "<span style='color: {$color}; font-weight: 500;'>".
-            number_format($stock, 2).
+        return "<span style='color: {$color}; font-weight: 500;'>" .
+            number_format($stock, 2) .
             '</span>';
     }
 
     private static function getStockStatusIcon($record): string
     {
-        if (! $record->ingredient->is_trackable) {
+        $inventory = $record->ingredient->inventory;
+        if (! $inventory) {
             return 'heroicon-o-x-circle';
         }
 
-        $stock = (float) $record->ingredient->current_stock;
+        $stock = (float) $inventory->current_stock;
         $productsPossible = floor($stock / $record->quantity_required);
 
         if ($productsPossible <= 5) {
@@ -269,11 +270,12 @@ final class ProductIngredientsTable
 
     private static function getStockStatusColor($record): string
     {
-        if (! $record->ingredient->is_trackable) {
+        $inventory = $record->ingredient->inventory;
+        if (! $inventory) {
             return 'gray';
         }
 
-        $stock = (float) $record->ingredient->current_stock;
+        $stock = (float) $inventory->current_stock;
         $productsPossible = floor($stock / $record->quantity_required);
 
         if ($productsPossible <= 5) {
@@ -288,11 +290,12 @@ final class ProductIngredientsTable
 
     private static function getStockStatusTooltip($record): string
     {
-        if (! $record->ingredient->is_trackable) {
-            return 'This ingredient is not tracked for stock levels';
+        $inventory = $record->ingredient->inventory;
+        if (! $inventory) {
+            return 'No inventory data available for this ingredient';
         }
 
-        $stock = (float) $record->ingredient->current_stock;
+        $stock = (float) $inventory->current_stock;
         $productsPossible = floor($stock / $record->quantity_required);
 
         if ($productsPossible <= 5) {
@@ -307,11 +310,12 @@ final class ProductIngredientsTable
 
     private static function getProductsPossibleColor($record): string
     {
-        if (! $record->ingredient->is_trackable) {
+        $inventory = $record->ingredient->inventory;
+        if (! $inventory) {
             return 'gray';
         }
 
-        $stock = (float) $record->ingredient->current_stock;
+        $stock = (float) $inventory->current_stock;
         $productsPossible = floor($stock / $record->quantity_required);
 
         if ($productsPossible <= 5) {
@@ -326,11 +330,12 @@ final class ProductIngredientsTable
 
     private static function calculateProductsPossible($record): string
     {
-        if (! $record->ingredient->is_trackable) {
+        $inventory = $record->ingredient->inventory;
+        if (! $inventory) {
             return '-';
         }
 
-        $stock = (float) $record->ingredient->current_stock;
+        $stock = (float) $inventory->current_stock;
         $productsPossible = floor($stock / $record->quantity_required);
 
         return (string) $productsPossible;

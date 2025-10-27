@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Ingredients\Schemas;
 
+use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -30,72 +31,34 @@ final class IngredientInfolist
                         TextEntry::make('unit_type')
                             ->label('Unit')
                             ->badge()
-                            ->color(
-                                fn ($state): string => match ($state) {
-                                    'grams' => 'warning',
-                                    'ml' => 'info',
-                                    'pieces' => 'success',
-                                    'liters' => 'primary',
-                                    'kilograms' => 'danger',
-                                    default => 'gray',
-                                },
-                            ),
+                            ->color(fn ($state) => $state?->getColor() ?? 'gray')
+                            ->icon(fn ($state) => $state?->getIcon())
+                            ->formatStateUsing(fn ($state) => $state?->getLabel()),
                     ]),
-                    TextEntry::make('description')
-                        ->label('Description')
-                        ->placeholder('No description provided')
-                        ->columnSpanFull(),
-                ]),
+            ]),
 
-            Section::make('Inventory & Cost')
-                ->description('Stock levels and pricing information')
-                ->icon('heroicon-o-currency-dollar')
-                ->visible(fn ($record) => $record->is_trackable)
+            Section::make('Related Inventory')
+                ->description('Inventory and stock information (if available)')
+                ->icon('heroicon-o-archive-box')
                 ->schema([
                     Grid::make(2)->schema([
-                        TextEntry::make('current_stock')
+                        TextEntry::make('inventory.current_stock')
                             ->label('Current Stock')
-
                             ->numeric(decimalPlaces: 2, thousandsSeparator: ',')
                             ->icon('heroicon-o-cube')
                             ->color(
                                 self::getStockColor(...),
-                            ),
-                        TextEntry::make('unit_cost')
+                            )
+                            ->placeholder('No inventory set'),
+                        TextEntry::make('inventory.unit_cost')
                             ->label('Unit Cost')
                             ->money(self::getMoneyConfig())
-                            ->icon('heroicon-o-tag'),
-                    ]),
-                    TextEntry::make('inventory.min_stock_level')
-                        ->label('Minimum Stock')
-                        ->numeric(decimalPlaces: 2)
-                        ->placeholder('Not set'),
-                    TextEntry::make('inventory.max_stock_level')
-                        ->label('Maximum Stock')
-                        ->numeric(decimalPlaces: 2)
-                        ->placeholder('Not set'),
-                ]),
-
-            Section::make('Supplier Information')
-                ->description('Supplier and procurement details')
-                ->icon('heroicon-o-truck')
-                ->schema([
-                    Grid::make(2)->schema([
-                        TextEntry::make('supplier')
-                            ->label('Primary Supplier')
-                            ->placeholder('Not specified'),
-                        IconEntry::make('is_trackable')
-                            ->label('Stock Tracking')
-                            ->boolean()
-                            ->trueIcon('heroicon-o-check-circle')
-                            ->falseIcon('heroicon-o-x-circle')
-                            ->trueColor('success')
-                            ->falseColor('danger'),
+                            ->icon('heroicon-o-tag')
+                            ->placeholder('Not set'),
                     ]),
                     TextEntry::make('inventory.location')
                         ->label('Storage Location')
-                        ->placeholder('Not specified')
-                        ->visible(fn ($record) => $record->is_trackable),
+                        ->placeholder('Not specified'),
                 ]),
 
             Section::make('System Information')
@@ -119,13 +82,9 @@ final class IngredientInfolist
 
     private static function getStockColor($record): string
     {
-        if (! $record->is_trackable) {
-            return 'gray';
-        }
-
         $inventory = $record->inventory;
         if (! $inventory) {
-            return 'danger';
+            return 'gray';
         }
 
         if ($inventory->current_stock <= ($inventory->min_stock_level ?? 0)) {

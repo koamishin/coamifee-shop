@@ -84,13 +84,11 @@ final readonly class PosProductService
 
         foreach ($ingredients as $productIngredient) {
             $ingredient = $productIngredient->ingredient;
-            if ($ingredient->is_trackable) {
-                $inventory = $ingredient->inventory;
-                if ($inventory) {
-                    $maxQuantities[] = (int) ($inventory->current_stock / $productIngredient->quantity_required);
-                } else {
-                    return 0;
-                }
+            $inventory = $ingredient->inventory;
+            if ($inventory) {
+                $maxQuantities[] = (int) ($inventory->current_stock / $productIngredient->quantity_required);
+            } else {
+                return 0;
             }
         }
 

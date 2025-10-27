@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\UnitType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,18 +16,11 @@ final class Ingredient extends Model
 
     protected $fillable = [
         'name',
-        'description',
         'unit_type',
-        'is_trackable',
-        'current_stock',
-        'unit_cost',
-        'supplier',
     ];
 
     protected $casts = [
-        'is_trackable' => 'boolean',
-        'current_stock' => 'decimal:3',
-        'unit_cost' => 'decimal:2',
+        'unit_type' => UnitType::class,
     ];
 
     public function productIngredients(): HasMany

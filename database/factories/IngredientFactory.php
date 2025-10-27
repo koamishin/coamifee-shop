@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Enums\UnitType;
 use App\Models\Ingredient;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,26 +22,9 @@ final class IngredientFactory extends Factory
     {
         return [
             'name' => fake()->words(2, true),
-            'description' => fake()->sentence(),
-            'unit_type' => fake()->randomElement(['grams', 'ml', 'pieces', 'liters', 'kilograms']),
-            'is_trackable' => fake()->boolean(70), // 70% chance of being trackable
-            'current_stock' => fake()->numberBetween(0, 10000),
-            'unit_cost' => fake()->randomFloat(2, 0.001, 0.10),
-            'supplier' => fake()->company(),
+            'unit_type' => fake()->randomElement(UnitType::cases())->value,
         ];
     }
 
-    public function trackable(): static
-    {
-        return $this->state(fn (array $attributes): array => [
-            'is_trackable' => true,
-        ]);
-    }
 
-    public function untrackable(): static
-    {
-        return $this->state(fn (array $attributes): array => [
-            'is_trackable' => false,
-        ]);
-    }
 }

@@ -15,13 +15,9 @@ final class InventoryService
 {
     public function decreaseIngredientStock(Ingredient $ingredient, float $quantity, ?OrderItem $orderItem = null, ?string $reason = null): bool
     {
-        if (! $ingredient->is_trackable) {
-            return true;
-        }
-
         $inventory = $ingredient->inventory()->first();
         if (! $inventory) {
-            return false;
+            return true; // No inventory means can't track stock
         }
 
         $previousStock = $inventory->current_stock;
@@ -48,10 +44,6 @@ final class InventoryService
 
     public function restockIngredient(Ingredient $ingredient, float $quantity, ?string $reason = null): bool
     {
-        if (! $ingredient->is_trackable) {
-            return true;
-        }
-
         $inventory = $ingredient->inventory()->firstOrCreate([
             'ingredient_id' => $ingredient->id,
         ], [
@@ -83,10 +75,6 @@ final class InventoryService
 
     public function adjustIngredientStock(Ingredient $ingredient, float $newQuantity, ?string $reason = null): bool
     {
-        if (! $ingredient->is_trackable) {
-            return true;
-        }
-
         $inventory = $ingredient->inventory()->firstOrCreate([
             'ingredient_id' => $ingredient->id,
         ], [
@@ -115,10 +103,6 @@ final class InventoryService
 
     public function recordWaste(Ingredient $ingredient, float $quantity, ?string $reason = null): bool
     {
-        if (! $ingredient->is_trackable) {
-            return true;
-        }
-
         $inventory = $ingredient->inventory()->first();
         if (! $inventory) {
             return false;
@@ -165,14 +149,11 @@ final class InventoryService
 
         foreach ($productIngredients as $productIngredient) {
             $ingredient = $productIngredient->ingredient;
+            $inventory = $ingredient->inventory()->first();
+            $requiredQuantity = $productIngredient->quantity_required * $quantity;
 
-            if ($ingredient->is_trackable) {
-                $inventory = $ingredient->inventory()->first();
-                $requiredQuantity = $productIngredient->quantity_required * $quantity;
-
-                if (! $inventory || $inventory->current_stock < $requiredQuantity) {
-                    return false;
-                }
+            if (! $inventory || $inventory->current_stock < $requiredQuantity) {
+                return false;
             }
         }
 

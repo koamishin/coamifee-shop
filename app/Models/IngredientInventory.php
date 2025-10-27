@@ -17,7 +17,10 @@ final class IngredientInventory extends Model
         'current_stock',
         'min_stock_level',
         'max_stock_level',
+        'reorder_level',
+        'unit_cost',
         'location',
+        'supplier_info',
         'last_restocked_at',
     ];
 
@@ -25,6 +28,8 @@ final class IngredientInventory extends Model
         'current_stock' => 'decimal:3',
         'min_stock_level' => 'decimal:3',
         'max_stock_level' => 'decimal:3',
+        'reorder_level' => 'decimal:3',
+        'unit_cost' => 'decimal:2',
         'last_restocked_at' => 'datetime',
     ];
 

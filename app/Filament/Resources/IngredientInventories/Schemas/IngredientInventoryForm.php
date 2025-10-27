@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\IngredientInventories\Schemas;
 
+use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
 use App\Models\Ingredient;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -29,8 +31,19 @@ final class IngredientInventoryForm
                     ->icon('heroicon-o-archive-box')
                     ->schema([
                         Grid::make(2)->schema([
+                            Toggle::make('create_new_ingredient')
+                                ->label('Create New Ingredient')
+                                ->helperText('Toggle to create a new ingredient instead of selecting an existing one')
+                                ->reactive()
+                                ->afterStateUpdated(
+                                    fn ($state, callable $set) => $set('ingredient_id', null)
+                                )
+                                ->default(fn ($record) => $record ? false : null)
+                                ->columnSpan(2),
+
+                            // Existing ingredient selection
                             Select::make('ingredient_id')
-                                ->label('Ingredient')
+                                ->label('Existing Ingredient')
                                 ->relationship('ingredient', 'name')
                                 ->required()
                                 ->searchable()
@@ -43,7 +56,33 @@ final class IngredientInventoryForm
                                 ->afterStateUpdated(
                                     self::populateIngredientDefaults(...),
                                 )
+                                ->hidden(fn (callable $get) => $get('create_new_ingredient'))
                                 ->columnSpan(2),
+
+                            // New ingredient creation fields
+                            TextInput::make('new_ingredient_name')
+                                ->label('Ingredient Name')
+                                ->required()
+                                ->maxLength(100)
+                                ->placeholder('e.g., Arabica Coffee Beans')
+                                ->helperText('Enter the full name of the ingredient')
+                                ->hidden(fn (callable $get) => !$get('create_new_ingredient'))
+                                ->requiredWith('create_new_ingredient')
+                                ->columnSpan(1),
+
+                            Select::make('new_ingredient_unit_type')
+                                ->label('Unit of Measurement')
+                                ->required()
+                                ->options(UnitType::getOptions())
+                                ->searchable()
+                                ->preload()
+                                ->placeholder('Select unit type')
+                                ->helperText('How this ingredient is measured and tracked')
+                                ->hidden(fn (callable $get) => !$get('create_new_ingredient'))
+                                ->requiredWith('create_new_ingredient')
+                                ->columnSpan(1),
+
+
 
                             TextInput::make('current_stock')
                                 ->label('Current Stock')
@@ -59,13 +98,16 @@ final class IngredientInventoryForm
                                 ->afterStateUpdated(
                                     fn (
                                         $state,
+                                        callable $get,
                                         callable $set,
                                     ) => self::updateStockStatus(
                                         $get,
                                     ),
                                 )
                                 ->columnSpan(1),
+                        ]),
 
+                        Grid::make(2)->schema([
                             TextInput::make('reorder_level')
                                 ->label('Reorder Level')
                                 ->numeric()
@@ -78,9 +120,7 @@ final class IngredientInventoryForm
                                 ->prefixIcon('heroicon-o-bell-alert')
                                 ->suffix(self::getUnitSuffix(...))
                                 ->columnSpan(1),
-                        ]),
 
-                        Grid::make(2)->schema([
                             TextInput::make('min_stock_level')
                                 ->label('Minimum Stock')
                                 ->numeric()
@@ -91,7 +131,9 @@ final class IngredientInventoryForm
                                 ->prefixIcon('heroicon-o-arrow-down')
                                 ->suffix(self::getUnitSuffix(...))
                                 ->columnSpan(1),
+                        ]),
 
+                        Grid::make(2)->schema([
                             TextInput::make('max_stock_level')
                                 ->label('Maximum Stock')
                                 ->numeric()
@@ -102,18 +144,18 @@ final class IngredientInventoryForm
                                 ->prefixIcon('heroicon-o-arrow-up')
                                 ->suffix(self::getUnitSuffix(...))
                                 ->columnSpan(1),
-                        ]),
 
-                        TextInput::make('location')
-                            ->label('Storage Location')
-                            ->placeholder(
-                                'e.g., Main Storage, Fridge A, Freezer B1',
-                            )
-                            ->helperText(
-                                'Physical location where this ingredient is stored',
-                            )
-                            ->prefixIcon('heroicon-o-map-pin')
-                            ->columnSpanFull(),
+                            TextInput::make('location')
+                                ->label('Storage Location')
+                                ->placeholder(
+                                    'e.g., Main Storage, Fridge A, Freezer B1',
+                                )
+                                ->helperText(
+                                    'Physical location where this ingredient is stored',
+                                )
+                                ->prefixIcon('heroicon-o-map-pin')
+                                ->columnSpan(1),
+                        ]),
 
                         TextInput::make('supplier_info')
                             ->label('Supplier Information')
@@ -165,34 +207,29 @@ final class IngredientInventoryForm
                         ]),
                     ]),
 
-                Section::make('Cost & Value Analysis')
-                    ->description('Financial analysis of current inventory')
-                    ->icon('heroicon-o-currency-dollar')
+                Section::make('Ingredient Details')
+                    ->description('View and manage ingredient basic information')
+                    ->icon('heroicon-o-cube')
                     ->collapsible()
                     ->schema([
-                        Grid::make(3)->schema([
-                            Placeholder::make('total_value')
-                                ->label('Total Value')
+                        Grid::make(2)->schema([
+                            Placeholder::make('ingredient_name')
+                                ->label('Ingredient Name')
                                 ->content(
-                                    self::calculateTotalValue(...),
+                                    self::getIngredientName(...),
                                 )
                                 ->columnSpan(1),
 
-                            Placeholder::make('cost_per_unit')
-                                ->label('Cost per Unit')
+                            Placeholder::make('unit_type')
+                                ->label('Unit of Measurement')
                                 ->content(
-                                    self::getCostPerUnit(...),
-                                )
-                                ->columnSpan(1),
-
-                            Placeholder::make('turnover_rate')
-                                ->label('Turnover Rate')
-                                ->content(
-                                    self::getTurnoverRate(...),
+                                    self::getUnitType(...),
                                 )
                                 ->columnSpan(1),
                         ]),
                     ]),
+
+
             ])
             ->columns(1);
     }
@@ -215,23 +252,40 @@ final class IngredientInventoryForm
         $set('max_stock_level', 10000);
         $set('reorder_level', 500);
 
-        // If ingredient has supplier info, populate it
-        if ($ingredient->supplier) {
-            $set('supplier_info', $ingredient->supplier);
+        // If ingredient has existing inventory, populate those values
+        $existingInventory = $ingredient->inventory()->first();
+        if ($existingInventory) {
+            $set('current_stock', $existingInventory->current_stock);
+            $set('min_stock_level', $existingInventory->min_stock_level);
+            $set('max_stock_level', $existingInventory->max_stock_level);
+            $set('reorder_level', $existingInventory->reorder_level);
+            $set('unit_cost', $existingInventory->unit_cost);
+            $set('location', $existingInventory->location);
+            $set('supplier_info', $existingInventory->supplier_info);
         }
     }
 
     private static function getUnitSuffix(callable $get): ?string
     {
         $ingredientId = $get('ingredient_id');
+        $isNewIngredient = $get('create_new_ingredient');
+        $newUnitTypeValue = $get('new_ingredient_unit_type');
+
+        if ($isNewIngredient && $newUnitTypeValue) {
+            $unitType = UnitType::tryFrom($newUnitTypeValue);
+            return $unitType?->getLabel();
+        }
 
         if (! $ingredientId) {
             return null;
         }
 
         $ingredient = Ingredient::query()->find($ingredientId);
+        if (!$ingredient) {
+            return null;
+        }
 
-        return $ingredient?->unit_type;
+        return $ingredient->unit_type?->getLabel();
     }
 
     private static function updateStockStatus(
@@ -341,62 +395,63 @@ final class IngredientInventoryForm
         );
     }
 
-    private static function calculateTotalValue(
-        callable $get,
-    ): HtmlString {
-        $current = (float) ($get('current_stock') ?? 0);
+
+
+    private static function getIngredientName(callable $get): HtmlString
+    {
+        $isNewIngredient = $get('create_new_ingredient');
+        $newIngredientName = $get('new_ingredient_name');
         $ingredientId = $get('ingredient_id');
 
+        if ($isNewIngredient && $newIngredientName) {
+            return new HtmlString(
+                "<span style='color: #374151; font-weight: 600;'>{$newIngredientName}</span>"
+            );
+        }
+
         if (! $ingredientId) {
-            return new HtmlString('<span style="color: #6b7280;">$0.00</span>');
+            return new HtmlString('<span style="color: #6b7280;">Not selected</span>');
         }
 
         $ingredient = Ingredient::query()->find($ingredientId);
         if (! $ingredient) {
-            return new HtmlString('<span style="color: #6b7280;">$0.00</span>');
+            return new HtmlString('<span style="color: #6b7280;">Not found</span>');
         }
-
-        return self::formatInventoryValue($current, $ingredient->unit_cost);
-    }
-
-    private static function getCostPerUnit(callable $get): HtmlString
-    {
-        $ingredientId = $get('ingredient_id');
-
-        if (! $ingredientId) {
-            return new HtmlString('<span style="color: #6b7280;">$0.00</span>');
-        }
-
-        $ingredient = Ingredient::query()->find($ingredientId);
-        if (! $ingredient) {
-            return new HtmlString('<span style="color: #6b7280;">$0.00</span>');
-        }
-
-        return self::formatUnitCost($ingredient->unit_cost);
-    }
-
-    private static function getTurnoverRate(callable $get): HtmlString
-    {
-        // This would typically be calculated from historical usage data
-        // For now, we'll provide a placeholder
-        $current = (float) ($get('current_stock') ?? 0);
-        $max = (float) ($get('max_stock_level') ?? 1000);
-
-        if ($current === 0) {
-            return new HtmlString('<span style="color: #6b7280;">N/A</span>');
-        }
-
-        // Simple turnover calculation (current/max)
-        $turnover = ($current / $max) * 100;
-
-        $color = match (true) {
-            $turnover > 80 => '#10b981',
-            $turnover > 50 => '#f59e0b',
-            default => '#dc2626',
-        };
 
         return new HtmlString(
-            "<span style='color: {$color};'>{$turnover}%</span>",
+            "<span style='color: #374151; font-weight: 600;'>{$ingredient->name}</span>",
         );
     }
+
+    private static function getUnitType(callable $get): HtmlString
+    {
+        $isNewIngredient = $get('create_new_ingredient');
+        $newUnitTypeValue = $get('new_ingredient_unit_type');
+        $ingredientId = $get('ingredient_id');
+
+        if ($isNewIngredient && $newUnitTypeValue) {
+            $newUnitType = UnitType::tryFrom($newUnitTypeValue);
+            if ($newUnitType) {
+                return new HtmlString(
+                    "<span style='color: #6b7280;'>{$newUnitType->getLabel()}</span>"
+                );
+            }
+            return new HtmlString('<span style="color: #6b7280;">Not selected</span>');
+        }
+
+        if (! $ingredientId) {
+            return new HtmlString('<span style="color: #6b7280;">-</span>');
+        }
+
+        $ingredient = Ingredient::query()->find($ingredientId);
+        if (! $ingredient || !$ingredient->unit_type) {
+            return new HtmlString('<span style="color: #6b7280;">-</span>');
+        }
+
+        return new HtmlString(
+            "<span style='color: #6b7280;'>{$ingredient->unit_type->getLabel()}</span>"
+        );
+    }
+
+
 }

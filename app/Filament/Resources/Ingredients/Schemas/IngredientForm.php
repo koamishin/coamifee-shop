@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Ingredients\Schemas;
 
+use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
 use App\Models\Ingredient;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -23,7 +25,7 @@ final class IngredientForm
         return $schema
             ->components([
                 Section::make('Basic Information')
-                    ->description('Manage ingredient details and settings')
+                    ->description('Manage ingredient basic details')
                     ->icon('heroicon-o-cube')
                     ->schema([
                         Grid::make(2)->schema([
@@ -36,70 +38,15 @@ final class IngredientForm
                                     'Enter the full name of the ingredient',
                                 )
                                 ->columnSpan(1),
-                            TextInput::make('unit_type')
+                            Select::make('unit_type')
                                 ->label('Unit of Measurement')
                                 ->required()
-                                ->placeholder('e.g., grams, ml, pieces')
+                                ->options(UnitType::getOptions())
+                                ->searchable()
+                                ->preload()
+                                ->placeholder('Select unit type')
                                 ->helperText(
                                     'How this ingredient is measured and tracked',
-                                )
-                                ->columnSpan(1),
-                        ]),
-                        TextInput::make('supplier')
-                            ->label('Supplier')
-                            ->placeholder('e.g., Local Coffee Roasters')
-                            ->helperText('Primary supplier for this ingredient')
-                            ->columnSpanFull(),
-                        Textarea::make('description')
-                            ->label('Description')
-                            ->placeholder(
-                                'e.g., Premium Arabica beans from Colombia, medium roast',
-                            )
-                            ->helperText(
-                                'Detailed description of the ingredient',
-                            )
-                            ->rows(3)
-                            ->columnSpanFull(),
-                    ]),
-
-                Section::make('Inventory & Cost Settings')
-                    ->description('Configure tracking and cost management')
-                    ->icon('heroicon-o-currency-dollar')
-                    ->schema([
-                        Grid::make(2)->schema([
-                            Toggle::make('is_trackable')
-                                ->label('Track Stock Levels')
-                                ->helperText(
-                                    'Enable real-time stock tracking for this ingredient',
-                                )
-                                ->default(true)
-                                ->reactive()
-                                ->afterStateUpdated(
-                                    self::updateStockFieldsVisibility(...),
-                                )
-                                ->columnSpan(1),
-                            TextInput::make('current_stock')
-                                ->label('Current Stock Level')
-                                ->numeric()
-                                ->step(0.01)
-                                ->placeholder('e.g., 5000')
-                                ->helperText('Current available quantity')
-                                ->columnSpan(1),
-                        ]),
-                        Grid::make(2)->schema([
-                            TextInput::make('unit_cost')
-                                ->label('Cost Per Unit')
-                                ->prefix(self::getCurrencyPrefix())
-                                ->suffix(self::getCurrencySuffix())
-                                ->numeric()
-                                ->step(0.001)
-                                ->placeholder('e.g., 0.020')
-                                ->helperText('Cost per unit of measurement')
-                                ->columnSpan(1),
-                            Placeholder::make('stock_status')
-                                ->label('Stock Status')
-                                ->content(
-                                    self::getStockStatus(...),
                                 )
                                 ->columnSpan(1),
                         ]),
@@ -108,39 +55,5 @@ final class IngredientForm
             ->columns(1);
     }
 
-    private static function updateStockFieldsVisibility(
-        bool $isTrackable,
-        callable $set,
-    ): void {
-        $set('current_stock', $isTrackable);
-    }
 
-    private static function getStockStatus(?Ingredient $record): string
-    {
-        if (! $record || ! $record->is_trackable) {
-            return '⚪ Not Tracked';
-        }
-
-        if (! $record->id) {
-            return '⚪ New Ingredient';
-        }
-
-        $inventory = $record->inventory()->first();
-        if (! $inventory) {
-            return '🔴 No Inventory Set';
-        }
-
-        if ($inventory->current_stock <= ($inventory->min_stock_level ?? 0)) {
-            return '🔴 Low Stock';
-        }
-
-        if (
-            $inventory->current_stock >=
-            ($inventory->max_stock_level ?? PHP_FLOAT_MAX)
-        ) {
-            return '🟠 Overstocked';
-        }
-
-        return '🟢 Normal';
-    }
 }

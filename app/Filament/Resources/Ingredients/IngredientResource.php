@@ -27,13 +27,13 @@ final class IngredientResource extends Resource
 
     protected static UnitEnum|string|null $navigationGroup = 'Inventory Management';
 
-    protected static ?string $navigationLabel = 'Ingredients';
+    protected static ?string $navigationLabel = 'Basic Ingredients';
 
     protected static ?string $modelLabel = 'Ingredient';
 
-    protected static ?string $pluralModelLabel = 'Ingredients';
+    protected static ?string $pluralModelLabel = 'Basic Ingredients';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 2;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
 

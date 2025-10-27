@@ -16,8 +16,8 @@ final class ReportingService
 {
     public function getInventoryReport(): array
     {
-        $trackableIngredients = Ingredient::with('inventory')
-            ->where('is_trackable', true)
+        $ingredientsWithInventory = Ingredient::with('inventory')
+            ->whereHas('inventory')
             ->get()
             ->map(function ($ingredient): array {
                 $inventory = $ingredient->inventory()->first();
@@ -28,22 +28,21 @@ final class ReportingService
                     'min_stock_level' => $inventory?->min_stock_level ?? 0,
                     'max_stock_level' => $inventory?->max_stock_level ?? 0,
                     'location' => $inventory?->location ?? 'N/A',
-                    'unit_type' => $ingredient->unit_type,
+                    'unit_type' => $ingredient->unit_type->getLabel(),
                     'status' => $this->getStockStatus($inventory),
                 ];
             });
 
-        $untrackableIngredients = Ingredient::query()->where('is_trackable', false)
+        $ingredientsWithoutInventory = Ingredient::query()->whereDoesntHave('inventory')
             ->get()
             ->map(fn ($ingredient): array => [
                 'name' => $ingredient->name,
-                'unit_type' => $ingredient->unit_type,
-                'unit_cost' => $ingredient->unit_cost,
+                'unit_type' => $ingredient->unit_type->getLabel(),
             ]);
 
         return [
-            'trackable' => $trackableIngredients,
-            'untrackable' => $untrackableIngredients,
+            'with_inventory' => $ingredientsWithInventory,
+            'without_inventory' => $ingredientsWithoutInventory,
             'low_stock_alerts' => $this->getLowStockItems(),
         ];
     }
@@ -187,7 +186,7 @@ final class ReportingService
     private function getLowStockItems(): Collection
     {
         return Ingredient::with('inventory')
-            ->where('is_trackable', true)
+            ->whereHas('inventory')
             ->whereHas('inventory', function ($query): void {
                 $query->whereColumn('current_stock', '<=', 'min_stock_level');
             })

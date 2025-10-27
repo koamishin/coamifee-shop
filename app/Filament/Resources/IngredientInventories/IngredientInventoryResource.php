@@ -25,13 +25,13 @@ final class IngredientInventoryResource extends Resource
 
     protected static UnitEnum|string|null $navigationGroup = 'Inventory Management';
 
-    protected static ?string $navigationLabel = 'Ingredient Inventories';
+    protected static ?string $navigationLabel = 'Ingredient Inventory';
 
     protected static ?string $modelLabel = 'Ingredient Inventory';
 
-    protected static ?string $pluralModelLabel = 'Ingredient Inventories';
+    protected static ?string $pluralModelLabel = 'Ingredient Inventory';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 1;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArchiveBox;
 
@@ -55,6 +55,15 @@ final class IngredientInventoryResource extends Resource
         return [
             //
         ];
+    }
+
+
+
+
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'primary';
     }
 
     public static function getPages(): array

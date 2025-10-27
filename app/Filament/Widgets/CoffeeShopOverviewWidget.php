@@ -50,8 +50,7 @@ final class CoffeeShopOverviewWidget extends BaseWidget
 
     private function getLowStockCount(): int
     {
-        return IngredientInventory::with('ingredient')
-            ->whereHas('ingredient', fn ($query) => $query->where('is_trackable', true))
+        return IngredientInventory::whereHas('ingredient', fn ($query) => $query->whereNotNull('id'))
             ->whereColumn('current_stock', '<=', 'min_stock_level')
             ->count();
     }
