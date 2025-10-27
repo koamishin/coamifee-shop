@@ -1,0 +1,10 @@
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/var/www/html
+    environment:
+      - AUTORUN_ENABLED=true
+      - PHP_OPCACHE_ENABLE=1
