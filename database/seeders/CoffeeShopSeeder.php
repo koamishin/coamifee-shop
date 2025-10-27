@@ -328,55 +328,63 @@ final class CoffeeShopSeeder extends Seeder
 
         if (str_contains($product->name, 'Bihon')) {
             $recipe = [
-                $ingredients['Bihon Noodles']->id => 200 * $multiplier,
-                $ingredients['Cabbage']->id => 100 * $multiplier,
-                $ingredients['Carrots']->id => 50 * $multiplier,
-                $ingredients['Onions']->id => 30 * $multiplier,
-                $ingredients['Soy Sauce']->id => 30 * $multiplier,
-                $ingredients['Garlic']->id => 20 * $multiplier,
-                $ingredients['Oil']->id => 20 * $multiplier,
+                $this->getIngredientId($ingredients, 'Bihon Noodles') => 200 * $multiplier,
+                $this->getIngredientId($ingredients, 'Cabbage') => 100 * $multiplier,
+                $this->getIngredientId($ingredients, 'Carrots') => 50 * $multiplier,
+                $this->getIngredientId($ingredients, 'Onions') => 30 * $multiplier,
+                $this->getIngredientId($ingredients, 'Soy Sauce') => 30 * $multiplier,
+                $this->getIngredientId($ingredients, 'Garlic') => 20 * $multiplier,
+                $this->getIngredientId($ingredients, 'Oil') => 20 * $multiplier,
             ];
         } elseif (str_contains($product->name, 'Canton')) {
             $recipe = [
-                $ingredients['Canton Noodles']->id => 200 * $multiplier,
-                $ingredients['Cabbage']->id => 100 * $multiplier,
-                $ingredients['Carrots']->id => 50 * $multiplier,
-                $ingredients['Onions']->id => 30 * $multiplier,
-                $ingredients['Soy Sauce']->id => 30 * $multiplier,
-                $ingredients['Garlic']->id => 20 * $multiplier,
-                $ingredients['Oil']->id => 20 * $multiplier,
+                $this->getIngredientId($ingredients, 'Canton Noodles') => 200 * $multiplier,
+                $this->getIngredientId($ingredients, 'Cabbage') => 100 * $multiplier,
+                $this->getIngredientId($ingredients, 'Carrots') => 50 * $multiplier,
+                $this->getIngredientId($ingredients, 'Onions') => 30 * $multiplier,
+                $this->getIngredientId($ingredients, 'Soy Sauce') => 30 * $multiplier,
+                $this->getIngredientId($ingredients, 'Garlic') => 20 * $multiplier,
+                $this->getIngredientId($ingredients, 'Oil') => 20 * $multiplier,
             ];
         } elseif (str_contains($product->name, 'Sotanghon')) {
             $recipe = [
-                $ingredients['Sotanghon Noodles']->id => 150 * $multiplier,
-                $ingredients['Cabbage']->id => 100 * $multiplier,
-                $ingredients['Carrots']->id => 50 * $multiplier,
-                $ingredients['Onions']->id => 30 * $multiplier,
-                $ingredients['Soy Sauce']->id => 30 * $multiplier,
-                $ingredients['Garlic']->id => 20 * $multiplier,
-                $ingredients['Oil']->id => 20 * $multiplier,
+                $this->getIngredientId($ingredients, 'Sotanghon Noodles') => 150 * $multiplier,
+                $this->getIngredientId($ingredients, 'Cabbage') => 100 * $multiplier,
+                $this->getIngredientId($ingredients, 'Carrots') => 50 * $multiplier,
+                $this->getIngredientId($ingredients, 'Onions') => 30 * $multiplier,
+                $this->getIngredientId($ingredients, 'Soy Sauce') => 30 * $multiplier,
+                $this->getIngredientId($ingredients, 'Garlic') => 20 * $multiplier,
+                $this->getIngredientId($ingredients, 'Oil') => 20 * $multiplier,
             ];
         } elseif (str_contains($product->name, 'Miki')) {
             $recipe = [
-                $ingredients['Miki Noodles']->id => 250 * $multiplier,
-                $ingredients['Cabbage']->id => 100 * $multiplier,
-                $ingredients['Carrots']->id => 50 * $multiplier,
-                $ingredients['Onions']->id => 30 * $multiplier,
-                $ingredients['Soy Sauce']->id => 30 * $multiplier,
-                $ingredients['Garlic']->id => 20 * $multiplier,
-                $ingredients['Oil']->id => 20 * $multiplier,
+                $this->getIngredientId($ingredients, 'Miki Noodles') => 250 * $multiplier,
+                $this->getIngredientId($ingredients, 'Cabbage') => 100 * $multiplier,
+                $this->getIngredientId($ingredients, 'Carrots') => 50 * $multiplier,
+                $this->getIngredientId($ingredients, 'Onions') => 30 * $multiplier,
+                $this->getIngredientId($ingredients, 'Soy Sauce') => 30 * $multiplier,
+                $this->getIngredientId($ingredients, 'Garlic') => 20 * $multiplier,
+                $this->getIngredientId($ingredients, 'Oil') => 20 * $multiplier,
             ];
         } elseif (str_contains($product->name, 'Palabok')) {
             $recipe = [
-                $ingredients['Pancit Noodles Mix']->id => 200 * $multiplier,
-                $ingredients['Pancit Sauce']->id => 100 * $multiplier,
-                $ingredients['Garlic']->id => 20 * $multiplier,
-                $ingredients['Onions']->id => 30 * $multiplier,
-                $ingredients['Oil']->id => 20 * $multiplier,
+                $this->getIngredientId($ingredients, 'Pancit Noodles Mix') => 200 * $multiplier,
+                $this->getIngredientId($ingredients, 'Pancit Sauce') => 100 * $multiplier,
+                $this->getIngredientId($ingredients, 'Garlic') => 20 * $multiplier,
+                $this->getIngredientId($ingredients, 'Onions') => 30 * $multiplier,
+                $this->getIngredientId($ingredients, 'Oil') => 20 * $multiplier,
             ];
         }
 
+        // Filter out any ingredients that couldn't be found (remove entries with ingredient_id = 0)
+        $validRecipe = [];
         foreach ($recipe as $ingredientId => $quantity) {
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
             ProductIngredient::query()->firstOrCreate([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredientId,
@@ -414,34 +422,42 @@ final class CoffeeShopSeeder extends Seeder
     {
         if (str_contains($product->name, 'Spaghetti')) {
             $recipe = [
-                $ingredients['Spaghetti Pasta']->id => 200,
-                $ingredients['Beef Ground']->id => 150,
-                $ingredients['Tomato Sauce']->id => 150,
-                $ingredients['Onions']->id => 30,
-                $ingredients['Garlic']->id => 20,
-                $ingredients['Cheese']->id => 50,
+                $this->getIngredientId($ingredients, 'Spaghetti Pasta') => 200,
+                $this->getIngredientId($ingredients, 'Beef Ground') => 150,
+                $this->getIngredientId($ingredients, 'Tomato Sauce') => 150,
+                $this->getIngredientId($ingredients, 'Onions') => 30,
+                $this->getIngredientId($ingredients, 'Garlic') => 20,
+                $this->getIngredientId($ingredients, 'Cheese') => 50,
             ];
         } elseif (str_contains($product->name, 'Stroganoff')) {
             $recipe = [
-                $ingredients['Fettuccine Pasta']->id => 200,
-                $ingredients['Beef Strips']->id => 200,
-                $ingredients['Mushrooms']->id => 100,
-                $ingredients['Heavy Cream']->id => 100,
-                $ingredients['Onions']->id => 30,
-                $ingredients['Garlic']->id => 20,
+                $this->getIngredientId($ingredients, 'Fettuccine Pasta') => 200,
+                $this->getIngredientId($ingredients, 'Beef Strips') => 200,
+                $this->getIngredientId($ingredients, 'Mushrooms') => 100,
+                $this->getIngredientId($ingredients, 'Heavy Cream') => 100,
+                $this->getIngredientId($ingredients, 'Onions') => 30,
+                $this->getIngredientId($ingredients, 'Garlic') => 20,
             ];
         } elseif (str_contains($product->name, 'Carbonara')) {
             $recipe = [
-                $ingredients['Spaghetti Pasta']->id => 200,
-                $ingredients['Bacon']->id => 100,
-                $ingredients['Heavy Cream']->id => 150,
-                $ingredients['Eggs']->id => 2,
-                $ingredients['Garlic']->id => 20,
-                $ingredients['Cheese']->id => 50,
+                $this->getIngredientId($ingredients, 'Spaghetti Pasta') => 200,
+                $this->getIngredientId($ingredients, 'Bacon') => 100,
+                $this->getIngredientId($ingredients, 'Heavy Cream') => 150,
+                $this->getIngredientId($ingredients, 'Eggs') => 2,
+                $this->getIngredientId($ingredients, 'Garlic') => 20,
+                $this->getIngredientId($ingredients, 'Cheese') => 50,
             ];
         }
 
+        // Filter out any ingredients that couldn't be found
+        $validRecipe = [];
         foreach ($recipe as $ingredientId => $quantity) {
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
             ProductIngredient::query()->firstOrCreate([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredientId,
@@ -547,7 +563,15 @@ final class CoffeeShopSeeder extends Seeder
             ];
         }
 
+        // Filter out any ingredients that couldn't be found
+        $validRecipe = [];
         foreach ($recipe as $ingredientId => $quantity) {
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
             ProductIngredient::query()->firstOrCreate([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredientId,
@@ -585,32 +609,39 @@ final class CoffeeShopSeeder extends Seeder
     {
         if (str_contains($product->name, 'Chicken Tenders')) {
             $recipe = [
-                $ingredients['Chicken Tenders']->id => 6,
-                $ingredients['Flour']->id => 50,
-                $ingredients['Eggs']->id => 1,
-                $ingredients['Oil']->id => 100,
+                $this->getIngredientId($ingredients, 'Chicken Tenders') => 6,
+                $this->getIngredientId($ingredients, 'Flour') => 50,
+                $this->getIngredientId($ingredients, 'Eggs') => 1,
+                $this->getIngredientId($ingredients, 'Oil') => 100,
             ];
         } elseif (str_contains($product->name, 'Nuggets')) {
             $recipe = [
-                $ingredients['Chicken Nuggets']->id => 10,
-                $ingredients['Flour']->id => 30,
-                $ingredients['Eggs']->id => 1,
-                $ingredients['Oil']->id => 100,
+                $this->getIngredientId($ingredients, 'Chicken Nuggets') => 10,
+                $this->getIngredientId($ingredients, 'Flour') => 30,
+                $this->getIngredientId($ingredients, 'Eggs') => 1,
+                $this->getIngredientId($ingredients, 'Oil') => 100,
             ];
         } elseif (str_contains($product->name, 'Tempura')) {
             $recipe = [
-                $ingredients['Tempura Shrimp']->id => 8,
-                $ingredients['Flour']->id => 50,
-                $ingredients['Eggs']->id => 1,
-                $ingredients['Oil']->id => 100,
+                $this->getIngredientId($ingredients, 'Tempura Shrimp') => 8,
+                $this->getIngredientId($ingredients, 'Flour') => 50,
+                $this->getIngredientId($ingredients, 'Eggs') => 1,
+                $this->getIngredientId($ingredients, 'Oil') => 100,
             ];
         }
 
+        // Filter out any ingredients that couldn't be found
+        $validRecipe = [];
         foreach ($recipe as $ingredientId => $quantity) {
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
             ProductIngredient::query()->firstOrCreate([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredientId,
-            ], [
                 'quantity_required' => $quantity,
             ]);
         }
@@ -645,53 +676,65 @@ final class CoffeeShopSeeder extends Seeder
 
     private function addSaladRecipe(Product $product, array $ingredients): void
     {
+        $recipe = [];
+
         if (str_contains($product->name, 'Waldorf')) {
             $recipe = [
-                $ingredients['Apples']->id => 100,
-                $ingredients['Walnuts']->id => 30,
-                $ingredients['Lettuce']->id => 50,
-                $ingredients['Mayonnaise']->id => 50,
+                $this->getIngredientId($ingredients, 'Apples') => 100,
+                $this->getIngredientId($ingredients, 'Walnuts') => 30,
+                $this->getIngredientId($ingredients, 'Lettuce') => 50,
+                $this->getIngredientId($ingredients, 'Mayonnaise') => 50,
             ];
         } elseif (str_contains($product->name, 'Ribbon')) {
             $recipe = [
-                $ingredients['Carrots']->id => 100,
-                $ingredients['Cucumber']->id => 100,
-                $ingredients['Lettuce']->id => 50,
-                $ingredients['Mayonnaise']->id => 50,
+                $this->getIngredientId($ingredients, 'Carrots') => 100,
+                $this->getIngredientId($ingredients, 'Cucumber') => 100,
+                $this->getIngredientId($ingredients, 'Lettuce') => 50,
+                $this->getIngredientId($ingredients, 'Mayonnaise') => 50,
             ];
         } elseif (str_contains($product->name, 'Fruit')) {
             $recipe = [
-                $ingredients['Apples']->id => 100,
-                $ingredients['Banana']->id => 100,
-                $ingredients['Grapes']->id => 100,
-                $ingredients['Cream']->id => 50,
-                $ingredients['Sugar']->id => 30,
+                $this->getIngredientId($ingredients, 'Apples') => 100,
+                $this->getIngredientId($ingredients, 'Banana') => 100,
+                $this->getIngredientId($ingredients, 'Grapes') => 100,
+                $this->getIngredientId($ingredients, 'Cream') => 50,
+                $this->getIngredientId($ingredients, 'Sugar') => 30,
             ];
         } elseif (str_contains($product->name, 'Chicken')) {
             $recipe = [
-                $ingredients['Chicken Breast']->id => 150,
-                $ingredients['Lettuce']->id => 100,
-                $ingredients['Mayonnaise']->id => 50,
-                $ingredients['Celery']->id => 30,
+                $this->getIngredientId($ingredients, 'Chicken Breast') => 150,
+                $this->getIngredientId($ingredients, 'Lettuce') => 100,
+                $this->getIngredientId($ingredients, 'Mayonnaise') => 50,
+                $this->getIngredientId($ingredients, 'Celery') => 30,
             ];
         } elseif (str_contains($product->name, 'Potato')) {
             $recipe = [
-                $ingredients['Potatoes']->id => 200,
-                $ingredients['Mayonnaise']->id => 80,
-                $ingredients['Eggs']->id => 2,
-                $ingredients['Onions']->id => 30,
+                $this->getIngredientId($ingredients, 'Potatoes') => 200,
+                $this->getIngredientId($ingredients, 'Mayonnaise') => 80,
+                $this->getIngredientId($ingredients, 'Eggs') => 2,
+                $this->getIngredientId($ingredients, 'Onions') => 30,
             ];
-        } elseif (str_contains($product->name, 'Green')) {
+        } elseif (str_contains($product->name, 'Garden')) {
             $recipe = [
-                $ingredients['Lettuce']->id => 150,
-                $ingredients['Tomatoes']->id => 50,
-                $ingredients['Cucumber']->id => 50,
-                $ingredients['Onions']->id => 20,
-                $ingredients['Oil']->id => 30,
+                $this->getIngredientId($ingredients, 'Lettuce') => 150,
+                $this->getIngredientId($ingredients, 'Tomatoes') => 50,
+                $this->getIngredientId($ingredients, 'Cucumber') => 50,
+                $this->getIngredientId($ingredients, 'Onions') => 20,
+                $this->getIngredientId($ingredients, 'Oil') => 30,
             ];
         }
 
-        foreach ($recipe as $ingredientId => $quantity) {
+        // Filter out any ingredients that couldn't be found
+        $validRecipe = [];
+        if (!empty($recipe)) {
+            foreach ($recipe as $ingredientId => $quantity) {
+                if ($ingredientId > 0) {
+                    $validRecipe[$ingredientId] = $quantity;
+                }
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
             ProductIngredient::query()->firstOrCreate([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredientId,
@@ -700,6 +743,7 @@ final class CoffeeShopSeeder extends Seeder
             ]);
         }
     }
+
 
     private function createFriesProducts(Category $category, array $ingredients): void
     {
@@ -727,7 +771,9 @@ final class CoffeeShopSeeder extends Seeder
 
     private function addFriesRecipe(Product $product, array $ingredients): void
     {
-        if (str_contains($product->name, 'Potato')) {
+        $recipe = [];
+
+        if (str_contains($product->name, 'Waldorf')) {
             $recipe = [
                 $ingredients['Potatoes']->id => 200,
                 $ingredients['Oil']->id => 100,
@@ -747,7 +793,15 @@ final class CoffeeShopSeeder extends Seeder
             ];
         }
 
+        // Filter out any ingredients that couldn't be found
+        $validRecipe = [];
         foreach ($recipe as $ingredientId => $quantity) {
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
             ProductIngredient::query()->firstOrCreate([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredientId,
@@ -805,7 +859,15 @@ final class CoffeeShopSeeder extends Seeder
             ];
         }
 
+        // Filter out any ingredients that couldn't be found
+        $validRecipe = [];
         foreach ($recipe as $ingredientId => $quantity) {
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
             ProductIngredient::query()->firstOrCreate([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredientId,
@@ -874,7 +936,15 @@ final class CoffeeShopSeeder extends Seeder
             ];
         }
 
+        // Filter out any ingredients that couldn't be found
+        $validRecipe = [];
         foreach ($recipe as $ingredientId => $quantity) {
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
             ProductIngredient::query()->firstOrCreate([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredientId,
@@ -921,37 +991,45 @@ final class CoffeeShopSeeder extends Seeder
 
         if (str_contains($product->name, 'Cheesy Spam')) {
             $recipe = array_merge($baseRecipe, [
-                $ingredients['Spam']->id => 50,
-                $ingredients['Cheese']->id => 40,
+                $this->getIngredientId($ingredients, 'Spam') => 50,
+                $this->getIngredientId($ingredients, 'Cheese') => 40,
             ]);
         } elseif (str_contains($product->name, 'Chicken')) {
             $recipe = array_merge($baseRecipe, [
-                $ingredients['Chicken Breast']->id => 100,
-                $ingredients['Onions']->id => 20,
-                $ingredients['Garlic']->id => 10,
+                $this->getIngredientId($ingredients, 'Chicken Breast') => 100,
+                $this->getIngredientId($ingredients, 'Onions') => 20,
+                $this->getIngredientId($ingredients, 'Garlic') => 10,
             ]);
         } elseif (str_contains($product->name, 'Corned Beef')) {
             $recipe = array_merge($baseRecipe, [
-                $ingredients['Corned Beef']->id => 100,
-                $ingredients['Onions']->id => 20,
-                $ingredients['Garlic']->id => 10,
+                $this->getIngredientId($ingredients, 'Corned Beef') => 100,
+                $this->getIngredientId($ingredients, 'Onions') => 20,
+                $this->getIngredientId($ingredients, 'Garlic') => 10,
             ]);
         } elseif (str_contains($product->name, 'Tuna')) {
             $recipe = array_merge($baseRecipe, [
-                $ingredients['Tuna Flakes']->id => 80,
-                $ingredients['Onions']->id => 20,
-                $ingredients['Garlic']->id => 10,
+                $this->getIngredientId($ingredients, 'Tuna Flakes') => 80,
+                $this->getIngredientId($ingredients, 'Onions') => 20,
+                $this->getIngredientId($ingredients, 'Garlic') => 10,
             ]);
-        } elseif (str_contains($product->name, 'Veggies')) {
+        } else {
             $recipe = array_merge($baseRecipe, [
-                $ingredients['Cabbage']->id => 50,
-                $ingredients['Carrots']->id => 30,
-                $ingredients['Onions']->id => 20,
-                $ingredients['Garlic']->id => 10,
+                $this->getIngredientId($ingredients, 'Cabbage') => 50,
+                $this->getIngredientId($ingredients, 'Carrots') => 30,
+                $this->getIngredientId($ingredients, 'Onions') => 20,
+                $this->getIngredientId($ingredients, 'Garlic') => 10,
             ]);
         }
 
+        // Filter out any ingredients that couldn't be found
+        $validRecipe = [];
         foreach ($recipe as $ingredientId => $quantity) {
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
             ProductIngredient::query()->firstOrCreate([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredientId,
@@ -1024,7 +1102,15 @@ final class CoffeeShopSeeder extends Seeder
             ]);
         }
 
+        // Filter out any ingredients that couldn't be found
+        $validRecipe = [];
         foreach ($recipe as $ingredientId => $quantity) {
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
             ProductIngredient::query()->firstOrCreate([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredientId,
@@ -1080,7 +1166,15 @@ final class CoffeeShopSeeder extends Seeder
             ]);
         }
 
+        // Filter out any ingredients that couldn't be found
+        $validRecipe = [];
         foreach ($recipe as $ingredientId => $quantity) {
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
             ProductIngredient::query()->firstOrCreate([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredientId,
@@ -1170,7 +1264,15 @@ final class CoffeeShopSeeder extends Seeder
             ]);
         }
 
+        // Filter out any ingredients that couldn't be found
+        $validRecipe = [];
         foreach ($recipe as $ingredientId => $quantity) {
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
             ProductIngredient::query()->firstOrCreate([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredientId,
@@ -1260,7 +1362,15 @@ final class CoffeeShopSeeder extends Seeder
             ]);
         }
 
+        // Filter out any ingredients that couldn't be found
+        $validRecipe = [];
         foreach ($recipe as $ingredientId => $quantity) {
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
             ProductIngredient::query()->firstOrCreate([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredientId,
@@ -1342,7 +1452,15 @@ final class CoffeeShopSeeder extends Seeder
             ]);
         }
 
+        // Filter out any ingredients that couldn't be found
+        $validRecipe = [];
         foreach ($recipe as $ingredientId => $quantity) {
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
             ProductIngredient::query()->firstOrCreate([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredientId,
@@ -1390,7 +1508,15 @@ final class CoffeeShopSeeder extends Seeder
             ];
         }
 
+        // Filter out any ingredients that couldn't be found
+        $validRecipe = [];
         foreach ($recipe as $ingredientId => $quantity) {
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
             ProductIngredient::query()->firstOrCreate([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredientId,
@@ -1400,9 +1526,9 @@ final class CoffeeShopSeeder extends Seeder
         }
     }
 
-    private function getRandomStock(string $unitType): int
+    private function getRandomStock(UnitType $unitType): int
     {
-        return match ($unitType) {
+        return match ($unitType->value) {
             'grams' => rand(5000, 50000),
             'kilograms' => rand(5, 50),
             'ml' => rand(1000, 20000),
@@ -1412,9 +1538,9 @@ final class CoffeeShopSeeder extends Seeder
         };
     }
 
-    private function getMinStockLevel(string $unitType): int
+    private function getMinStockLevel(UnitType $unitType): int
     {
-        return match ($unitType) {
+        return match ($unitType->value) {
             'grams' => 1000,
             'kilograms' => 1,
             'ml' => 500,
@@ -1424,12 +1550,12 @@ final class CoffeeShopSeeder extends Seeder
         };
     }
 
-    private function getMaxStockLevel(string $unitType): int
+    private function getMaxStockLevel(UnitType $unitType): int
     {
-        return match ($unitType) {
-            'grams' => 100000,
+        return match ($unitType->value) {
+            'grams' => 50000,
             'kilograms' => 100,
-            'ml' => 50000,
+            'ml' => 25000,
             'liters' => 50,
             'pieces' => 2000,
             default => 2000,
@@ -1486,4 +1612,25 @@ final class CoffeeShopSeeder extends Seeder
 
         return $costs[$ingredientName] ?? 0.005; // Default cost
     }
+
+    /**
+     * Safely get ingredient ID from ingredients array
+     */
+    private function getIngredientId(array $ingredients, string $ingredientName): int
+    {
+        if (!isset($ingredients[$ingredientName])) {
+            $this->command->warn("Warning: Ingredient '{$ingredientName}' not found in ingredients array");
+            return 0; // Return 0 to indicate missing ingredient
+        }
+
+        $ingredient = $ingredients[$ingredientName];
+        if (!$ingredient || !$ingredient->id) {
+            $this->command->warn("Warning: Ingredient '{$ingredientName}' has no valid ID");
+            return 0;
+        }
+
+        return $ingredient->id;
+    }
+
+
 }
