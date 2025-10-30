@@ -15,10 +15,7 @@ it(
     'can access current_stock from ingredient and its inventory relationship',
     function (): void {
         // Create an ingredient
-        $ingredient = Ingredient::factory()->create([
-            'current_stock' => 100.5,
-            'is_trackable' => true,
-        ]);
+        $ingredient = Ingredient::factory()->create();
 
         // Create inventory record for this ingredient
         $inventory = IngredientInventory::factory()->create([
@@ -29,8 +26,7 @@ it(
         // Reload the ingredient with its relationship
         $ingredient = $ingredient->fresh(['inventory']);
 
-        // Test that we can access both stock values
-        expect((float) $ingredient->current_stock)->toBe(100.5);
+        // Test that we can access stock from inventory relationship
         expect($ingredient->inventory)->not->toBeNull();
         expect((float) $ingredient->inventory->current_stock)->toBe(75.25);
     },
@@ -41,10 +37,7 @@ test(
     function (): void {
         // Create related models
         $product = Product::factory()->create();
-        $ingredient = Ingredient::factory()->create([
-            'current_stock' => 50.75,
-            'is_trackable' => true,
-        ]);
+        $ingredient = Ingredient::factory()->create();
 
         // Create inventory record
         $inventory = IngredientInventory::factory()->create([
@@ -62,10 +55,7 @@ test(
         // Load the product ingredient with relationships
         $productIngredient->load(['ingredient', 'ingredient.inventory']);
 
-        // Test accessing the current stock values
-        expect((float) $productIngredient->ingredient->current_stock)->toBe(
-            50.75,
-        );
+        // Test accessing the current stock from inventory relationship
         expect(
             (float) $productIngredient->ingredient->inventory->current_stock,
         )->toBe(45.0);

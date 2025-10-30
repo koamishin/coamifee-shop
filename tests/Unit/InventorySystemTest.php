@@ -16,13 +16,9 @@ test('ingredient creation and inventory tracking', function (): void {
     $ingredient = Ingredient::query()->create([
         'name' => 'Test Coffee Beans',
         'unit_type' => 'grams',
-        'is_trackable' => true,
-        'current_stock' => 1000,
-        'unit_cost' => 0.02,
     ]);
 
     expect($ingredient)->toBeInstanceOf(Ingredient::class);
-    expect($ingredient->is_trackable)->toBeTrue();
 
     $inventory = IngredientInventory::factory()->create([
         'ingredient_id' => $ingredient->id,
@@ -47,9 +43,6 @@ test('product recipe ingredients', function (): void {
     $ingredient = Ingredient::query()->create([
         'name' => 'Test Milk',
         'unit_type' => 'ml',
-        'is_trackable' => true,
-        'current_stock' => 2000,
-        'unit_cost' => 0.001,
     ]);
 
     $productIngredient = ProductIngredient::query()->create([
@@ -68,9 +61,6 @@ test('inventory service stock decrease', function (): void {
     $ingredient = Ingredient::query()->create([
         'name' => 'Test Coffee',
         'unit_type' => 'grams',
-        'is_trackable' => true,
-        'current_stock' => 1000,
-        'unit_cost' => 0.02,
     ]);
 
     $inventory = IngredientInventory::factory()->create([

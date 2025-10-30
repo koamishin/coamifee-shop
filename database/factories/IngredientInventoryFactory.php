@@ -21,7 +21,7 @@ final class IngredientInventoryFactory extends Factory
     public function definition(): array
     {
         return [
-            'ingredient_id' => Ingredient::factory()->trackable(),
+            'ingredient_id' => Ingredient::factory(),
             'current_stock' => fake()->randomFloat(3, 0, 10000),
             'min_stock_level' => fake()->randomFloat(3, 100, 1000),
             'max_stock_level' => fake()->randomFloat(3, 1000, 50000),

@@ -3,8 +3,11 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Fortify\Features;
 use Livewire\Livewire;
+
+uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     if (! Features::canManageTwoFactorAuthentication()) {
@@ -22,7 +25,7 @@ test('two factor settings page can be rendered', function (): void {
 
     $this->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route('settings.profile'))
+        ->get(route('two-factor.show'))
         ->assertOk()
         ->assertSeeLivewire('settings.two-factor');
 });
@@ -32,7 +35,7 @@ test(
     function (): void {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->get(route('settings.profile'));
+        $response = $this->actingAs($user)->get(route('two-factor.show'));
 
         $response->assertRedirect(route('password.confirm'));
     },
@@ -47,7 +50,7 @@ test(
 
         $response = $this->actingAs($user)
             ->withSession(['auth.password_confirmed_at' => time()])
-            ->get(route('settings.profile'));
+            ->get(route('two-factor.show'));
 
         $response->assertForbidden();
     },

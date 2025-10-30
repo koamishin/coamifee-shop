@@ -200,7 +200,7 @@ final class ExchangeRate extends Model
      * Scope for active rates
      */
     #[Scope]
-    protected function active($query)
+    protected function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
@@ -209,7 +209,7 @@ final class ExchangeRate extends Model
      * Scope for non-expired rates
      */
     #[Scope]
-    protected function notExpired($query)
+    protected function scopeNotExpired($query)
     {
         return $query->where('expires_at', '>', now());
     }
@@ -218,7 +218,7 @@ final class ExchangeRate extends Model
      * Scope for a specific currency pair
      */
     #[Scope]
-    protected function forPair($query, Currency $base, Currency $target)
+    protected function scopeForPair($query, Currency $base, Currency $target)
     {
         return $query
             ->where('base_currency', $base->value)

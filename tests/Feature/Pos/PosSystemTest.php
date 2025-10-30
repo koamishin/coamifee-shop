@@ -3,7 +3,10 @@
 declare(strict_types=1);
 
 use App\Livewire\Pos;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+
+uses(RefreshDatabase::class);
 
 test('pos page renders with sidebar and products', function (): void {
     Livewire::test(Pos::class)

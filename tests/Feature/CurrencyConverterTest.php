@@ -3,7 +3,11 @@
 declare(strict_types=1);
 
 use App\Enums\Currency;
+use App\Models\ExchangeRate;
 use App\Services\CurrencyConverter;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
 
 it('can create currency enum values', function (): void {
     expect(Currency::USD->value)->toBe('USD');
@@ -94,43 +98,56 @@ it('returns rate 1.0 for same currency', function (): void {
 });
 
 it('can convert and format with target currency', function (): void {
-    $converter = new class extends CurrencyConverter
-    {
-        public function convert(
-            float $amount,
-            Currency $from,
-            Currency $to,
-        ): float {
-            return match ([$from->value, $to->value]) {
-                ['USD', 'EUR'] => 92.0,
-                ['USD', 'GBP'] => 79.0,
-                default => $amount,
-            };
-        }
-    };
+    // Create mock exchange rate in database
+    ExchangeRate::create([
+        'base_currency' => 'USD',
+        'target_currency' => 'EUR',
+        'rate' => 0.92,
+        'source' => 'test',
+        'fetched_at' => now(),
+        'expires_at' => now()->addHours(24),
+        'is_active' => true,
+    ]);
 
+    $converter = new CurrencyConverter();
     $result = $converter->convertAndFormat(100.0, Currency::USD, Currency::EUR);
 
     expect($result)->toBe('92.00€');
 });
 
 it('can convert to multiple currencies', function (): void {
-    $converter = new class extends CurrencyConverter
-    {
-        public function convert(
-            float $amount,
-            Currency $from,
-            Currency $to,
-        ): float {
-            return match ([$from->value, $to->value]) {
-                ['USD', 'EUR'] => 92.0,
-                ['USD', 'GBP'] => 79.0,
-                ['USD', 'JPY'] => 14950,
-                default => $amount,
-            };
-        }
-    };
+    // Create mock exchange rates in database
+    ExchangeRate::create([
+        'base_currency' => 'USD',
+        'target_currency' => 'EUR',
+        'rate' => 0.92,
+        'source' => 'test',
+        'fetched_at' => now(),
+        'expires_at' => now()->addHours(24),
+        'is_active' => true,
+    ]);
 
+    ExchangeRate::create([
+        'base_currency' => 'USD',
+        'target_currency' => 'GBP',
+        'rate' => 0.79,
+        'source' => 'test',
+        'fetched_at' => now(),
+        'expires_at' => now()->addHours(24),
+        'is_active' => true,
+    ]);
+
+    ExchangeRate::create([
+        'base_currency' => 'USD',
+        'target_currency' => 'JPY',
+        'rate' => 149.50,
+        'source' => 'test',
+        'fetched_at' => now(),
+        'expires_at' => now()->addHours(24),
+        'is_active' => true,
+    ]);
+
+    $converter = new CurrencyConverter();
     $results = $converter->convertToMultiple(100.0, Currency::USD, [
         Currency::EUR,
         Currency::GBP,

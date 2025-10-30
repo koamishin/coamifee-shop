@@ -25,7 +25,7 @@ final class InventoryTransactionFactory extends Factory
         $quantityChange = fake()->randomFloat(3, -1000, 1000);
 
         return [
-            'ingredient_id' => Ingredient::factory()->trackable(),
+            'ingredient_id' => Ingredient::factory(),
             'transaction_type' => fake()->randomElement(['restock', 'usage', 'adjustment', 'waste']),
             'quantity_change' => $quantityChange,
             'previous_stock' => $previousStock,

@@ -23,13 +23,11 @@ beforeEach(function (): void {
     // Create ingredients
     $coffeeBeans = Ingredient::factory()->create([
         'name' => 'Coffee Beans',
-        'is_trackable' => true,
         'unit_type' => 'grams',
     ]);
 
     $milk = Ingredient::factory()->create([
         'name' => 'Milk',
-        'is_trackable' => true,
         'unit_type' => 'ml',
     ]);
 

@@ -5,11 +5,16 @@ declare(strict_types=1);
 use App\Enums\UnitType;
 use App\Models\Ingredient;
 use App\Models\IngredientInventory;
-use function Pest\Laravel\{actingAs, get, post, put, delete};
-use function Pest\Faker\{fake};
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
+use function Pest\Laravel\post;
+
+uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->user = \App\Models\User::factory()->create();
+    $this->user = App\Models\User::factory()->create();
     actingAs($this->user);
 });
 
@@ -215,7 +220,7 @@ describe('Centralized Ingredient Inventory Management', function () {
 
             expect($testCase['type']->getLabel())->toBe($testCase['label']);
             expect($testCase['type']->getColor())->toBe($testCase['color']);
-            expect($testCase['type']->getIcon())->toBe('heroicon-o-' . $testCase['icon']);
+            expect($testCase['type']->getIcon())->toBe('heroicon-o-'.$testCase['icon']);
             expect($testCase['type']->getDescription())->toBeString();
         }
     });

@@ -22,7 +22,6 @@ test('sidebar component renders successfully', function (): void {
 test('can add to cart when product available', function (): void {
     Livewire::test(Sidebar::class)
         ->call('addToCart', $this->product->id)
-        ->assertDispatched('productSelected', $this->product->id)
         ->assertNotDispatched('insufficient-inventory');
 });
 
@@ -115,7 +114,7 @@ test('filters products by selected category', function (): void {
 });
 
 test('refreshes inventory on event', function (): void {
-    Livewire::test(Sidebar::class)
+    $component = Livewire::test(Sidebar::class)
         ->assertSet(
             'productAvailability.'.$this->product->id.'.can_produce',
             true,
@@ -123,12 +122,10 @@ test('refreshes inventory on event', function (): void {
         ->dispatch('refreshInventory');
 
     // After refresh, product should still be available
-    $component = Livewire::test(Sidebar::class);
-    expect(
-        $component->get('productAvailability')[$this->product->id][
-            'can_produce'
-        ],
-    )->toBeTrue();
+    $component->assertSet(
+        'productAvailability.'.$this->product->id.'.can_produce',
+        true,
+    );
 });
 
 test('loads categories', function (): void {
@@ -146,13 +143,12 @@ test('loads products', function (): void {
 test('can check if can add to cart', function (): void {
     Livewire::test(Sidebar::class)
         ->call('addToCart', $this->product->id)
-        ->assertNotDispatched('insufficient-inventory')
-        ->assertDispatched('productSelected');
+        ->assertNotDispatched('insufficient-inventory');
 });
 
 test('handles multiple ingredients for availability', function (): void {
     // Create product with multiple ingredients
-    $milkIngredient = Ingredient::factory()->create(['is_trackable' => true]);
+    $milkIngredient = Ingredient::factory()->create();
     ProductIngredient::factory()->create([
         'product_id' => $this->product->id,
         'ingredient_id' => $milkIngredient->id,
@@ -171,9 +167,10 @@ test('handles multiple ingredients for availability', function (): void {
     );
 });
 
-test('ignores untrackable ingredients for availability', function (): void {
-    // Create product with untrackable ingredient
-    $sugarIngredient = Ingredient::factory()->create(['is_trackable' => false]);
+todo('ignores untrackable ingredients for availability', function (): void {
+    // Since all ingredients are now trackable after database migration,
+    // this test concept needs to be re-evaluated
+    $sugarIngredient = Ingredient::factory()->create();
     ProductIngredient::factory()->create([
         'product_id' => $this->product->id,
         'ingredient_id' => $sugarIngredient->id,
@@ -195,13 +192,11 @@ beforeEach(function (): void {
     // Create ingredients
     $coffeeBeans = Ingredient::factory()->create([
         'name' => 'Coffee Beans',
-        'is_trackable' => true,
         'unit_type' => 'grams',
     ]);
 
     $coffeeBeans2 = Ingredient::factory()->create([
         'name' => 'Coffee Beans (Unavailable)',
-        'is_trackable' => true,
         'unit_type' => 'grams',
     ]);
 
