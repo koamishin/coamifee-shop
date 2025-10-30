@@ -17,6 +17,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
 
 final class ProductIngredientsTable
@@ -51,12 +52,7 @@ final class ProductIngredientsTable
                     ->sortable()
                     ->alignRight()
                     ->formatStateUsing(
-                        fn ($state, $record): HtmlString => new HtmlString("
-                        <div style='display: flex; align-items: center; justify-content: flex-end; gap: 4px;'>
-                            <span style='font-weight: 600;'>{$state}</span>
-                            <span style='color: #6b7280; font-size: 0.85em;'>{$record->ingredient->unit_type->getLabel()}</span>
-                        </div>
-                    "),
+                        fn ($state, $record): string => (string) $state
                     ),
 
                 TextColumn::make('cost_per_product')
@@ -67,7 +63,7 @@ final class ProductIngredientsTable
                     ->alignRight()
                     ->formatStateUsing(
                         fn ($record): int|float => $record->quantity_required *
-                            $record->ingredient->unit_cost,
+                            ($record->ingredient->unit_cost ?? 0),
                     )
                     ->color('success'),
 
@@ -113,6 +109,45 @@ final class ProductIngredientsTable
             ->defaultSort('product.name')
             ->striped()
             ->filters([
+                SelectFilter::make('unit_type')
+                    ->label('Unit Type')
+                    ->options(UnitType::getOptions())
+                    ->placeholder('Filter by measurement unit')
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (empty($data['value'])) {
+                            return $query;
+                        }
+
+                        return $query->whereHas('ingredient', function (Builder $query) use ($data) {
+                            $query->where('unit_type', $data['value']);
+                        });
+                    }),
+
+                SelectFilter::make('stock_status')
+                    ->label('Stock Status')
+                    ->options([
+                        'low' => '🔴 Low Stock',
+                        'limited' => '🟠 Limited Stock',
+                        'good' => '🟢 Good Stock',
+                        'no_inventory' => '⚪ No Inventory Set',
+                    ])
+                    ->placeholder('Filter by stock status')
+                    ->query(function (Builder $query, array $data): Builder {
+                        return match ($data['value']) {
+                            'low' => $query->whereHas('ingredient.inventory', function (Builder $q) {
+                                $q->whereColumn('current_stock', '<=', 'min_stock_level');
+                            }),
+                            'limited' => $query->whereHas('ingredient.inventory', function (Builder $q) {
+                                $q->where('current_stock', '>', 'min_stock_level')
+                                  ->whereRaw('current_stock <= (min_stock_level * 3)');
+                            }),
+                            'good' => $query->whereHas('ingredient.inventory', function (Builder $q) {
+                                $q->whereRaw('current_stock > (min_stock_level * 3)');
+                            }),
+                            'no_inventory' => $query->whereDoesntHave('ingredient.inventory'),
+                            default => $query,
+                        };
+                    }),
                 SelectFilter::make('product_id')
                     ->label('Product')
                     ->relationship('product', 'name')
@@ -126,16 +161,6 @@ final class ProductIngredientsTable
                     ->searchable()
                     ->preload()
                     ->placeholder('Filter by ingredient'),
-
-                SelectFilter::make('stock_status')
-                    ->label('Stock Status')
-                    ->options([
-                        'low' => '🔴 Low Stock',
-                        'limited' => '🟠 Limited Stock',
-                        'good' => '🟢 Good Stock',
-                        'no_inventory' => '⚪ No Inventory Set',
-                    ])
-                    ->placeholder('Filter by stock status'),
             ])
             ->actions([
                 ActionGroup::make([
@@ -223,6 +248,7 @@ final class ProductIngredientsTable
                     ),
             ])
             ->poll('60s'); // Refresh every minute for real-time stock updates
+
     }
 
     private static function formatStock($record): string

@@ -25,7 +25,13 @@ final class DatabaseSeeder extends Seeder
             'password' => Hash::make('password'),
         ]);
 
-        // Use the CoffeeShopSeeder for all sample data
+        // Use the CoffeeShopSeeder for existing data
         $this->call(CoffeeShopSeeder::class);
+
+        // Seed Goodland Kitchen and Bar inventory
+        $this->call(GoodlandInventorySeeder::class);
+
+        // Seed test data for enhanced UI testing
+        $this->call(TestProductIngredientsSeeder::class);
     }
 }

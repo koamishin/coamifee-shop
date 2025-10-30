@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ProductIngredients\Schemas;
 
+use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
 use App\Models\Ingredient;
 use Filament\Forms\Components\Placeholder;
@@ -115,13 +116,13 @@ final class ProductIngredientForm
                                             );
                                         }
 
-                                        $cost =
-                                            $quantity * $ingredient->unit_cost;
+                                        $unitCost = $ingredient->unit_cost ?? 0;
+                                        $cost = $quantity * $unitCost;
                                         $unit = $ingredient->unit_type;
 
                                         return self::formatCostCalculation(
                                             $quantity,
-                                            $ingredient->unit_cost,
+                                            $unitCost,
                                             $unit,
                                         );
                                     })
@@ -222,7 +223,7 @@ final class ProductIngredientForm
                                             }
 
                                             $currentStock =
-                                                $ingredient->current_stock;
+                                                $ingredient->inventory->current_stock;
                                             $inventory = $ingredient->inventory;
                                             $minStock =
                                                 $inventory->min_stock_level ??
@@ -269,7 +270,7 @@ final class ProductIngredientForm
             return null;
         }
 
-        return $ingredient->unit_type;
+        return $ingredient->unit_type?->getLabel() ?? $ingredient->unit_type;
     }
 
     private static function getUnitInfo(callable $get): HtmlString|string
@@ -286,8 +287,47 @@ final class ProductIngredientForm
             return 'Ingredient not found';
         }
 
-        return new HtmlString(
-            "<span style='color: #374151; font-weight: 500;'>{$ingredient->unit_type}</span>",
-        );
+        $unitType = $ingredient->unit_type;
+        $label = $unitType?->getLabel() ?? $unitType;
+        $icon = $unitType?->getIcon() ?? 'heroicon-o-cube';
+        $color = $unitType?->getColor() ?? 'gray';
+        $description = $unitType?->getDescription() ?? 'Measurement unit';
+
+        return new HtmlString("
+            <div style='display: flex; align-items: center; gap: 8px;'>
+                <span style='color: #6b7280;'>
+                    <svg class='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                        <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'></path>
+                    </svg>
+                </span>
+                <div>
+                    <div style='color: #374151; font-weight: 600;'>{$label}</div>
+                    <div style='color: #6b7280; font-size: 0.85em;'>{$description}</div>
+                </div>
+            </div>
+        ");
+    }
+
+    private static function formatCostCalculation(float $quantity, float $unitCost, $unitType): HtmlString
+    {
+        $totalCost = $quantity * $unitCost;
+        $unitLabel = $unitType?->getLabel() ?? 'unit';
+
+        return new HtmlString("
+            <div style='padding: 16px; background: #f9fafb; border-radius: 8px; border-left: 4px solid #10b981;'>
+                <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
+                    <span style='color: #6b7280; font-size: 0.9em;'>Calculation:</span>
+                    <span style='color: #374151; font-weight: 500;'>
+                        {$quantity} {$unitLabel} × {$unitCost} = {$totalCost}
+                    </span>
+                </div>
+                <div style='display: flex; justify-content: space-between; align-items: center;'>
+                    <span style='color: #111827; font-weight: 600; font-size: 1.1em;'>Cost per Product:</span>
+                    <span style='color: #10b981; font-weight: bold; font-size: 1.2em;'>" .
+                        number_format($totalCost, 2) .
+                    "</span>
+                </div>
+            </div>
+        ");
     }
 }
