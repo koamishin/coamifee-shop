@@ -1,0 +1,22 @@
+
+  [41;1m InvalidArgumentException [49;22m
+
+[39;1m  Unexpected end of input[39;22m
+
+  at [32mvendor\psy\psysh\src\Shell.php[39m:[32m968[39m
+    964▕ 
+    965▕         if (!$this->hasValidCode()) {
+    966▕             $this->popCodeStack();
+    967▕ 
+  ➜ 968▕             throw new \InvalidArgumentException('Unexpected end of input');
+    969▕         }
+    970▕     }
+    971▕ 
+    972▕     /**
+
+  [33m1   [39m[39;1mvendor\psy\psysh\src\Shell.php[39;22m:[39;1m1497[39;22m
+  [90m    Psy\Shell::setCode("App\Models\Ingredient::first()-")[39m
+
+  [33m2   [39m[39;1mvendor\laravel\tinker\src\Console\TinkerCommand.php[39;22m:[39;1m76[39;22m
+  [90m    Psy\Shell::execute("App\Models\Ingredient::first()-")[39m
+
