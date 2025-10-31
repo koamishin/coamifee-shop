@@ -6,8 +6,7 @@ nixPkgs = [
     "php84",
     "php84Packages.composer",
     "nodejs_22",
-    "nginx",
-    "supervisor"
+    "nginx"
 ]
 
 [phases.build]
@@ -34,6 +33,9 @@ cmds = [
 
     # Set proper permissions for Laravel directories
     "chmod -R 775 storage bootstrap/cache",
+
+    # Install supervisor via apt
+    "apt-get update && apt-get install -y supervisor",
 
     # Create supervisor config directories
     "mkdir -p /etc/supervisor/conf.d/ /var/log/supervisor /var/run/supervisor /run/php"
