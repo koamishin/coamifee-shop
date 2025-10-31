@@ -1,11 +1,11 @@
-# Use PHP 8.4 FPM as base image
-FROM php:8.4-fpm-alpine AS base
+# Use PHP 8.4 FPM as base image (Debian for better compatibility)
+FROM php:8.4-fpm AS base
 
 # Set working directory
 WORKDIR /var/www/html
 
 # Install system dependencies
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
     curl \
@@ -15,15 +15,18 @@ RUN apk add --no-cache \
     zip \
     libzip-dev \
     libpng-dev \
-    libjpeg-turbo-dev \
+    libjpeg-dev \
     libwebp-dev \
-    freetype-dev \
+    libfreetype6-dev \
     libxml2-dev \
-    sqlite-dev \
-    oniguruma-dev \
-    icu-dev \
+    libsqlite3-dev \
+    libonig-dev \
+    libicu-dev \
     nodejs \
-    npm
+    npm \
+    gnupg \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
@@ -46,8 +49,8 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Create non-root user
-RUN addgroup -g 1000 -S laravel \
-    && adduser -S laravel -u 1000 -G laravel
+RUN groupadd -r laravel -g 1000 \
+    && useradd -r -g laravel -u 1000 -d /var/www/html laravel
 
 # Set permissions
 RUN chown -R laravel:laravel /var/www/html \
