@@ -1,13 +1,11 @@
-# Use PHP 8.4 FPM as base image (Debian for better compatibility)
-FROM php:8.4-fpm AS base
+# Use PHP 8.4 CLI as base image for development
+FROM php:8.4-cli AS base
 
 # Set working directory
 WORKDIR /var/www/html
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    nginx \
-    supervisor \
     curl \
     wget \
     git \
@@ -29,9 +27,12 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
+# Extensions that need configuration
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
-    && docker-php-ext-install -j$(nproc) \
-        gd \
+    && docker-php-ext-install -j$(nproc) gd
+
+# Extensions that don't need configuration
+RUN docker-php-ext-install -j$(nproc) \
         pdo_sqlite \
         zip \
         bcmath \
@@ -41,7 +42,6 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
         mbstring \
         opcache \
         pdo \
-        tokenizer \
         xml \
     && docker-php-ext-enable opcache
 
@@ -62,6 +62,9 @@ FROM base AS development
 # Switch to laravel user
 USER laravel
 
+# Copy application files first
+COPY --chown=laravel:laravel . .
+
 # Copy composer files
 COPY --chown=laravel:laravel composer.json composer.lock ./
 
@@ -73,9 +76,6 @@ COPY --chown=laravel:laravel package.json package-lock.json ./
 
 # Install Node.js dependencies
 RUN npm ci
-
-# Copy application files
-COPY --chown=laravel:laravel . .
 
 # Create environment file
 RUN cp .env.example .env
@@ -96,6 +96,9 @@ FROM base AS production
 # Switch to laravel user
 USER laravel
 
+# Copy application files first
+COPY --chown=laravel:laravel . .
+
 # Copy composer files
 COPY --chown=laravel:laravel composer.json composer.lock ./
 
@@ -108,9 +111,6 @@ COPY --chown=laravel:laravel package.json package-lock.json ./
 # Install Node.js dependencies and build
 RUN npm ci --only=production \
     && npm run build
-
-# Copy application files
-COPY --chown=laravel:laravel . .
 
 # Create environment file
 RUN cp .env.example .env
@@ -131,22 +131,3 @@ RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cac
 
 # Final stage
 FROM production
-
-# Copy configuration files from host
-COPY --chown=laravel:laravel docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY --chown=laravel:laravel docker/nginx.conf /etc/nginx/nginx.conf
-COPY --chown=laravel:laravel docker/php.ini /usr/local/etc/php/conf.d/custom.ini
-COPY --chown=laravel:laravel docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
-
-# Switch back to root for final setup
-USER root
-
-# Create log directories
-RUN mkdir -p /var/log/supervisor /var/log/nginx \
-    && chown -R laravel:laravel /var/log/supervisor /var/log/nginx
-
-# Expose ports
-EXPOSE 8080
-
-# Start supervisor
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

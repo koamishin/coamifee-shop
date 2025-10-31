@@ -1,10 +1,48 @@
+version: '3.8'
+
 services:
-  php:
+  app:
     build:
       context: .
-      dockerfile: Dockerfile
+      target: development
+    container_name: coamifee-shop-app
+    ports:
+      - "8080:8080"
     volumes:
       - .:/var/www/html
+      - /var/www/html/vendor
+      - /var/www/html/node_modules
     environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_URL=http://localhost:8080
+      - DB_CONNECTION=sqlite
+      - DB_DATABASE=/var/www/html/database/database.sqlite
+      - CACHE_DRIVER=file
+      - SESSION_DRIVER=file
+      - QUEUE_CONNECTION=sync
       - AUTORUN_ENABLED=true
       - PHP_OPCACHE_ENABLE=1
+    networks:
+      - coamifee-network
+
+  node:
+    image: node:22-alpine
+    container_name: coamifee-shop-node
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+    command: sh -c "npm install && npm run dev"
+    networks:
+      - coamifee-network
+    profiles:
+      - dev
+
+networks:
+  coamifee-network:
+    driver: bridge
