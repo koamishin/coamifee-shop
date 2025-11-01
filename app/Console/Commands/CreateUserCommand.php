@@ -27,8 +27,11 @@ final class CreateUserCommand extends Command
             'name' => $this->argument('name'),
             'email' => $this->argument('email'),
             'password' => bcrypt($this->argument('password')),
-            'is_admin' => $this->option('role') === 'admin',
+            'is_admin' => $this->option('role') === 'super_admin',
         ]);
+
+            $user->assignRole('super_admin');
+
 
         $this->info('User created!');
     }
