@@ -63,6 +63,9 @@ chown -R www-data:www-data /var/www/html &&
 # Ensure www-data can write to supervisor log directory
 chown -R www-data:www-data /var/log/supervisor
 
+# Ensure storage directory is writable for supervisord pid file
+chmod -R 775 /var/www/html/storage
+
 service php8.4-fpm start
 
 service redis-server start
@@ -78,5 +81,5 @@ cron
 
 echo "Vito is running! 🚀"
 
-# Run supervisord as www-data user
-exec gosu www-data /usr/bin/supervisord
+# Run supervisord as root (worker process will run as www-data)
+exec /usr/bin/supervisord
