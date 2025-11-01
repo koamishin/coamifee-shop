@@ -54,8 +54,18 @@ if [ ! -f "$INIT_FLAG" ]; then
   touch "$INIT_FLAG"
 fi
 
+# Create supervisor log directory
+mkdir -p /var/log/supervisor
+
 chown -R www-data:www-data /var/www/html &&
   chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Ensure www-data can write to supervisor log directory
+chown -R www-data:www-data /var/log/supervisor
+
+# Ensure storage directory is writable for supervisord pid file
+chmod -R 775 /var/www/html/storage
+
 service php8.4-fpm start
 
 service redis-server start
@@ -71,4 +81,5 @@ cron
 
 echo "Vito is running! 🚀"
 
-/usr/bin/supervisord
+# Run supervisord as root (worker process will run as www-data)
+exec /usr/bin/supervisord
