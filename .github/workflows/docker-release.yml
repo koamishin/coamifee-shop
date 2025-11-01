@@ -33,16 +33,16 @@ jobs:
           echo "Branch: $COMMIT_REF"
           echo "Is prerelease: $IS_PRERELEASE"
 
-          TAGS="koamishin/coamifee-shop:$TAG_NAME"
+          TAGS="yukazaki/coamifee-shop:$TAG_NAME"
 
           if [[ "$COMMIT_REF" == 1.x* ]]; then
-            TAGS="$TAGS,koamishin/coamifee-shop:1.x"
+            TAGS="$TAGS,yukazaki/coamifee-shop:1.x"
           elif [[ "$COMMIT_REF" == 2.x* ]]; then
-            TAGS="$TAGS,koamishin/coamifee-shop:2.x"
+            TAGS="$TAGS,yukazaki/coamifee-shop:2.x"
           elif [[ "$COMMIT_REF" == 3.x* ]]; then
-            TAGS="$TAGS,koamishin/coamifee-shop:3.x"
+            TAGS="$TAGS,yukazaki/coamifee-shop:3.x"
             if [[ "$IS_PRERELEASE" == "false" ]]; then
-              TAGS="$TAGS,koamishin/coamifee-shop:latest"
+              TAGS="$TAGS,yukazaki/coamifee-shop:latest"
             fi
           fi
 
