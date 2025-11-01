@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Models\User;
 use Illuminate\Console\Command;
 
-class CreateUserCommand extends Command
+final class CreateUserCommand extends Command
 {
     protected $signature = 'user:create {name} {email} {password} {--role=admin}';
 
@@ -28,7 +30,7 @@ class CreateUserCommand extends Command
             'is_admin' => $this->option('role') === 'admin',
         ]);
 
-        $user->ensureHasDefaultProject();
+
 
         $this->info('User created!');
     }
