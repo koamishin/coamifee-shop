@@ -74,12 +74,17 @@ service nginx start
 php /var/www/html/artisan migrate --force
 php /var/www/html/artisan optimize:clear
 php /var/www/html/artisan optimize
+php /var/www/html/artisan shield:generate --all --panel=admin --no-interaction
 
 php /var/www/html/artisan user:create "$NAME" "$EMAIL" "$PASSWORD"
-
+php artisan shield:super-admin --no-interaction --panel=admin
 cron
 
-echo "Vito is running! 🚀"
+echo "Coamifee is running! 🚀"
+echo "Your account has been created successfully."
+echo "User: $NAME"
+echo "Email: $EMAIL"
+echo "Password: $PASSWORD"
 
 # Run supervisord as root (worker process will run as www-data)
 exec /usr/bin/supervisord

@@ -1,10 +1,8 @@
 <?php
 
-declare(strict_types=1);
-
 return [
     App\Providers\AppServiceProvider::class,
     App\Providers\Filament\AdminPanelProvider::class,
     App\Providers\FortifyServiceProvider::class,
-    //    \Modules\UserManagerModule\Providers\UserManagerModuleServiceProvider::class,
+    App\Providers\HorizonServiceProvider::class,
 ];
