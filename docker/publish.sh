@@ -33,16 +33,16 @@ if [ ${#TAGS[@]} -eq 0 ]; then
 fi
 
 # Clone the specified branch of the repo
-rm -rf /tmp/vito
-git clone --branch "$BRANCH" --depth 1 git@github.com:vitodeploy/vito.git /tmp/vito
-cd /tmp/vito || exit
+rm -rf /tmp/coamifee-shop
+git clone --branch "$BRANCH" --depth 1 git@github.com:koamishi/coamifee-shop.git /tmp/coamifee-shop
+cd /tmp/coamifee-shop || exit
 
 # Prepare tag arguments for docker buildx
 TAG_ARGS=()
 for TAG in "${TAGS[@]}"; do
     # Trim whitespace to avoid invalid tag formatting
     TAG_CLEANED=$(echo -n "$TAG" | xargs)
-    TAG_ARGS+=("-t" "vitodeploy/vito:$TAG_CLEANED")
+    TAG_ARGS+=("-t" "koamishin/coamifee-shop-$TAG_CLEANED")
 done
 
 # Build and push the image

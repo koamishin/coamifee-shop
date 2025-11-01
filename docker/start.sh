@@ -1,8 +1,8 @@
 #!/bin/bash
 
 INIT_FLAG="/var/www/html/storage/.INIT_ENV"
-NAME=${NAME:-"vito"}
-EMAIL=${EMAIL:-"vito@vitodeploy.com"}
+NAME=${NAME:-"test"}
+EMAIL=${EMAIL:-"test@example.com"}
 PASSWORD=${PASSWORD:-"password"}
 
 # Function to check if a string is 32 characters long
