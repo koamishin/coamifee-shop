@@ -103,7 +103,7 @@ final class TestProductIngredientsSeeder extends Seeder
                     'description' => "Test product for UI demonstration - {$productData['name']}",
                     'preparation_time' => rand(5, 20),
                     'is_active' => true,
-                    'sku' => 'TEST-' . strtoupper(str_replace(' ', '-', $productData['name'])),
+                    'sku' => 'TEST-'.mb_strtoupper(str_replace(' ', '-', $productData['name'])),
                 ])
             );
 
@@ -144,7 +144,7 @@ final class TestProductIngredientsSeeder extends Seeder
         ];
 
         foreach ($testRecipes as $productName => $recipe) {
-            if (!isset($products[$productName])) {
+            if (! isset($products[$productName])) {
                 continue;
             }
 
@@ -154,8 +154,9 @@ final class TestProductIngredientsSeeder extends Seeder
             ProductIngredient::query()->where('product_id', $product->id)->delete();
 
             foreach ($recipe as $ingredientName => $quantity) {
-                if (!isset($ingredients[$ingredientName])) {
+                if (! isset($ingredients[$ingredientName])) {
                     $this->command->warn("Warning: Ingredient '{$ingredientName}' not found");
+
                     continue;
                 }
 

@@ -11,7 +11,6 @@ use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -25,36 +24,36 @@ final class IngredientsTable
         return $table
             ->columns([
 
-                    TextColumn::make('name')
-                        ->label('Ingredient')
-                        ->description('Name of the ingredient')
-                        ->searchable()
-                        ->sortable()
-                        ->weight('bold'),
-                    TextColumn::make('unit_type')
-                        ->label('Unit')
-                        ->description('Measurement unit')
-                        ->badge()
-                        ->color(fn ($state) => $state?->getColor() ?? 'gray')
-                        ->icon(fn ($state) => $state?->getIcon())
-                        ->formatStateUsing(fn ($state) => $state?->getLabel())
-                        ->searchable()
-                        ->sortable(),
-                    TextColumn::make('inventory.current_stock')
-                        ->label('Stock')
-                        ->description('Current stock level')
-                        ->numeric(decimalPlaces: 2, thousandsSeparator: ',')
-                        ->sortable()
-                        ->alignRight()
-                        ->weight('medium')
-                        ->color(self::getStockColor(...))
-                        ->placeholder('No inventory'),
-                    TextColumn::make('created_at')
-                        ->label('Added')
-                        ->description('Date ingredient was added')
-                        ->dateTime('M j, Y')
-                        ->sortable()
-                        ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('name')
+                    ->label('Ingredient')
+                    ->description('Name of the ingredient')
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold'),
+                TextColumn::make('unit_type')
+                    ->label('Unit')
+                    ->description('Measurement unit')
+                    ->badge()
+                    ->color(fn ($state) => $state?->getColor() ?? 'gray')
+                    ->icon(fn ($state) => $state?->getIcon())
+                    ->formatStateUsing(fn ($state) => $state?->getLabel())
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('inventory.current_stock')
+                    ->label('Stock')
+                    ->description('Current stock level')
+                    ->numeric(decimalPlaces: 2, thousandsSeparator: ',')
+                    ->sortable()
+                    ->alignRight()
+                    ->weight('medium')
+                    ->color(self::getStockColor(...))
+                    ->placeholder('No inventory'),
+                TextColumn::make('created_at')
+                    ->label('Added')
+                    ->description('Date ingredient was added')
+                    ->dateTime('M j, Y')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('unit_type')
@@ -84,7 +83,7 @@ final class IngredientsTable
                 CreateAction::make()
                     ->label('Create Ingredient')
                     ->url(route('filament.admin.resources.ingredients.create')),
-                \Filament\Actions\Action::make('manage_inventory')
+                Action::make('manage_inventory')
                     ->label('Manage Inventory')
                     ->icon('heroicon-o-archive-box')
                     ->url(route('filament.admin.resources.ingredient-inventories.create')),

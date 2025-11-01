@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Filament\Widgets;
@@ -14,8 +15,6 @@ final class LowStockAlertWidget extends BaseWidget
     protected static ?int $sort = 7;
 
     protected int|string|array $columnSpan = 'full';
-
-    private static ?string $maxHeight = '400px';
 
     public function getHeading(): string
     {
@@ -85,7 +84,7 @@ final class LowStockAlertWidget extends BaseWidget
             ])
             ->emptyStateHeading('No Low Stock Items')
             ->emptyStateDescription('All trackable ingredients are above minimum stock levels')
-            ->paginated([false]);
+            ->paginated(false);
     }
 
     private function getUrgencyLevel($record): HtmlString

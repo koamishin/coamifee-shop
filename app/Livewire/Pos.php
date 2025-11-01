@@ -6,20 +6,20 @@ namespace App\Livewire;
 
 use AllowDynamicProperties;
 use App\Actions\PosCheckoutAction;
-use App\Actions\ProcessOrderAction;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
-use App\Services\InventoryService;
-use App\Services\OrderProcessingService;
 use App\Services\PosService;
-use App\Services\ReportingService;
 use Illuminate\View\View;
 use Livewire\Component;
 
 #[AllowDynamicProperties]
 final class Pos extends Component
 {
+    // State properties
+    public bool $isProcessing = false;
+
     public string $search = '';
 
     public int $selectedCategory = 0;
@@ -116,18 +116,15 @@ final class Pos extends Component
         'searchChanged' => 'updateSearch',
     ];
 
+    // Service properties
+    private PosCheckoutAction $posCheckoutAction;
+
+    private PosService $posService;
+
     public function boot(
-        OrderProcessingService $orderProcessingService,
-        InventoryService $inventoryService,
-        ProcessOrderAction $processOrderAction,
-        ReportingService $reportingService,
         PosCheckoutAction $posCheckoutAction,
         PosService $posService
     ): void {
-        $this->orderProcessingService = $orderProcessingService;
-        $this->inventoryService = $inventoryService;
-        $this->processOrderAction = $processOrderAction;
-        $this->reportingService = $reportingService;
         $this->posCheckoutAction = $posCheckoutAction;
         $this->posService = $posService;
     }
@@ -254,6 +251,10 @@ final class Pos extends Component
             $this->checkLowStock();
             $this->updateProductAvailability();
         } else {
+            $this->dispatch('order-failed', [
+                'message' => $result['message'],
+                'order_id' => null,
+            ]);
             $this->dispatch('show-toast', [
                 'type' => 'error',
                 'message' => 'Order failed: '.$result['message'],
@@ -356,6 +357,7 @@ final class Pos extends Component
                 'customizations' => [],
             ];
         } else {
+            // @phpstan-ignore booleanNot.alwaysFalse
             if (! $this->posService->canAddToCart($productId)) {
                 $this->dispatch('insufficient-inventory', [
                     'message' => 'Cannot add more: Insufficient ingredients',
@@ -407,13 +409,15 @@ final class Pos extends Component
 
         $this->cart = [];
         foreach ($order->items as $item) {
+            /** @var OrderItem $item */
             $cartItemId = $item->product_id;
 
             // Check if we can produce this item
-            if (! $this->posService->canAddToCart($item->product_id)) {
+            if ($this->posService->canAddToCart($item->product_id) === false) {
+                $productName = $item->product->name ?? 'Unknown Product';
                 $this->dispatch('insufficient-inventory', [
-                    'message' => "Cannot duplicate order: Insufficient ingredients for {$item->product->name}",
-                    'product_name' => $item->product->name,
+                    'message' => "Cannot duplicate order: Insufficient ingredients for {$productName}",
+                    'product_name' => $productName,
                 ]);
 
                 continue;
@@ -421,10 +425,10 @@ final class Pos extends Component
 
             $this->cart[$cartItemId] = [
                 'id' => $item->product_id,
-                'name' => $item->product->name,
+                'name' => $item->product->name ?? 'Unknown Product',
                 'price' => $item->price,
                 'quantity' => $item->quantity,
-                'image' => $item->product->image_url,
+                'image' => $item->product->image_url ?? '',
                 'customizations' => [],
             ];
         }
@@ -523,6 +527,7 @@ final class Pos extends Component
             ];
         } else {
             // Check if we can add one more
+            // @phpstan-ignore booleanNot.alwaysFalse
             if (! $this->posService->canAddToCart($productId)) {
                 $this->dispatch('insufficient-inventory', [
                     'message' => "Cannot add more {$product->name}: Insufficient ingredients",
@@ -652,12 +657,13 @@ final class Pos extends Component
 
         $this->cart = [];
         foreach ($order->items as $item) {
+            /** @var OrderItem $item */
             $this->cart[$item->product_id] = [
                 'id' => $item->product_id,
-                'name' => $item->product->name,
+                'name' => $item->product->name ?? 'Unknown Product',
                 'price' => $item->price,
                 'quantity' => $item->quantity,
-                'image' => $item->product->image_url,
+                'image' => $item->product->image_url ?? '',
             ];
         }
 

@@ -39,11 +39,11 @@ final class InventoryStatusWidget extends ChartWidget
             }
 
             $labels[] = Str::limit($ingredient->name, 20);
-            $stockData[] = (float) $ingredient->inventory->current_stock;
-            $minStockData[] = (float) ($ingredient->inventory->min_stock_level ?? 0);
+            $stockData[] = (float) $ingredient->inventory->getAttribute('current_stock');
+            $minStockData[] = (float) ($ingredient->inventory->getAttribute('min_stock_level') ?? 0);
 
             // Determine color based on stock level
-            $currentStock = $ingredient->inventory->current_stock;
+            $currentStock = $ingredient->inventory->getAttribute('current_stock');
             $minStock = $ingredient->inventory->min_stock_level ?? 0;
             $maxStock = $ingredient->inventory->max_stock_level ?? PHP_FLOAT_MAX;
 

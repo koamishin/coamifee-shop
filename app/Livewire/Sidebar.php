@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
-use App\Services\InventoryService;
 use App\Services\PosService;
-use App\Services\ReportingService;
 use Illuminate\View\View;
 use Livewire\Component;
 
@@ -19,10 +17,6 @@ final class Sidebar extends Component
     public array $productAvailability = [];
 
     protected $listeners = ['refreshInventory' => 'updateProductAvailability'];
-
-    private InventoryService $inventoryService;
-
-    private ReportingService $reportingService;
 
     private PosService $posService;
 
@@ -40,12 +34,8 @@ final class Sidebar extends Component
     }
 
     public function boot(
-        InventoryService $inventoryService,
-        ReportingService $reportingService,
         PosService $posService
     ): void {
-        $this->inventoryService = $inventoryService;
-        $this->reportingService = $reportingService;
         $this->posService = $posService;
     }
 

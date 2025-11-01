@@ -25,6 +25,7 @@ final readonly class OrderProcessingService
             DB::beginTransaction();
 
             foreach ($order->items as $orderItem) {
+                assert($orderItem instanceof OrderItem);
                 $this->processOrderItem($orderItem);
             }
 
@@ -43,6 +44,7 @@ final readonly class OrderProcessingService
     public function canFulfillOrder(Order $order): bool
     {
         foreach ($order->items as $orderItem) {
+            assert($orderItem instanceof OrderItem);
             if (! $this->canFulfillOrderItem($orderItem)) {
                 return false;
             }
@@ -60,15 +62,22 @@ final readonly class OrderProcessingService
         // Process ingredients if they exist
         foreach ($productIngredients as $productIngredient) {
             $ingredient = $productIngredient->ingredient;
+            if (! $ingredient instanceof Ingredient) {
+                continue;
+            }
+
             $quantityNeeded = $productIngredient->quantity_required * $orderItem->quantity;
 
             $inventory = $ingredient->inventory()->first();
             if ($inventory) {
+                $product = $orderItem->product;
+                $productName = $product instanceof \App\Models\Product ? $product->name : 'Unknown Product';
+
                 $this->inventoryService->decreaseIngredientStock(
                     $ingredient,
                     $quantityNeeded,
                     $orderItem,
-                    "Used in {$orderItem->quantity}x {$orderItem->product->name}"
+                    "Used in {$orderItem->quantity}x {$productName}"
                 );
             }
 
@@ -101,10 +110,14 @@ final readonly class OrderProcessingService
 
         foreach ($productIngredients as $productIngredient) {
             $ingredient = $productIngredient->ingredient;
+            if (! $ingredient instanceof Ingredient) {
+                return false;
+            }
+
             $quantityNeeded = $productIngredient->quantity_required * $orderItem->quantity;
             $inventory = $ingredient->inventory()->first();
 
-            if (! $inventory || $inventory->current_stock < $quantityNeeded) {
+            if (! $inventory || ! $inventory instanceof \App\Models\IngredientInventory || $inventory->current_stock < $quantityNeeded) {
                 return false;
             }
         }

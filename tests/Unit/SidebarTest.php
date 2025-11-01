@@ -48,17 +48,18 @@ test('updates product availability on mount', function (): void {
 });
 
 test('updates product availability for all products', function (): void {
-    Livewire::test(Sidebar::class)
-        ->assertSet(
-            'productAvailability.'.$this->product->id.'.can_produce',
-            true,
-        )
-        ->assertSet(
-            'productAvailability.'.
-                $this->unavailableProduct->id.
-                '.can_produce',
-            false,
-        );
+    $component = Livewire::test(Sidebar::class);
+
+    // Test that all products have availability data
+    $availability = $component->get('productAvailability');
+
+    // Should have availability for both test products
+    expect($availability)->toHaveKey($this->product->id);
+    expect($availability)->toHaveKey($this->unavailableProduct->id);
+
+    // Check the values are correct
+    expect($availability[$this->product->id]['can_produce'])->toBeTrue();
+    expect($availability[$this->unavailableProduct->id]['can_produce'])->toBeFalse();
 });
 
 test('calculates correct stock status', function (): void {
@@ -88,12 +89,9 @@ test('calculates max producible quantity', function (): void {
     $component = Livewire::test(Sidebar::class);
     $availability = $component->get('productAvailability');
     // Find the correct product in availability array
-    $productAvailability = collect($availability)->firstWhere(
-        'product_id',
-        $this->product->id,
-    );
+    $productAvailability = $availability[$this->product->id] ?? null;
     expect($productAvailability['max_quantity'])->toBe(10);
-})->skip('Complex array structure needs investigation');
+});
 
 test('filters products by selected category', function (): void {
     // Create products in different categories

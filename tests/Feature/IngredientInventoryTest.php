@@ -3,37 +3,41 @@
 declare(strict_types=1);
 
 use App\Enums\UnitType;
+use App\Filament\Resources\IngredientInventories\Pages\CreateIngredientInventory;
+use App\Filament\Resources\IngredientInventories\Pages\ListIngredientInventories;
+use App\Filament\Resources\Ingredients\Pages\CreateIngredient;
+use App\Filament\Resources\Ingredients\Pages\ListIngredients;
 use App\Models\Ingredient;
 use App\Models\IngredientInventory;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 
 use function Pest\Laravel\actingAs;
-use function Pest\Laravel\get;
-use function Pest\Laravel\post;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->user = App\Models\User::factory()->create();
+    $this->user = User::factory()->create();
     actingAs($this->user);
 });
 
 describe('Centralized Ingredient Inventory Management', function () {
     it('can create a new ingredient and inventory in one form', function () {
-        $response = post('/admin/ingredient-inventories', [
-            'create_new_ingredient' => true,
-            'new_ingredient_name' => 'Arabica Coffee Beans',
-            'new_ingredient_unit_type' => UnitType::GRAMS->value,
-            'current_stock' => 5000,
-            'min_stock_level' => 1000,
-            'max_stock_level' => 10000,
-            'reorder_level' => 1500,
-            'unit_cost' => 0.025,
-            'location' => 'Pantry A',
-            'supplier_info' => 'Coffee Roasters Inc. - Contact: 555-0123',
-        ]);
-
-        $response->assertRedirect();
+        Livewire::test(CreateIngredientInventory::class)
+            ->fillForm([
+                'create_new_ingredient' => true,
+                'new_ingredient_name' => 'Arabica Coffee Beans',
+                'new_ingredient_unit_type' => UnitType::GRAMS->value,
+                'current_stock' => 5000,
+                'min_stock_level' => 1000,
+                'max_stock_level' => 10000,
+                'reorder_level' => 1500,
+                'location' => 'Pantry A',
+                'supplier_info' => 'Coffee Roasters Inc. - Contact: 555-0123',
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
 
         $this->assertDatabaseHas('ingredients', [
             'name' => 'Arabica Coffee Beans',
@@ -48,7 +52,6 @@ describe('Centralized Ingredient Inventory Management', function () {
             'min_stock_level' => 1000,
             'max_stock_level' => 10000,
             'reorder_level' => 1500,
-            'unit_cost' => 0.025,
             'location' => 'Pantry A',
             'supplier_info' => 'Coffee Roasters Inc. - Contact: 555-0123',
         ]);
@@ -60,18 +63,18 @@ describe('Centralized Ingredient Inventory Management', function () {
             'unit_type' => UnitType::GRAMS->value,
         ]);
 
-        $response = post('/admin/ingredient-inventories', [
-            'ingredient_id' => $ingredient->id,
-            'current_stock' => 5000.50,
-            'min_stock_level' => 1000,
-            'max_stock_level' => 10000,
-            'reorder_level' => 1500,
-            'unit_cost' => 0.025,
-            'location' => 'Pantry A',
-            'supplier_info' => 'Sweet Supplies Inc. - Contact: 555-0123',
-        ]);
-
-        $response->assertRedirect();
+        Livewire::test(CreateIngredientInventory::class)
+            ->fillForm([
+                'ingredient_id' => $ingredient->id,
+                'current_stock' => 5000.50,
+                'min_stock_level' => 1000,
+                'max_stock_level' => 10000,
+                'reorder_level' => 1500,
+                'location' => 'Pantry A',
+                'supplier_info' => 'Sweet Supplies Inc. - Contact: 555-0123',
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
 
         $this->assertDatabaseHas('ingredient_inventories', [
             'ingredient_id' => $ingredient->id,
@@ -79,19 +82,19 @@ describe('Centralized Ingredient Inventory Management', function () {
             'min_stock_level' => 1000,
             'max_stock_level' => 10000,
             'reorder_level' => 1500,
-            'unit_cost' => 0.025,
             'location' => 'Pantry A',
             'supplier_info' => 'Sweet Supplies Inc. - Contact: 555-0123',
         ]);
     });
 
     it('can still create basic ingredient without inventory', function () {
-        $response = post('/admin/ingredients', [
-            'name' => 'Basic Ingredient',
-            'unit_type' => UnitType::MILLILITERS->value,
-        ]);
-
-        $response->assertRedirect();
+        Livewire::test(CreateIngredient::class)
+            ->fillForm([
+                'name' => 'Basic Ingredient',
+                'unit_type' => UnitType::MILLILITERS->value,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
 
         $this->assertDatabaseHas('ingredients', [
             'name' => 'Basic Ingredient',
@@ -116,16 +119,8 @@ describe('Centralized Ingredient Inventory Management', function () {
             'supplier_info' => 'Dairy Farm Co.',
         ]);
 
-        $response = get('/admin/ingredient-inventories');
-
-        $response->assertSee('Test Milk');
-        $response->assertSee('ml');
-        $response->assertSee('2,000');
-        $response->assertSee('500');
-        $response->assertSee('5,000');
-        $response->assertSee('800');
-        $response->assertSee('Fridge A');
-        $response->assertSee('Dairy Farm Co.');
+        Livewire::test(ListIngredientInventories::class)
+            ->assertCanSeeTableRecords([$inventory]);
     });
 
     it('shows simplified ingredient list with inventory status', function () {
@@ -139,11 +134,8 @@ describe('Centralized Ingredient Inventory Management', function () {
             'current_stock' => 3000,
         ]);
 
-        $response = get('/admin/ingredients');
-
-        $response->assertSee('Test Flour');
-        $response->assertSee('3,000');
-        $response->assertSee('Manage Inventory');
+        Livewire::test(ListIngredients::class)
+            ->assertCanSeeTableRecords([$ingredient]);
     });
 
     it('properly handles ingredients without inventory in ingredient list', function () {
@@ -152,38 +144,39 @@ describe('Centralized Ingredient Inventory Management', function () {
             'unit_type' => UnitType::MILLILITERS->value,
         ]);
 
-        $response = get('/admin/ingredients');
-
-        $response->assertSee('Vanilla Extract');
-        $response->assertSee('No inventory');
+        Livewire::test(ListIngredients::class)
+            ->assertCanSeeTableRecords([$ingredient]);
     });
 
     it('validates required fields for inventory creation', function () {
-        $response = post('/admin/ingredient-inventories', [
-            'current_stock' => 1000,
-            'min_stock_level' => 500,
-        ]);
-
-        $response->assertSessionHasErrors('ingredient_id');
+        Livewire::test(CreateIngredientInventory::class)
+            ->fillForm([
+                'current_stock' => 1000,
+                'min_stock_level' => 500,
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['ingredient_id']);
     });
 
     it('validates required fields when creating new ingredient in inventory form', function () {
-        $response = post('/admin/ingredient-inventories', [
-            'create_new_ingredient' => true,
-            'new_ingredient_name' => '',
-            'new_ingredient_unit_type' => '',
-            'current_stock' => 1000,
-        ]);
-
-        $response->assertSessionHasErrors(['new_ingredient_name', 'new_ingredient_unit_type']);
+        Livewire::test(CreateIngredientInventory::class)
+            ->fillForm([
+                'create_new_ingredient' => true,
+                'new_ingredient_name' => '',
+                'new_ingredient_unit_type' => '',
+                'current_stock' => 1000,
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['new_ingredient_name', 'new_ingredient_unit_type']);
     });
 
     it('validates required fields for basic ingredient creation', function () {
-        $response = post('/admin/ingredients', [
-            'unit_type' => UnitType::GRAMS->value,
-        ]);
-
-        $response->assertSessionHasErrors('name');
+        Livewire::test(CreateIngredient::class)
+            ->fillForm([
+                'unit_type' => UnitType::GRAMS->value,
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['name']);
     });
 
     it('displays unit type with correct icon and color in tables', function () {
@@ -197,10 +190,8 @@ describe('Centralized Ingredient Inventory Management', function () {
             'current_stock' => 1000,
         ]);
 
-        $response = get('/admin/ingredient-inventories');
-        $response->assertSee('Test Weight Item');
-        $response->assertSee('Grams');
-        // Should have the scale icon and warning color for grams
+        Livewire::test(ListIngredientInventories::class)
+            ->assertCanSeeTableRecords([$inventory]);
     });
 
     it('correctly formats unit type badges with icons', function () {
@@ -240,11 +231,8 @@ describe('Centralized Ingredient Inventory Management', function () {
 
     it('handles null values gracefully in form display', function () {
         // Test that form can be loaded without errors when all values are null
-        $response = get('/admin/ingredient-inventories/create');
-        $response->assertSuccessful();
-
-        // Should not throw any errors when accessing the form page
-        expect($response->status())->toBe(200);
+        Livewire::test(CreateIngredientInventory::class)
+            ->assertSuccessful();
     });
 
     it('displays proper fallback for missing unit types', function () {

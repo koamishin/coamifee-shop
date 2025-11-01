@@ -16,11 +16,19 @@ final class Ingredient extends Model
 
     protected $fillable = [
         'name',
+        'description',
         'unit_type',
+        'is_trackable',
+        'current_stock',
+        'unit_cost',
+        'supplier',
     ];
 
     protected $casts = [
         'unit_type' => UnitType::class,
+        'is_trackable' => 'boolean',
+        'current_stock' => 'decimal:3',
+        'unit_cost' => 'decimal:2',
     ];
 
     public function productIngredients(): HasMany

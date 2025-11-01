@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Category;
+use App\Models\Ingredient;
+use App\Models\IngredientInventory;
 use App\Models\Product;
+use App\Models\ProductIngredient;
 use Illuminate\Support\Collection;
 
 final readonly class PosService
@@ -67,12 +70,12 @@ final readonly class PosService
             ->orderBy('name')
             ->take($limit)
             ->get()
-            ->map(fn ($product): array => [
+            ->map(fn (Product $product): array => [
                 'id' => $product->id,
                 'name' => $product->name,
                 'price' => $product->price,
                 'image' => $product->image_url,
-                'category' => $product->category->name,
+                'category' => $product->category->name ?? 'Unknown',
                 'can_produce' => $this->inventoryService->canProduceProduct($product->id, 1),
             ])
             ->toArray();
@@ -99,10 +102,16 @@ final readonly class PosService
         $ingredients = $product->ingredients()->with('ingredient.inventory')->get();
         $maxQuantities = [];
 
+        /** @var ProductIngredient $productIngredient */
         foreach ($ingredients as $productIngredient) {
             $ingredient = $productIngredient->ingredient;
+            if ($ingredient === null) {
+                return 0;
+            }
+            /** @var Ingredient $ingredient */
             $inventory = $ingredient->inventory;
             if ($inventory) {
+                /** @var IngredientInventory $inventory */
                 $maxQuantities[] = (int) ($inventory->current_stock / $productIngredient->quantity_required);
             } else {
                 return 0; // No inventory means can't produce

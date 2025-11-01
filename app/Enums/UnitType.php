@@ -13,6 +13,32 @@ enum UnitType: string
     case PIECES = 'pieces';
 
     /**
+     * Get all options for filament select field
+     */
+    public static function getOptions(): array
+    {
+        return collect(self::cases())->mapWithKeys(function (UnitType $unit) {
+            return [$unit->value => $unit->getLabel()];
+        })->toArray();
+    }
+
+    /**
+     * Get filament select field configuration
+     */
+    public static function getSelectFieldConfig(): array
+    {
+        return collect(self::cases())->map(function (UnitType $unit) {
+            return [
+                'value' => $unit->value,
+                'label' => $unit->getLabel(),
+                'icon' => $unit->getIcon(),
+                'description' => $unit->getDescription(),
+                'color' => $unit->getColor(),
+            ];
+        })->toArray();
+    }
+
+    /**
      * Get display label for unit type
      */
     public function getLabel(): string
@@ -66,31 +92,5 @@ enum UnitType: string
             self::LITERS => 'Volume measurement in liters',
             self::PIECES => 'Count measurement for individual items',
         };
-    }
-
-    /**
-     * Get all options for filament select field
-     */
-    public static function getOptions(): array
-    {
-        return collect(self::cases())->mapWithKeys(function (UnitType $unit) {
-            return [$unit->value => $unit->getLabel()];
-        })->toArray();
-    }
-
-    /**
-     * Get filament select field configuration
-     */
-    public static function getSelectFieldConfig(): array
-    {
-        return collect(self::cases())->map(function (UnitType $unit) {
-            return [
-                'value' => $unit->value,
-                'label' => $unit->getLabel(),
-                'icon' => $unit->getIcon(),
-                'description' => $unit->getDescription(),
-                'color' => $unit->getColor(),
-            ];
-        })->toArray();
     }
 }

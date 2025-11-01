@@ -31,7 +31,7 @@ final class OrderStatusWidget extends ChartWidget
 
         foreach ($orderStats as $stat) {
             $labels[] = ucfirst(str_replace('_', ' ', $stat->status));
-            $data[] = $stat->count;
+            $data[] = $stat->getAttribute('count');
 
             // Assign colors based on status
             $colors[] = match ($stat->status) {
@@ -40,8 +40,7 @@ final class OrderStatusWidget extends ChartWidget
                 'confirmed' => 'rgba(59, 130, 246, 0.8)',
                 'preparing' => 'rgba(168, 85, 247, 0.8)',
                 'ready' => 'rgba(236, 72, 153, 0.8)',
-                'cancelled' => 'rgba(239, 68, 68, 0.8)',
-                default => 'rgba(107, 114, 128, 0.8)',
+                default => 'rgba(239, 68, 68, 0.8)',
             };
         }
 

@@ -16,6 +16,17 @@ final readonly class GenerateDailyMetricsAction
         private MetricsService $metricsService,
     ) {}
 
+    /**
+     * @return array{
+     *     success: bool,
+     *     date: string,
+     *     processed_products: array<string>,
+     *     failed_products: array<array{product_name: string, error: string}>,
+     *     total_products: int,
+     *     successful_count: int,
+     *     failed_count: int
+     * }
+     */
     public function execute(?Carbon $date = null): array
     {
         $date ??= Date::yesterday();
@@ -47,6 +58,24 @@ final readonly class GenerateDailyMetricsAction
         ];
     }
 
+    /**
+     * @return array{
+     *     success: bool,
+     *     period: string,
+     *     total_products_processed: int,
+     *     total_successful: int,
+     *     total_failed: int,
+     *     daily_results: array{
+     *         success: bool,
+     *         date: string,
+     *         processed_products: array<string>,
+     *         failed_products: array<array{product_name: string, error: string}>,
+     *         total_products: int,
+     *         successful_count: int,
+     *         failed_count: int
+     *     }[]
+     * }
+     */
     public function executeForDateRange(Carbon $startDate, Carbon $endDate): array
     {
         $allResults = [];

@@ -25,6 +25,4 @@ final class IngredientFactory extends Factory
             'unit_type' => fake()->randomElement(UnitType::cases())->value,
         ];
     }
-
-
 }

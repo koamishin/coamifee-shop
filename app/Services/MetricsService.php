@@ -34,6 +34,7 @@ final class MetricsService
             $orderItems = $order->items()->where('product_id', $productId)->get();
 
             foreach ($orderItems as $item) {
+                assert($item instanceof \App\Models\OrderItem);
                 $totalOrders += $item->quantity;
                 $totalRevenue += $item->price * $item->quantity;
             }

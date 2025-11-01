@@ -35,7 +35,7 @@ final class TopProductsWidget extends ChartWidget
         $revenues = [];
 
         foreach ($topProducts as $item) {
-            $labels[] = $item->product->name;
+            $labels[] = $item->product->getAttribute('name');
             $quantities[] = $item->total_quantity;
             $revenues[] = (float) $item->total_revenue;
         }

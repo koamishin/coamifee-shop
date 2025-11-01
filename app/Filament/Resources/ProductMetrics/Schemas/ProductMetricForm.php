@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ProductMetrics\Schemas;
 
+use AllowDynamicProperties;
 use App\Filament\Concerns\CurrencyAware;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
@@ -14,6 +15,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
 
+#[AllowDynamicProperties]
 final class ProductMetricForm
 {
     use CurrencyAware;
@@ -94,13 +96,11 @@ final class ProductMetricForm
                                 )
                                 ->reactive()
                                 ->afterStateUpdated(
-                                    fn (
-                                        $state,
-                                        callable $set,
-                                    ) => self::calculateAverageOrderValue(
-                                        $state,
-                                        $get('total_revenue'),
-                                    ),
+                                    function ($state, callable $set, callable $get) {
+                                        $totalRevenue = $get('total_revenue');
+                                        $average = self::calculateAverageOrderValue($state, $totalRevenue);
+                                        $set('average_order_value', $average);
+                                    },
                                 )
                                 ->columnSpan(1),
 
@@ -120,13 +120,11 @@ final class ProductMetricForm
                                 )
                                 ->reactive()
                                 ->afterStateUpdated(
-                                    fn (
-                                        $state,
-                                        callable $set,
-                                    ) => self::calculateAverageOrderValue(
-                                        $get('orders_count'),
-                                        $state,
-                                    ),
+                                    function ($state, callable $set, callable $get) {
+                                        $ordersCount = $get('orders_count');
+                                        $average = self::calculateAverageOrderValue($ordersCount, $state);
+                                        $set('average_order_value', $average);
+                                    },
                                 )
                                 ->columnSpan(1),
                         ]),
@@ -139,40 +137,32 @@ final class ProductMetricForm
                                 Grid::make(3)->schema([
                                     Placeholder::make('average_order_value')
                                         ->label('Average Order Value')
-                                        ->content(function ($get): HtmlString {
-                                            $orders =
-                                                (float) ($get('orders_count') ??
-                                                    0);
-                                            $revenue =
-                                                (float) ($get(
-                                                    'total_revenue',
-                                                ) ?? 0);
+                                        ->content(function (callable $get): HtmlString {
+                                            $ordersValue = $get('orders_count');
+                                            $orders = is_numeric($ordersValue) ? (float) $ordersValue : 0.0;
+                                            $revenueValue = $get('total_revenue');
+                                            $revenue = is_numeric($revenueValue) ? (float) $revenueValue : 0.0;
 
-                                            if ($orders > 0) {
+                                            if ($orders > 0.0) {
                                                 $average = $revenue / $orders;
-                                                $color =
-                                                    $average >= 50
-                                                        ? '#10b981'
-                                                        : ($average >= 25
-                                                            ? '#f59e0b'
-                                                            : '#ef4444');
+                                                $color = match (true) {
+                                                    $average >= 50.0 => '#10b981',
+                                                    $average >= 25.0 => '#f59e0b',
+                                                    default => '#ef4444',
+                                                };
 
                                                 return new HtmlString(
                                                     '<span style="font-weight: bold; font-size: 1.1em; color: '.
                                                         $color.
                                                         ';">'.
-                                                        self::formatCurrency(
-                                                            $average,
-                                                        ).
+                                                        self::formatCurrency($average).
                                                         '</span>',
                                                 );
                                             }
 
                                             return new HtmlString(
                                                 '<span style="color: #6b7280;">'.
-                                                    self::formatCurrency(
-                                                        0.0,
-                                                    ).
+                                                    self::formatCurrency(0.0).
                                                     '</span>',
                                             );
                                         })
@@ -221,8 +211,8 @@ final class ProductMetricForm
                                                 ) ?? 0);
 
                                             if (
-                                                $orders === 0 &&
-                                                $revenue === 0
+                                                $orders === 0.0 &&
+                                                $revenue === 0.0
                                             ) {
                                                 return new HtmlString(
                                                     '<span style="color: #6b7280;">⚪ No Activity</span>',
@@ -235,8 +225,8 @@ final class ProductMetricForm
                                                     : 0;
 
                                             if (
-                                                $average >= 50 &&
-                                                $orders >= 10
+                                                $average >= 50.0 &&
+                                                $orders >= 10.0
                                             ) {
                                                 return new HtmlString(
                                                     '<span style="color: #10b981; font-weight: bold;">🟢 Excellent</span>',
@@ -244,8 +234,8 @@ final class ProductMetricForm
                                             }
 
                                             if (
-                                                $average >= 25 &&
-                                                $orders >= 5
+                                                $average >= 25.0 &&
+                                                $orders >= 5.0
                                             ) {
                                                 return new HtmlString(
                                                     '<span style="color: #f59e0b; font-weight: bold;">🟠 Good</span>',
@@ -268,15 +258,12 @@ final class ProductMetricForm
     }
 
     private static function calculateAverageOrderValue(
-        $orders,
-        $revenue,
-    ): void {
-        $orders = (float) ($orders ?? 0);
-        $revenue = (float) ($revenue ?? 0);
+        mixed $orders,
+        mixed $revenue,
+    ): float {
+        $ordersValue = is_numeric($orders) ? (float) $orders : 0.0;
+        $revenueValue = is_numeric($revenue) ? (float) $revenue : 0.0;
 
-        if ($orders > 0) {
-            $average = $revenue / $orders;
-            // Update the calculated placeholder if needed
-        }
+        return $ordersValue > 0 ? $revenueValue / $ordersValue : 0.0;
     }
 }

@@ -27,6 +27,11 @@ final class OrderItem extends Model
         'price' => 'decimal:2',
     ];
 
+    protected $appends = [
+        'total_quantity',
+        'total_revenue',
+    ];
+
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
@@ -35,5 +40,15 @@ final class OrderItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function getTotalQuantityAttribute(): int
+    {
+        return (int) $this->quantity;
+    }
+
+    public function getTotalRevenueAttribute(): float
+    {
+        return (float) ($this->quantity * $this->price);
     }
 }

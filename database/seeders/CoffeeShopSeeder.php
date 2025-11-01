@@ -311,10 +311,10 @@ final class CoffeeShopSeeder extends Seeder
             ], [
                 'category_id' => $category->id,
                 'price' => $price,
-                'description' => "Traditional Filipino noodle dish",
+                'description' => 'Traditional Filipino noodle dish',
                 'preparation_time' => 15,
                 'is_active' => true,
-                'sku' => 'PC-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'PC-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addPancitRecipe($product, $ingredients, str_contains($name, '4-6 PAX'));
@@ -408,10 +408,10 @@ final class CoffeeShopSeeder extends Seeder
             ], [
                 'category_id' => $category->id,
                 'price' => $price,
-                'description' => "Classic pasta dish",
+                'description' => 'Classic pasta dish',
                 'preparation_time' => 20,
                 'is_active' => true,
-                'sku' => 'PS-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'PS-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addPastaRecipe($product, $ingredients);
@@ -485,10 +485,10 @@ final class CoffeeShopSeeder extends Seeder
             ], [
                 'category_id' => $category->id,
                 'price' => $price,
-                'description' => "Sweet homemade dessert",
+                'description' => 'Sweet homemade dessert',
                 'preparation_time' => 5,
                 'is_active' => true,
-                'sku' => 'DS-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'DS-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addDessertRecipe($product, $ingredients);
@@ -595,10 +595,10 @@ final class CoffeeShopSeeder extends Seeder
             ], [
                 'category_id' => $category->id,
                 'price' => $price,
-                'description' => "Crispy appetizer",
+                'description' => 'Crispy appetizer',
                 'preparation_time' => 15,
                 'is_active' => true,
-                'sku' => 'PP-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'PP-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addPicaPicaRecipe($product, $ingredients);
@@ -664,10 +664,10 @@ final class CoffeeShopSeeder extends Seeder
             ], [
                 'category_id' => $category->id,
                 'price' => $price,
-                'description' => "Fresh and healthy salad",
+                'description' => 'Fresh and healthy salad',
                 'preparation_time' => 10,
                 'is_active' => true,
-                'sku' => 'SL-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'SL-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addSaladRecipe($product, $ingredients);
@@ -726,7 +726,7 @@ final class CoffeeShopSeeder extends Seeder
 
         // Filter out any ingredients that couldn't be found
         $validRecipe = [];
-        if (!empty($recipe)) {
+        if (! empty($recipe)) {
             foreach ($recipe as $ingredientId => $quantity) {
                 if ($ingredientId > 0) {
                     $validRecipe[$ingredientId] = $quantity;
@@ -744,7 +744,6 @@ final class CoffeeShopSeeder extends Seeder
         }
     }
 
-
     private function createFriesProducts(Category $category, array $ingredients): void
     {
         $products = [
@@ -759,10 +758,10 @@ final class CoffeeShopSeeder extends Seeder
             ], [
                 'category_id' => $category->id,
                 'price' => $price,
-                'description' => "Crispy fried potatoes",
+                'description' => 'Crispy fried potatoes',
                 'preparation_time' => 8,
                 'is_active' => true,
-                'sku' => 'FR-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'FR-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addFriesRecipe($product, $ingredients);
@@ -824,10 +823,10 @@ final class CoffeeShopSeeder extends Seeder
             ], [
                 'category_id' => $category->id,
                 'price' => $price,
-                'description' => "Gourmet burger",
+                'description' => 'Gourmet burger',
                 'preparation_time' => 12,
                 'is_active' => true,
-                'sku' => 'BG-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'BG-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addBurgerRecipe($product, $ingredients);
@@ -892,10 +891,10 @@ final class CoffeeShopSeeder extends Seeder
             ], [
                 'category_id' => $category->id,
                 'price' => $price,
-                'description' => "Fresh sandwich",
+                'description' => 'Fresh sandwich',
                 'preparation_time' => 8,
                 'is_active' => true,
-                'sku' => 'SW-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'SW-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addSandwichRecipe($product, $ingredients);
@@ -970,10 +969,10 @@ final class CoffeeShopSeeder extends Seeder
             ], [
                 'category_id' => $category->id,
                 'price' => $price,
-                'description' => "Fluffy omelette",
+                'description' => 'Fluffy omelette',
                 'preparation_time' => 10,
                 'is_active' => true,
-                'sku' => 'OM-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'OM-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addOmeletteRecipe($product, $ingredients);
@@ -1056,10 +1055,10 @@ final class CoffeeShopSeeder extends Seeder
             ], [
                 'category_id' => $category->id,
                 'price' => $price,
-                'description' => "Filipino breakfast combo",
+                'description' => 'Filipino breakfast combo',
                 'preparation_time' => 15,
                 'is_active' => true,
-                'sku' => 'SG-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'SG-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addSilogRecipe($product, $ingredients);
@@ -1134,10 +1133,10 @@ final class CoffeeShopSeeder extends Seeder
             ], [
                 'category_id' => $category->id,
                 'price' => $price,
-                'description' => "Sizzling hot plate",
+                'description' => 'Sizzling hot plate',
                 'preparation_time' => 20,
                 'is_active' => true,
-                'sku' => 'HP-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'HP-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addHotPlateRecipe($product, $ingredients);
@@ -1201,10 +1200,10 @@ final class CoffeeShopSeeder extends Seeder
             ], [
                 'category_id' => $category->id,
                 'price' => $price,
-                'description' => "Beef dish with rice",
+                'description' => 'Beef dish with rice',
                 'preparation_time' => 18,
                 'is_active' => true,
-                'sku' => 'BR-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'BR-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addBeefRiceMealRecipe($product, $ingredients);
@@ -1299,10 +1298,10 @@ final class CoffeeShopSeeder extends Seeder
             ], [
                 'category_id' => $category->id,
                 'price' => $price,
-                'description' => "Chicken dish with rice",
+                'description' => 'Chicken dish with rice',
                 'preparation_time' => 16,
                 'is_active' => true,
-                'sku' => 'CR-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'CR-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addChickenRiceMealRecipe($product, $ingredients);
@@ -1396,10 +1395,10 @@ final class CoffeeShopSeeder extends Seeder
             ], [
                 'category_id' => $category->id,
                 'price' => $price,
-                'description' => "Specialty rice meal",
+                'description' => 'Specialty rice meal',
                 'preparation_time' => 18,
                 'is_active' => true,
-                'sku' => 'OR-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'OR-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addOtherRiceMealRecipe($product, $ingredients);
@@ -1483,10 +1482,10 @@ final class CoffeeShopSeeder extends Seeder
             ], [
                 'category_id' => $category->id,
                 'price' => $price,
-                'description' => "Side dish",
+                'description' => 'Side dish',
                 'preparation_time' => 5,
                 'is_active' => true,
-                'sku' => 'AO-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'AO-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addAddOnRecipe($product, $ingredients);
@@ -1618,19 +1617,19 @@ final class CoffeeShopSeeder extends Seeder
      */
     private function getIngredientId(array $ingredients, string $ingredientName): int
     {
-        if (!isset($ingredients[$ingredientName])) {
+        if (! isset($ingredients[$ingredientName])) {
             $this->command->warn("Warning: Ingredient '{$ingredientName}' not found in ingredients array");
+
             return 0; // Return 0 to indicate missing ingredient
         }
 
         $ingredient = $ingredients[$ingredientName];
-        if (!$ingredient || !$ingredient->id) {
+        if (! $ingredient || ! $ingredient->id) {
             $this->command->warn("Warning: Ingredient '{$ingredientName}' has no valid ID");
+
             return 0;
         }
 
         return $ingredient->id;
     }
-
-
 }

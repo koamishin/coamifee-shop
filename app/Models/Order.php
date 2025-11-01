@@ -29,6 +29,11 @@ final class Order extends Model
         'customer_id' => 'integer',
     ];
 
+    protected $appends = [
+        'revenue',
+        'orders',
+    ];
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
@@ -37,5 +42,15 @@ final class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function getRevenueAttribute(): float
+    {
+        return (float) $this->total;
+    }
+
+    public function getOrdersAttribute(): int
+    {
+        return $this->items()->count();
     }
 }

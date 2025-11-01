@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\IngredientInventories\Schemas;
 
-use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
@@ -67,8 +66,6 @@ final class IngredientInventoryInfolist
                                 ->placeholder('Not set'),
                         ]),
                     ]),
-
-
 
                 Section::make('Storage & Supplier')
                     ->description('Storage location and supplier information')

@@ -7,6 +7,7 @@ namespace App\Filament\Resources\ProductIngredients\Schemas;
 use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
 use App\Models\Ingredient;
+use App\Models\IngredientInventory;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -97,26 +98,26 @@ final class ProductIngredientForm
                                 Placeholder::make('cost_calculation')
                                     ->label('Cost per Product')
                                     ->content(function ($get): HtmlString {
-                                        $quantity =
-                                            (float) ($get(
-                                                'quantity_required',
-                                            ) ?? 0);
+                                        $quantity = is_numeric($get('quantity_required'))
+                                            ? (float) $get('quantity_required')
+                                            : 0.0;
                                         $ingredientId = $get('ingredient_id');
 
-                                        if (! $quantity || ! $ingredientId) {
+                                        if ($quantity === 0.0 || ! $ingredientId) {
                                             return new HtmlString(
                                                 '<span style="color: #6b7280;">Select ingredient and quantity to see cost</span>',
                                             );
                                         }
 
                                         $ingredient = Ingredient::query()->find($ingredientId);
-                                        if (! $ingredient) {
+                                        if (! $ingredient instanceof Ingredient) {
                                             return new HtmlString(
                                                 '<span style="color: #6b7280;">Ingredient not found</span>',
                                             );
                                         }
 
-                                        $unitCost = $ingredient->unit_cost ?? 0;
+                                        $unitCostValue = $ingredient->getAttribute('unit_cost');
+                                        $unitCost = is_numeric($unitCostValue) ? (float) $unitCostValue : 0.0;
                                         $cost = $quantity * $unitCost;
                                         $unit = $ingredient->unit_type;
 
@@ -142,112 +143,82 @@ final class ProductIngredientForm
                                             'Products Possible with Current Stock',
                                         )
                                         ->content(function ($get): string|HtmlString {
-                                            $quantityRequired =
-                                                (float) ($get(
-                                                    'quantity_required',
-                                                ) ?? 0);
-                                            $ingredientId = $get(
-                                                'ingredient_id',
-                                            );
+                                            $quantityValue = $get('quantity_required');
+                                            $quantityRequired = is_numeric($quantityValue) ? (float) $quantityValue : 0.0;
+                                            $ingredientId = $get('ingredient_id');
 
-                                            if (
-                                                ! $quantityRequired ||
-                                                ! $ingredientId
-                                            ) {
+                                            if ($quantityRequired === 0.0 || ! $ingredientId) {
                                                 return '-';
                                             }
 
-                                            $ingredient = Ingredient::with(
-                                                'inventory',
-                                            )->find($ingredientId);
+                                            $ingredient = Ingredient::with('inventory')
+                                                ->find($ingredientId);
                                             if (
-                                                ! $ingredient ||
-                                                ! $ingredient->inventory
+                                                ! $ingredient instanceof Ingredient ||
+                                                ! $ingredient->inventory instanceof IngredientInventory
                                             ) {
                                                 return 'N/A';
                                             }
 
-                                            $currentStock =
-                                                $ingredient->inventory
-                                                    ->current_stock;
-                                            $productsPossible = floor(
-                                                $currentStock /
-                                                    $quantityRequired,
+                                            $currentStock = $ingredient->inventory->current_stock;
+                                            $productsPossible = (int) floor(
+                                                $currentStock / $quantityRequired,
                                             );
 
-                                            $color =
-                                                $productsPossible <= 10
-                                                    ? '#dc2626'
-                                                    : ($productsPossible <= 50
-                                                        ? '#f59e0b'
-                                                        : '#10b981');
+                                            $color = match (true) {
+                                                $productsPossible <= 10 => '#dc2626',
+                                                $productsPossible <= 50 => '#f59e0b',
+                                                default => '#10b981',
+                                            };
 
                                             return new HtmlString(
                                                 "<span style='color: $color; font-weight: bold; font-size: 1.1em;'>".
-                                                    number_format(
-                                                        $productsPossible,
-                                                    ).
+                                                    number_format($productsPossible).
                                                     '</span>',
                                             );
                                         }),
                                     Placeholder::make('low_stock_warning')
                                         ->label('Stock Status')
                                         ->content(function ($get): HtmlString {
-                                            $quantityRequired =
-                                                (float) ($get(
-                                                    'quantity_required',
-                                                ) ?? 0);
-                                            $ingredientId = $get(
-                                                'ingredient_id',
-                                            );
+                                            $quantityValue = $get('quantity_required');
+                                            $quantityRequired = is_numeric($quantityValue) ? (float) $quantityValue : 0.0;
+                                            $ingredientId = $get('ingredient_id');
 
-                                            if (
-                                                ! $quantityRequired ||
-                                                ! $ingredientId
-                                            ) {
+                                            if ($quantityRequired === 0.0 || ! $ingredientId) {
                                                 return new HtmlString(
                                                     '<span style="color: #6b7280;">⚪ Unknown</span>',
                                                 );
                                             }
 
-                                            $ingredient = Ingredient::with(
-                                                'inventory',
-                                            )->find($ingredientId);
+                                            $ingredient = Ingredient::with('inventory')
+                                                ->find($ingredientId);
                                             if (
-                                                ! $ingredient ||
-                                                ! $ingredient->inventory
+                                                ! $ingredient instanceof Ingredient ||
+                                                ! $ingredient->inventory instanceof IngredientInventory
                                             ) {
                                                 return new HtmlString(
                                                     '<span style="color: #dc2626;">🔴 No Inventory Set</span>',
                                                 );
                                             }
 
-                                            $currentStock =
-                                                $ingredient->inventory->current_stock;
                                             $inventory = $ingredient->inventory;
-                                            $minStock =
-                                                $inventory->min_stock_level ??
-                                                0;
-                                            $productsPossible = floor(
-                                                $currentStock /
-                                                    $quantityRequired,
+                                            $currentStock = $inventory->current_stock;
+                                            $minStock = $inventory->min_stock_level ?? 0.0;
+                                            $productsPossible = (int) floor(
+                                                $currentStock / $quantityRequired,
                                             );
 
-                                            if ($currentStock <= $minStock) {
-                                                return new HtmlString(
+                                            return match (true) {
+                                                $currentStock <= $minStock => new HtmlString(
                                                     '<span style="color: #dc2626;">🔴 Low Stock</span>',
-                                                );
-                                            }
-
-                                            if ($productsPossible <= 10) {
-                                                return new HtmlString(
+                                                ),
+                                                $productsPossible <= 10 => new HtmlString(
                                                     '<span style="color: #f59e0b;">🟠 Limited Stock</span>',
-                                                );
-                                            }
-
-                                            return new HtmlString(
-                                                '<span style="color: #10b981;">🟢 Good Stock</span>',
-                                            );
+                                                ),
+                                                default => new HtmlString(
+                                                    '<span style="color: #10b981;">🟢 Good Stock</span>',
+                                                ),
+                                            };
                                         }),
                                 ]),
                             ]),
@@ -266,11 +237,11 @@ final class ProductIngredientForm
 
         $ingredient = Ingredient::query()->find($ingredientId);
 
-        if (! $ingredient) {
+        if (! $ingredient instanceof Ingredient) {
             return null;
         }
 
-        return $ingredient->unit_type?->getLabel() ?? $ingredient->unit_type;
+        return $ingredient->unit_type->getLabel();
     }
 
     private static function getUnitInfo(callable $get): HtmlString|string
@@ -283,15 +254,15 @@ final class ProductIngredientForm
 
         $ingredient = Ingredient::query()->find($ingredientId);
 
-        if (! $ingredient) {
+        if (! $ingredient instanceof Ingredient) {
             return 'Ingredient not found';
         }
 
         $unitType = $ingredient->unit_type;
-        $label = $unitType?->getLabel() ?? $unitType;
-        $icon = $unitType?->getIcon() ?? 'heroicon-o-cube';
-        $color = $unitType?->getColor() ?? 'gray';
-        $description = $unitType?->getDescription() ?? 'Measurement unit';
+        $label = $unitType->getLabel();
+        $icon = $unitType->getIcon();
+        $color = $unitType->getColor();
+        $description = $unitType->getDescription();
 
         return new HtmlString("
             <div style='display: flex; align-items: center; gap: 8px;'>
@@ -308,10 +279,10 @@ final class ProductIngredientForm
         ");
     }
 
-    private static function formatCostCalculation(float $quantity, float $unitCost, $unitType): HtmlString
+    private static function formatCostCalculation(float $quantity, float $unitCost, UnitType $unitType): HtmlString
     {
         $totalCost = $quantity * $unitCost;
-        $unitLabel = $unitType?->getLabel() ?? 'unit';
+        $unitLabel = $unitType->getLabel();
 
         return new HtmlString("
             <div style='padding: 16px; background: #f9fafb; border-radius: 8px; border-left: 4px solid #10b981;'>
@@ -323,11 +294,11 @@ final class ProductIngredientForm
                 </div>
                 <div style='display: flex; justify-content: space-between; align-items: center;'>
                     <span style='color: #111827; font-weight: 600; font-size: 1.1em;'>Cost per Product:</span>
-                    <span style='color: #10b981; font-weight: bold; font-size: 1.2em;'>" .
-                        number_format($totalCost, 2) .
-                    "</span>
+                    <span style='color: #10b981; font-weight: bold; font-size: 1.2em;'>".
+                        number_format($totalCost, 2).
+                    '</span>
                 </div>
             </div>
-        ");
+        ');
     }
 }

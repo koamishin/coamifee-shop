@@ -18,7 +18,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\HtmlString;
 
 final class ProductIngredientsTable
 {
@@ -139,7 +138,7 @@ final class ProductIngredientsTable
                             }),
                             'limited' => $query->whereHas('ingredient.inventory', function (Builder $q) {
                                 $q->where('current_stock', '>', 'min_stock_level')
-                                  ->whereRaw('current_stock <= (min_stock_level * 3)');
+                                    ->whereRaw('current_stock <= (min_stock_level * 3)');
                             }),
                             'good' => $query->whereHas('ingredient.inventory', function (Builder $q) {
                                 $q->whereRaw('current_stock > (min_stock_level * 3)');
@@ -269,8 +268,8 @@ final class ProductIngredientsTable
             $color = '#f59e0b'; // orange
         }
 
-        return "<span style='color: {$color}; font-weight: 500;'>" .
-            number_format($stock, 2) .
+        return "<span style='color: {$color}; font-weight: 500;'>".
+            number_format($stock, 2).
             '</span>';
     }
 

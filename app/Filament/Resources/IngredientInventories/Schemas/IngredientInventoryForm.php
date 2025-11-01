@@ -66,23 +66,22 @@ final class IngredientInventoryForm
                                 ->maxLength(100)
                                 ->placeholder('e.g., Arabica Coffee Beans')
                                 ->helperText('Enter the full name of the ingredient')
-                                ->hidden(fn (callable $get) => !$get('create_new_ingredient'))
+                                ->hidden(fn (callable $get) => ! $get('create_new_ingredient'))
                                 ->requiredWith('create_new_ingredient')
                                 ->columnSpan(1),
 
                             Select::make('new_ingredient_unit_type')
                                 ->label('Unit of Measurement')
                                 ->required()
-                                ->options(UnitType::getOptions())
+                                ->options(fn () => UnitType::getOptions())
+                                ->native(false)
                                 ->searchable()
                                 ->preload()
                                 ->placeholder('Select unit type')
                                 ->helperText('How this ingredient is measured and tracked')
-                                ->hidden(fn (callable $get) => !$get('create_new_ingredient'))
+                                ->hidden(fn (callable $get) => ! $get('create_new_ingredient'))
                                 ->requiredWith('create_new_ingredient')
                                 ->columnSpan(1),
-
-
 
                             TextInput::make('current_stock')
                                 ->label('Current Stock')
@@ -157,85 +156,87 @@ final class IngredientInventoryForm
                                 ->columnSpan(1),
                         ]),
 
-                        TextInput::make('supplier_info')
-                            ->label('Supplier Information')
-                            ->placeholder(
-                                'e.g., Local Coffee Roasters - Contact: 555-0123',
-                            )
-                            ->helperText(
-                                'Supplier details and contact information',
-                            )
-                            ->prefixIcon('heroicon-o-building-office')
-                            ->columnSpanFull(),
-                    ]),
-
-                Section::make('Stock Status & Analysis')
-                    ->description(
-                        'Current inventory status and recommendations',
-                    )
-                    ->icon('heroicon-o-chart-pie')
-                    ->collapsible()
-                    ->schema([
-                        Grid::make(4)->schema([
-                            Placeholder::make('stock_status')
-                                ->label('Stock Status')
-                                ->content(
-                                    self::getStockStatusDisplay(...),
-                                )
-                                ->columnSpan(1),
-
-                            Placeholder::make('stock_percentage')
-                                ->label('Stock Level')
-                                ->content(
-                                    self::getStockPercentage(...),
-                                )
-                                ->columnSpan(1),
-
-                            Placeholder::make('days_until_reorder')
-                                ->label('Days Until Reorder')
-                                ->content(
-                                    self::getDaysUntilReorder(...),
-                                )
-                                ->columnSpan(1),
-
-                            Placeholder::make('recommended_order')
-                                ->label('Recommended Order')
-                                ->content(
-                                    self::getRecommendedOrder(...),
-                                )
-                                ->columnSpan(1),
-                        ]),
-                    ]),
-
-                Section::make('Ingredient Details')
-                    ->description('View and manage ingredient basic information')
-                    ->icon('heroicon-o-cube')
-                    ->collapsible()
-                    ->schema([
                         Grid::make(2)->schema([
-                            Placeholder::make('ingredient_name')
-                                ->label('Ingredient Name')
-                                ->content(
-                                    self::getIngredientName(...),
+                            TextInput::make('supplier_info')
+                                ->label('Supplier Information')
+                                ->placeholder(
+                                    'e.g., Local Coffee Roasters - Contact: 555-0123',
                                 )
-                                ->columnSpan(1),
-
-                            Placeholder::make('unit_type')
-                                ->label('Unit of Measurement')
-                                ->content(
-                                    self::getUnitType(...),
+                                ->helperText(
+                                    'Supplier details and contact information',
                                 )
-                                ->columnSpan(1),
+                                ->prefixIcon('heroicon-o-building-office')
+                                ->columnSpanFull(),
                         ]),
-                    ]),
 
+                        Section::make('Stock Status & Analysis')
+                            ->description(
+                                'Current inventory status and recommendations',
+                            )
+                            ->icon('heroicon-o-chart-pie')
+                            ->collapsible()
+                            ->schema([
+                                Grid::make(4)->schema([
+                                    Placeholder::make('stock_status')
+                                        ->label('Stock Status')
+                                        ->content(
+                                            self::getStockStatusDisplay(...),
+                                        )
+                                        ->columnSpan(1),
 
-            ])
-            ->columns(1);
+                                    Placeholder::make('stock_percentage')
+                                        ->label('Stock Level')
+                                        ->content(
+                                            self::getStockPercentage(...),
+                                        )
+                                        ->columnSpan(1),
+
+                                    Placeholder::make('days_until_reorder')
+                                        ->label('Days Until Reorder')
+                                        ->content(
+                                            self::getDaysUntilReorder(...),
+                                        )
+                                        ->columnSpan(1),
+
+                                    Placeholder::make('recommended_order')
+                                        ->label('Recommended Order')
+                                        ->content(
+                                            self::getRecommendedOrder(...),
+                                        )
+                                        ->columnSpan(1),
+                                ]),
+                            ]),
+
+                        Section::make('Ingredient Details')
+                            ->description('View and manage ingredient basic information')
+                            ->icon('heroicon-o-cube')
+                            ->collapsible()
+                            ->schema([
+                                Grid::make(2)->schema([
+                                    Placeholder::make('ingredient_name')
+                                        ->label('Ingredient Name')
+                                        ->content(
+                                            self::getIngredientName(...),
+                                        )
+                                        ->columnSpan(1),
+
+                                    Placeholder::make('unit_type')
+                                        ->label('Unit of Measurement')
+                                        ->content(
+                                            self::getUnitType(...),
+                                        )
+                                        ->columnSpan(1),
+                                ]),
+                            ]),
+
+                    ])
+                    ->columns(1),
+            ]);
+
     }
 
     private static function populateIngredientDefaults(
-        $ingredientId,
+        mixed $ingredientId,
         callable $set,
     ): void {
         if (! $ingredientId) {
@@ -253,15 +254,14 @@ final class IngredientInventoryForm
         $set('reorder_level', 500);
 
         // If ingredient has existing inventory, populate those values
-        $existingInventory = $ingredient->inventory()->first();
-        if ($existingInventory) {
-            $set('current_stock', $existingInventory->current_stock);
-            $set('min_stock_level', $existingInventory->min_stock_level);
-            $set('max_stock_level', $existingInventory->max_stock_level);
-            $set('reorder_level', $existingInventory->reorder_level);
-            $set('unit_cost', $existingInventory->unit_cost);
-            $set('location', $existingInventory->location);
-            $set('supplier_info', $existingInventory->supplier_info);
+        $existingInventory = $ingredient instanceof Ingredient ? $ingredient->inventory : null;
+        if ($existingInventory instanceof \App\Models\IngredientInventory) {
+            $set('current_stock', (float) $existingInventory->current_stock);
+            $set('min_stock_level', (float) $existingInventory->min_stock_level);
+            $set('max_stock_level', (float) $existingInventory->max_stock_level);
+            $set('reorder_level', (float) $existingInventory->reorder_level);
+            $set('location', (string) $existingInventory->location);
+            $set('supplier_info', (string) $existingInventory->supplier_info);
         }
     }
 
@@ -271,8 +271,9 @@ final class IngredientInventoryForm
         $isNewIngredient = $get('create_new_ingredient');
         $newUnitTypeValue = $get('new_ingredient_unit_type');
 
-        if ($isNewIngredient && $newUnitTypeValue) {
+        if ($isNewIngredient && is_string($newUnitTypeValue)) {
             $unitType = UnitType::tryFrom($newUnitTypeValue);
+
             return $unitType?->getLabel();
         }
 
@@ -281,11 +282,11 @@ final class IngredientInventoryForm
         }
 
         $ingredient = Ingredient::query()->find($ingredientId);
-        if (!$ingredient) {
+        if (! $ingredient instanceof Ingredient) {
             return null;
         }
 
-        return $ingredient->unit_type?->getLabel();
+        return $ingredient->unit_type->getLabel();
     }
 
     private static function updateStockStatus(
@@ -298,13 +299,13 @@ final class IngredientInventoryForm
 
     private static function getStockStatusDisplay(
         callable $get,
-        $record,
+        mixed $record,
     ): HtmlString {
-        $current = (float) ($get('current_stock') ?? 0);
-        $min = (float) ($get('min_stock_level') ?? 0);
-        $max = (float) ($get('max_stock_level') ?? PHP_FLOAT_MAX);
+        $current = is_numeric($get('current_stock')) ? (float) $get('current_stock') : 0.0;
+        $min = is_numeric($get('min_stock_level')) ? (float) $get('min_stock_level') : 0.0;
+        $max = is_numeric($get('max_stock_level')) ? (float) $get('max_stock_level') : PHP_FLOAT_MAX;
 
-        if (! $record && $current === 0) {
+        if (! $record && $current === 0.0) {
             return new HtmlString(
                 '<span style="color: #6b7280;">⚪ New Inventory</span>',
             );
@@ -329,11 +330,11 @@ final class IngredientInventoryForm
 
     private static function getStockPercentage(callable $get): HtmlString
     {
-        $current = (float) ($get('current_stock') ?? 0);
-        $min = (float) ($get('min_stock_level') ?? 1);
-        $max = (float) ($get('max_stock_level') ?? $current);
+        $current = is_numeric($get('current_stock')) ? (float) $get('current_stock') : 0.0;
+        $min = is_numeric($get('min_stock_level')) ? (float) $get('min_stock_level') : 1.0;
+        $max = is_numeric($get('max_stock_level')) ? (float) $get('max_stock_level') : $current;
 
-        if ($max === 0) {
+        if ($max === 0.0) {
             return new HtmlString('<span style="color: #6b7280;">0%</span>');
         }
 
@@ -355,8 +356,8 @@ final class IngredientInventoryForm
     private static function getDaysUntilReorder(
         callable $get,
     ): HtmlString {
-        $current = (float) ($get('current_stock') ?? 0);
-        $reorder = (float) ($get('reorder_level') ?? 0);
+        $current = is_numeric($get('current_stock')) ? (float) $get('current_stock') : 0.0;
+        $reorder = is_numeric($get('reorder_level')) ? (float) $get('reorder_level') : 0.0;
 
         if ($current <= $reorder) {
             return new HtmlString(
@@ -376,9 +377,9 @@ final class IngredientInventoryForm
     private static function getRecommendedOrder(
         callable $get,
     ): HtmlString {
-        $current = (float) ($get('current_stock') ?? 0);
-        $max = (float) ($get('max_stock_level') ?? 1000);
-        $reorder = (float) ($get('reorder_level') ?? 100);
+        $current = is_numeric($get('current_stock')) ? (float) $get('current_stock') : 0.0;
+        $max = is_numeric($get('max_stock_level')) ? (float) $get('max_stock_level') : 1000.0;
+        $reorder = is_numeric($get('reorder_level')) ? (float) $get('reorder_level') : 100.0;
 
         if ($current > $reorder) {
             return new HtmlString(
@@ -395,8 +396,6 @@ final class IngredientInventoryForm
         );
     }
 
-
-
     private static function getIngredientName(callable $get): HtmlString
     {
         $isNewIngredient = $get('create_new_ingredient');
@@ -405,7 +404,7 @@ final class IngredientInventoryForm
 
         if ($isNewIngredient && $newIngredientName) {
             return new HtmlString(
-                "<span style='color: #374151; font-weight: 600;'>{$newIngredientName}</span>"
+                "<span style='color: #374151; font-weight: 600;'>".htmlspecialchars(is_string($newIngredientName) ? $newIngredientName : '').'</span>'
             );
         }
 
@@ -414,7 +413,7 @@ final class IngredientInventoryForm
         }
 
         $ingredient = Ingredient::query()->find($ingredientId);
-        if (! $ingredient) {
+        if (! $ingredient instanceof Ingredient) {
             return new HtmlString('<span style="color: #6b7280;">Not found</span>');
         }
 
@@ -429,13 +428,14 @@ final class IngredientInventoryForm
         $newUnitTypeValue = $get('new_ingredient_unit_type');
         $ingredientId = $get('ingredient_id');
 
-        if ($isNewIngredient && $newUnitTypeValue) {
+        if ($isNewIngredient && is_string($newUnitTypeValue)) {
             $newUnitType = UnitType::tryFrom($newUnitTypeValue);
             if ($newUnitType) {
                 return new HtmlString(
                     "<span style='color: #6b7280;'>{$newUnitType->getLabel()}</span>"
                 );
             }
+
             return new HtmlString('<span style="color: #6b7280;">Not selected</span>');
         }
 
@@ -444,7 +444,7 @@ final class IngredientInventoryForm
         }
 
         $ingredient = Ingredient::query()->find($ingredientId);
-        if (! $ingredient || !$ingredient->unit_type) {
+        if (! $ingredient instanceof Ingredient) {
             return new HtmlString('<span style="color: #6b7280;">-</span>');
         }
 
@@ -452,6 +452,4 @@ final class IngredientInventoryForm
             "<span style='color: #6b7280;'>{$ingredient->unit_type->getLabel()}</span>"
         );
     }
-
-
 }

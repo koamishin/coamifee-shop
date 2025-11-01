@@ -57,11 +57,7 @@ final class IngredientInventoryResource extends Resource
         ];
     }
 
-
-
-
-
-    public static function getNavigationBadgeColor(): ?string
+    public static function getNavigationBadgeColor(): string
     {
         return 'primary';
     }

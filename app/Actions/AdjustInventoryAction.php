@@ -13,6 +13,9 @@ final readonly class AdjustInventoryAction
         private InventoryService $inventoryService,
     ) {}
 
+    /**
+     * @return array{success: bool, message: string, ingredient_name: string, previous_stock?: float, new_stock?: float}
+     */
     public function execute(int $ingredientId, float $newQuantity, string $reason): array
     {
         $ingredient = Ingredient::query()->find($ingredientId);
@@ -21,15 +24,21 @@ final readonly class AdjustInventoryAction
             return [
                 'success' => false,
                 'message' => 'Ingredient not found',
+                'ingredient_name' => '',
             ];
         }
 
         if ($this->inventoryService->adjustIngredientStock($ingredient, $newQuantity, $reason)) {
+            $inventory = $ingredient->inventory;
+            $previousStock = $inventory instanceof \App\Models\IngredientInventory
+                ? (float) $inventory->current_stock
+                : 0.0;
+
             return [
                 'success' => true,
                 'message' => 'Inventory adjusted successfully',
                 'ingredient_name' => $ingredient->name,
-                'previous_stock' => $ingredient->current_stock,
+                'previous_stock' => $previousStock,
                 'new_stock' => $newQuantity,
             ];
         }
@@ -41,6 +50,9 @@ final readonly class AdjustInventoryAction
         ];
     }
 
+    /**
+     * @return array{success: bool, message: string, ingredient_name: string, quantity_added?: float, new_stock?: float}
+     */
     public function restock(int $ingredientId, float $quantity, string $reason): array
     {
         $ingredient = Ingredient::query()->find($ingredientId);
@@ -49,18 +61,22 @@ final readonly class AdjustInventoryAction
             return [
                 'success' => false,
                 'message' => 'Ingredient not found',
+                'ingredient_name' => '',
             ];
         }
 
         if ($this->inventoryService->restockIngredient($ingredient, $quantity, $reason)) {
-            $inventory = $ingredient->inventory()->first();
+            $inventory = $ingredient->inventory;
+            $newStock = $inventory instanceof \App\Models\IngredientInventory
+                ? (float) $inventory->current_stock
+                : 0.0;
 
             return [
                 'success' => true,
                 'message' => 'Ingredient restocked successfully',
                 'ingredient_name' => $ingredient->name,
                 'quantity_added' => $quantity,
-                'new_stock' => $inventory->current_stock,
+                'new_stock' => $newStock,
             ];
         }
 
@@ -71,6 +87,9 @@ final readonly class AdjustInventoryAction
         ];
     }
 
+    /**
+     * @return array{success: bool, message: string, ingredient_name: string, waste_quantity?: float, remaining_stock?: float}
+     */
     public function recordWaste(int $ingredientId, float $quantity, string $reason): array
     {
         $ingredient = Ingredient::query()->find($ingredientId);
@@ -79,18 +98,22 @@ final readonly class AdjustInventoryAction
             return [
                 'success' => false,
                 'message' => 'Ingredient not found',
+                'ingredient_name' => '',
             ];
         }
 
         if ($this->inventoryService->recordWaste($ingredient, $quantity, $reason)) {
-            $inventory = $ingredient->inventory()->first();
+            $inventory = $ingredient->inventory;
+            $remainingStock = $inventory instanceof \App\Models\IngredientInventory
+                ? (float) $inventory->current_stock
+                : 0.0;
 
             return [
                 'success' => true,
                 'message' => 'Waste recorded successfully',
                 'ingredient_name' => $ingredient->name,
                 'waste_quantity' => $quantity,
-                'remaining_stock' => $inventory->current_stock,
+                'remaining_stock' => $remainingStock,
             ];
         }
 

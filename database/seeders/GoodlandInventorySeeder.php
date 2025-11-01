@@ -318,7 +318,7 @@ final class GoodlandInventorySeeder extends Seeder
     private function createBeverageProducts(array $ingredients): void
     {
         $beverageCategory = Category::where('name', 'Bar Beverages')->first();
-        if (!$beverageCategory) {
+        if (! $beverageCategory) {
             return;
         }
 
@@ -342,10 +342,10 @@ final class GoodlandInventorySeeder extends Seeder
             ], [
                 'category_id' => $beverageCategory->id,
                 'price' => $price,
-                'description' => "Refreshing beverage",
+                'description' => 'Refreshing beverage',
                 'preparation_time' => 5,
                 'is_active' => true,
-                'sku' => 'BV-' . strtoupper(str_replace(' ', '-', $name)),
+                'sku' => 'BV-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addBeverageRecipe($product, $ingredients);
@@ -602,14 +602,16 @@ final class GoodlandInventorySeeder extends Seeder
 
     private function getIngredientId(array $ingredients, string $ingredientName): int
     {
-        if (!isset($ingredients[$ingredientName])) {
+        if (! isset($ingredients[$ingredientName])) {
             $this->command->warn("Warning: Ingredient '{$ingredientName}' not found");
+
             return 0;
         }
 
         $ingredient = $ingredients[$ingredientName];
-        if (!$ingredient || !$ingredient->id) {
+        if (! $ingredient || ! $ingredient->id) {
             $this->command->warn("Warning: Ingredient '{$ingredientName}' has no valid ID");
+
             return 0;
         }
 

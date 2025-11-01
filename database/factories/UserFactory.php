@@ -16,7 +16,7 @@ final class UserFactory extends Factory
     /**
      * The current password being used by the factory.
      */
-    private static ?string $password;
+    private static string $password;
 
     /**
      * Define the model's default state.
@@ -56,6 +56,18 @@ final class UserFactory extends Factory
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the user has two-factor authentication enabled.
+     */
+    public function withTwoFactor(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'two_factor_secret' => encrypt('test-secret'),
+            'two_factor_recovery_codes' => encrypt(json_encode(['test-recovery-code-1', 'test-recovery-code-2'])),
+            'two_factor_confirmed_at' => now(),
         ]);
     }
 }

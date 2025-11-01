@@ -82,8 +82,11 @@ final readonly class PosProductService
         $ingredients = $product->ingredients()->with('ingredient.inventory')->get();
         $maxQuantities = [];
 
+        /** @var \App\Models\ProductIngredient $productIngredient */
         foreach ($ingredients as $productIngredient) {
+            /** @var \App\Models\Ingredient $ingredient */
             $ingredient = $productIngredient->ingredient;
+            /** @var \App\Models\IngredientInventory|null $inventory */
             $inventory = $ingredient->inventory;
             if ($inventory) {
                 $maxQuantities[] = (int) ($inventory->current_stock / $productIngredient->quantity_required);

@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Products\Schemas;
 
-use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -216,10 +214,13 @@ final class ProductForm
                                         ->placeholder('e.g., 2.5')
                                         ->suffix(function (callable $get) {
                                             $ingredientId = $get('ingredient_id');
-                                            if (!$ingredientId) return null;
+                                            if (! $ingredientId) {
+                                                return null;
+                                            }
 
                                             $ingredient = \App\Models\Ingredient::find($ingredientId);
-                                            return $ingredient?->unit_type?->getLabel() ?? 'unit';
+
+                                            return $ingredient->unit_type->getLabel();
                                         })
                                         ->helperText('Amount needed per product')
                                         ->live(onBlur: true),
@@ -237,18 +238,20 @@ final class ProductForm
                                                     $quantity = (float) ($get('quantity_required') ?? 0);
                                                     $ingredientId = $get('ingredient_id');
 
-                                                    if (!$quantity || !$ingredientId) {
+                                                    if (! $quantity || ! $ingredientId) {
                                                         return 'Set quantity to calculate';
                                                     }
 
                                                     $ingredient = \App\Models\Ingredient::find($ingredientId);
-                                                    if (!$ingredient) return 'Ingredient not found';
+                                                    if (! $ingredient) {
+                                                        return 'Ingredient not found';
+                                                    }
 
                                                     $unitCost = $ingredient->unit_cost ?? 0;
                                                     $totalCost = $quantity * $unitCost;
-                                                    $unitLabel = $ingredient->unit_type?->getLabel() ?? 'unit';
+                                                    $unitLabel = $ingredient->unit_type->getLabel();
 
-                                                    return self::getCurrencyPrefix() . number_format($totalCost, 2) . " ({$quantity} {$unitLabel} × " . number_format($unitCost, 2) . ")";
+                                                    return self::getCurrencyPrefix().number_format($totalCost, 2)." ({$quantity} {$unitLabel} × ".number_format($unitCost, 2).')';
                                                 })
                                                 ->disabled()
                                                 ->dehydrated(false),
@@ -259,16 +262,18 @@ final class ProductForm
                                                     $quantity = (float) ($get('quantity_required') ?? 0);
                                                     $ingredientId = $get('ingredient_id');
 
-                                                    if (!$quantity || !$ingredientId) {
+                                                    if (! $quantity || ! $ingredientId) {
                                                         return 'Unknown';
                                                     }
 
                                                     $ingredient = \App\Models\Ingredient::with('inventory')->find($ingredientId);
-                                                    if (!$ingredient || !$ingredient->inventory) {
+                                                    if (! $ingredient || ! $ingredient->inventory) {
                                                         return 'No inventory data';
                                                     }
 
-                                                    $currentStock = (float) $ingredient->inventory->current_stock;
+                                                    $currentStock = $ingredient->inventory instanceof \App\Models\IngredientInventory
+                                                        ? (float) $ingredient->inventory->getAttribute('current_stock')
+                                                        : 0.0;
                                                     $productsPossible = floor($currentStock / $quantity);
 
                                                     $status = $productsPossible <= 10 ? 'Low Stock' :
@@ -289,10 +294,12 @@ final class ProductForm
                                 $ingredient = \App\Models\Ingredient::find($state['ingredient_id']);
                                 if ($ingredient) {
                                     $quantity = $state['quantity_required'] ?? 0;
-                                    $unit = $ingredient->unit_type?->getLabel() ?? 'unit';
+                                    $unit = $ingredient->unit_type->getLabel();
+
                                     return "{$ingredient->name} ({$quantity} {$unit})";
                                 }
                             }
+
                             return 'New Ingredient';
                         })
                         ->addActionLabel('Add Ingredient')

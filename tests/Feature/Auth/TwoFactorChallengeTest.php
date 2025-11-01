@@ -37,4 +37,6 @@ test('two factor challenge can be rendered', function (): void {
         'email' => $user->email,
         'password' => 'password',
     ])->assertRedirect(route('two-factor.login'));
+
+    $this->get(route('two-factor.login'))->assertStatus(200);
 });

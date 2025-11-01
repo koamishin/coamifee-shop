@@ -33,7 +33,7 @@ final class EditIngredientInventory extends EditRecord
                 'unit_type' => $data['new_ingredient_unit_type'],
             ]);
             $data['ingredient_id'] = $ingredient->id;
-        } elseif (isset($data['ingredient_id']) && $record->ingredient_id !== $data['ingredient_id']) {
+        } elseif (isset($data['ingredient_id']) && $record instanceof \App\Models\IngredientInventory && $record->ingredient_id !== $data['ingredient_id']) {
             // Ingredient was changed
             // No assignment needed as data already contains the ingredient_id
         }

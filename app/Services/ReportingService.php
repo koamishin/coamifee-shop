@@ -4,41 +4,72 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\DataTransferObjects\TopProductDto;
 use App\Models\Ingredient;
+use App\Models\IngredientInventory;
 use App\Models\IngredientUsage;
 use App\Models\InventoryTransaction;
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 
 final class ReportingService
 {
+    /**
+     * @return array{
+     *     with_inventory: Collection<int, array{
+     *         name: string,
+     *         current_stock: float,
+     *         min_stock_level: float,
+     *         max_stock_level: float,
+     *         location: string,
+     *         unit_type: string,
+     *         status: string
+     *     }>,
+     *     without_inventory: Collection<int, array{
+     *         name: string,
+     *         unit_type: string
+     *     }>,
+     *     low_stock_alerts: Collection<int, array{
+     *         ingredient_name: string,
+     *         current_stock: float,
+     *         min_stock_level: float,
+     *         unit_type: string,
+     *         shortage: float
+     *     }>
+     * }
+     */
     public function getInventoryReport(): array
     {
         $ingredientsWithInventory = Ingredient::with('inventory')
             ->whereHas('inventory')
             ->get()
-            ->map(function ($ingredient): array {
-                $inventory = $ingredient->inventory()->first();
+            ->map(function (Ingredient $ingredient): array {
+                /** @var IngredientInventory|null $inventory */
+                $inventory = $ingredient->inventory;
 
                 return [
                     'name' => $ingredient->name,
-                    'current_stock' => $inventory?->current_stock ?? 0,
-                    'min_stock_level' => $inventory?->min_stock_level ?? 0,
-                    'max_stock_level' => $inventory?->max_stock_level ?? 0,
-                    'location' => $inventory?->location ?? 'N/A',
+                    'current_stock' => (float) ($inventory->current_stock ?? 0.0),
+                    'min_stock_level' => (float) ($inventory->min_stock_level ?? 0.0),
+                    'max_stock_level' => (float) ($inventory->max_stock_level ?? 0.0),
+                    'location' => (string) ($inventory->location ?? 'N/A'),
                     'unit_type' => $ingredient->unit_type->getLabel(),
-                    'status' => $this->getStockStatus($inventory),
+                    'status' => $this->getStockStatus($inventory ?: null),
                 ];
             });
 
         $ingredientsWithoutInventory = Ingredient::query()->whereDoesntHave('inventory')
             ->get()
-            ->map(fn ($ingredient): array => [
-                'name' => $ingredient->name,
-                'unit_type' => $ingredient->unit_type->getLabel(),
-            ]);
+            ->map(function (Ingredient $ingredient): array {
+                return [
+                    'name' => $ingredient->name,
+                    'unit_type' => $ingredient->unit_type->getLabel(),
+                ];
+            });
 
         return [
             'with_inventory' => $ingredientsWithInventory,
@@ -47,21 +78,69 @@ final class ReportingService
         ];
     }
 
+    /**
+     * @return Collection<string, array{
+     *     ingredient_name: string,
+     *     total_quantity_used: float,
+     *     unit_type: string,
+     *     usage_count: int,
+     *     total_cost: float
+     * }>
+     */
     public function getIngredientUsageReport(Carbon $startDate, Carbon $endDate): Collection
     {
         return IngredientUsage::with(['ingredient', 'orderItem.product', 'orderItem.order'])
             ->whereBetween('recorded_at', [$startDate, $endDate])
             ->get()
-            ->groupBy('ingredient.name')
-            ->map(fn ($usages): array => [
-                'ingredient_name' => $usages->first()->ingredient->name,
-                'total_quantity_used' => $usages->sum('quantity_used'),
-                'unit_type' => $usages->first()->ingredient->unit_type,
-                'usage_count' => $usages->count(),
-                'total_cost' => $usages->sum('quantity_used') * $usages->first()->ingredient->unit_cost,
-            ]);
+            ->groupBy(function (IngredientUsage $usage): string {
+                return $usage->ingredient->name ?? 'Unknown';
+            })
+            ->map(function (Collection $usages): array {
+                $firstUsage = $usages->first();
+                if ($firstUsage === null) {
+                    return [
+                        'ingredient_name' => '',
+                        'total_quantity_used' => 0.0,
+                        'unit_type' => '',
+                        'usage_count' => 0,
+                        'total_cost' => 0.0,
+                    ];
+                }
+
+                $ingredient = $firstUsage->ingredient;
+                if (! $ingredient instanceof Ingredient) {
+                    return [
+                        'ingredient_name' => '',
+                        'total_quantity_used' => 0.0,
+                        'unit_type' => '',
+                        'usage_count' => 0,
+                        'total_cost' => 0.0,
+                    ];
+                }
+
+                return [
+                    'ingredient_name' => (string) ($ingredient->name ?? ''),
+                    'total_quantity_used' => (float) $usages->sum('quantity_used'),
+                    'unit_type' => $ingredient->unit_type->getLabel(),
+                    'usage_count' => $usages->count(),
+                    'total_cost' => (float) $usages->sum('quantity_used') * (float) ($ingredient->unit_cost ?? 0.0),
+                ];
+            });
     }
 
+    /**
+     * @return array{
+     *     period: string,
+     *     total_revenue: float,
+     *     total_orders: int,
+     *     average_order_value: float,
+     *     product_sales: Collection<string, array{
+     *         product_name: string,
+     *         quantity_sold: float,
+     *         revenue: float
+     *     }>
+     * }
+     */
     public function getSalesReport(Carbon $startDate, Carbon $endDate): array
     {
         $orders = Order::query()->whereBetween('created_at', [$startDate, $endDate])
@@ -70,26 +149,53 @@ final class ReportingService
 
         $totalRevenue = $orders->sum('total');
         $totalOrders = $orders->count();
-        $averageOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
+        $averageOrderValue = $totalOrders > 0 ? (float) $totalRevenue / $totalOrders : 0.0;
 
         $productSales = $orders->flatMap->items
-            ->groupBy('product.name')
-            ->map(fn ($items): array => [
-                'product_name' => $items->first()->product->name,
-                'quantity_sold' => $items->sum('quantity'),
-                'revenue' => $items->sum(fn ($item): int|float => $item->price * $item->quantity),
-            ])
+            ->groupBy(function ($item): string {
+                return $item->product->name ?? 'Unknown';
+            })
+            ->map(function (Collection $items): array {
+                $firstItem = $items->first();
+                if ($firstItem === null) {
+                    return [
+                        'product_name' => '',
+                        'quantity_sold' => 0.0,
+                        'revenue' => 0.0,
+                    ];
+                }
+
+                $product = $firstItem->product;
+                if ($product === null) {
+                    return [
+                        'product_name' => '',
+                        'quantity_sold' => 0.0,
+                        'revenue' => 0.0,
+                    ];
+                }
+
+                return [
+                    'product_name' => (string) $product->name,
+                    'quantity_sold' => (float) $items->sum('quantity'),
+                    'revenue' => (float) $items->sum(function ($item): float {
+                        return (float) $item->price * (float) $item->quantity;
+                    }),
+                ];
+            })
             ->sortByDesc('revenue');
 
         return [
             'period' => $startDate->format('M j, Y').' - '.$endDate->format('M j, Y'),
-            'total_revenue' => $totalRevenue,
+            'total_revenue' => (float) $totalRevenue,
             'total_orders' => $totalOrders,
             'average_order_value' => $averageOrderValue,
             'product_sales' => $productSales,
         ];
     }
 
+    /**
+     * @return Collection<int, TopProductDto>
+     */
     public function getTopProducts(int $limit = 5, string $period = 'daily', int $days = 7): Collection
     {
         $startDate = match ($period) {
@@ -105,35 +211,79 @@ final class ReportingService
             ->get()
             ->flatMap->items
             ->groupBy('product_id')
-            ->map(function ($items, $productId) {
-                $product = $items->first()->product;
+            ->map(function (Collection $items, mixed $productId) {
+                $firstItem = $items->first();
+                /** @var OrderItem $firstItem */
+                $product = $firstItem->product;
+                /** @var Product|null $product */
 
-                return (object) [
-                    'product' => $product,
-                    'quantity_sold' => $items->sum('quantity'),
-                    'revenue' => $items->sum(fn ($item): int|float => $item->price * $item->quantity),
-                ];
+                return new TopProductDto(
+                    product: $product,
+                    quantity_sold: (float) $items->sum('quantity'),
+                    revenue: (float) $items->sum(function ($item) {
+                        /** @var OrderItem $item */
+                        return (float) $item->price * (float) $item->quantity;
+                    })
+                );
             })
             ->sortByDesc('quantity_sold')
-            ->take($limit);
+            ->take($limit)
+            ->values();
     }
 
+    /**
+     * @return array{
+     *     period: string,
+     *     total_ingredient_cost: float,
+     *     ingredient_breakdown: Collection<string, array{
+     *         ingredient_name: string,
+     *         quantity_used: float,
+     *         unit_type: string,
+     *         unit_cost: float,
+     *         total_cost: float
+     *     }>
+     * }
+     */
     public function getCostAnalysisReport(Carbon $startDate, Carbon $endDate): array
     {
         $ingredientCosts = IngredientUsage::with('ingredient')
             ->whereBetween('recorded_at', [$startDate, $endDate])
             ->get()
-            ->groupBy('ingredient.name')
-            ->map(function ($usages): array {
-                $ingredient = $usages->first()->ingredient;
-                $totalQuantity = $usages->sum('quantity_used');
-                $totalCost = $totalQuantity * $ingredient->unit_cost;
+            ->groupBy(function (IngredientUsage $usage): string {
+                return $usage->ingredient->name ?? 'Unknown';
+            })
+            ->map(function (Collection $usages): array {
+                $firstUsage = $usages->first();
+                if ($firstUsage === null) {
+                    return [
+                        'ingredient_name' => '',
+                        'quantity_used' => 0.0,
+                        'unit_type' => '',
+                        'unit_cost' => 0.0,
+                        'total_cost' => 0.0,
+                    ];
+                }
+
+                $ingredient = $firstUsage->ingredient;
+                if (! $ingredient instanceof Ingredient) {
+                    return [
+                        'ingredient_name' => '',
+                        'quantity_used' => 0.0,
+                        'unit_type' => '',
+                        'unit_cost' => 0.0,
+                        'total_cost' => 0.0,
+                    ];
+                }
+
+                $totalQuantity = (float) $usages->sum('quantity_used');
+                $unitCost = (float) ($ingredient->unit_cost ?? 0.0);
+                $totalCost = $totalQuantity * $unitCost;
 
                 return [
-                    'ingredient_name' => $ingredient->name,
+                    'ingredient_name' => (string) ($ingredient->name ?? ''),
                     'quantity_used' => $totalQuantity,
-                    'unit_type' => $ingredient->unit_type,
-                    'unit_cost' => $ingredient->unit_cost,
+                    'unit_type' => $ingredient->unit_type->getLabel(),
+                    'unit_cost' => $unitCost,
                     'total_cost' => $totalCost,
                 ];
             })
@@ -143,46 +293,68 @@ final class ReportingService
 
         return [
             'period' => $startDate->format('M j, Y').' - '.$endDate->format('M j, Y'),
-            'total_ingredient_cost' => $totalIngredientCost,
+            'total_ingredient_cost' => (float) $totalIngredientCost,
             'ingredient_breakdown' => $ingredientCosts,
         ];
     }
 
+    /**
+     * Get inventory transactions for a specified date range.
+     */
     public function getInventoryTransactions(Carbon $startDate, Carbon $endDate): Collection
     {
         return InventoryTransaction::with(['ingredient', 'orderItem.product'])
             ->whereBetween('created_at', [$startDate, $endDate])->latest()
             ->get()
-            ->map(fn ($transaction): array => [
-                'id' => $transaction->id,
-                'ingredient_name' => $transaction->ingredient->name,
-                'transaction_type' => $transaction->transaction_type,
-                'quantity_change' => $transaction->quantity_change,
-                'previous_stock' => $transaction->previous_stock,
-                'new_stock' => $transaction->new_stock,
-                'reason' => $transaction->reason,
-                'product_name' => $transaction->orderItem?->product->name,
-                'created_at' => $transaction->created_at->format('M j, Y H:i'),
-            ]);
+            ->map(function (InventoryTransaction $transaction): array {
+                /** @var Ingredient|null $ingredient */
+                $ingredient = $transaction->ingredient;
+                /** @var OrderItem|null $orderItem */
+                $orderItem = $transaction->orderItem;
+
+                /** @var Product|null $product */
+                $product = $orderItem?->product;
+
+                return [
+                    'id' => $transaction->id,
+                    'ingredient_name' => $ingredient instanceof Ingredient ? (string) $ingredient->name : 'Unknown',
+                    'transaction_type' => $transaction->transaction_type,
+                    'quantity_change' => (float) $transaction->quantity_change,
+                    'previous_stock' => (float) $transaction->previous_stock,
+                    'new_stock' => (float) $transaction->new_stock,
+                    'reason' => $transaction->reason,
+                    'product_name' => $product?->name,
+                    'created_at' => $transaction->created_at?->format('M j, Y H:i') ?? '',
+                ];
+            });
     }
 
-    private function getStockStatus($inventory): string
+    private function getStockStatus(?IngredientInventory $inventory): string
     {
-        if (! $inventory) {
+        if ($inventory === null) {
             return 'No Inventory';
         }
 
-        if ($inventory->current_stock <= $inventory->min_stock_level) {
+        if ((float) $inventory->current_stock <= (float) $inventory->min_stock_level) {
             return 'Low Stock';
         }
 
-        if ($inventory->max_stock_level && $inventory->current_stock >= $inventory->max_stock_level) {
+        if ($inventory->max_stock_level !== null && (float) $inventory->current_stock >= (float) $inventory->max_stock_level) {
             return 'Overstocked';
         }
 
         return 'Normal';
     }
 
+    /**
+     * @return Collection<int, array{
+     *     ingredient_name: string,
+     *     current_stock: float,
+     *     min_stock_level: float,
+     *     unit_type: string,
+     *     shortage: float
+     * }>
+     */
     private function getLowStockItems(): Collection
     {
         return Ingredient::with('inventory')
@@ -191,15 +363,24 @@ final class ReportingService
                 $query->whereColumn('current_stock', '<=', 'min_stock_level');
             })
             ->get()
-            ->map(function ($ingredient): array {
+            ->map(function (Ingredient $ingredient): array {
                 $inventory = $ingredient->inventory;
+                if ($inventory === null) {
+                    return [
+                        'ingredient_name' => $ingredient->name,
+                        'current_stock' => 0.0,
+                        'min_stock_level' => 0.0,
+                        'unit_type' => $ingredient->unit_type->getLabel(),
+                        'shortage' => 0.0,
+                    ];
+                }
 
                 return [
                     'ingredient_name' => $ingredient->name,
-                    'current_stock' => $inventory->current_stock,
-                    'min_stock_level' => $inventory->min_stock_level,
-                    'unit_type' => $ingredient->unit_type,
-                    'shortage' => max(0, $inventory->min_stock_level - $inventory->current_stock),
+                    'current_stock' => (float) ($inventory->current_stock ?? 0.0),
+                    'min_stock_level' => (float) ($inventory->min_stock_level ?? 0.0),
+                    'unit_type' => $ingredient->unit_type->getLabel(),
+                    'shortage' => max(0.0, (float) ($inventory->min_stock_level ?? 0.0) - (float) ($inventory->current_stock ?? 0.0)),
                 ];
             });
     }

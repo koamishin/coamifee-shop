@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ProductIngredients\Schemas;
 
-use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
-use Filament\Schemas\Components\Section;
+use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
-use Filament\Infolists\Components\IconEntry;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\HtmlString;
@@ -52,6 +51,7 @@ final class ProductIngredientInfolist
                             ->alignCenter()
                             ->formatStateUsing(function ($state, $record) {
                                 $unit = $record->ingredient->unit_type?->getLabel() ?? 'unit';
+
                                 return "{$state} {$unit}";
                             })
                             ->weight('medium')
@@ -73,7 +73,7 @@ final class ProductIngredientInfolist
                             ->label('Can Make')
                             ->alignCenter()
                             ->formatStateUsing(function ($record) {
-                                if (!$record->ingredient->inventory) {
+                                if (! $record->ingredient->inventory) {
                                     return 'N/A';
                                 }
 
@@ -84,8 +84,7 @@ final class ProductIngredientInfolist
                             })
                             ->weight('medium')
                             ->badge()
-                            ->color(fn ($record): string =>
-                                !$record->ingredient->inventory ? 'gray' :
+                            ->color(fn ($record): string => ! $record->ingredient->inventory ? 'gray' :
                                 (floor($record->ingredient->inventory->current_stock / $record->quantity_required) <= 10 ? 'danger' :
                                 (floor($record->ingredient->inventory->current_stock / $record->quantity_required) <= 50 ? 'warning' : 'success'))
                             ),
@@ -101,6 +100,7 @@ final class ProductIngredientInfolist
                             ->label('Measurement Unit')
                             ->formatStateUsing(function ($state) {
                                 $unitType = $state;
+
                                 return $unitType?->getLabel() ?? 'Unknown';
                             })
                             ->badge()
@@ -119,7 +119,7 @@ final class ProductIngredientInfolist
                             ->numeric(decimalPlaces: 2)
                             ->alignCenter()
                             ->formatStateUsing(function ($record) {
-                                if (!$record->ingredient->inventory) {
+                                if (! $record->ingredient->inventory) {
                                     return 'No Inventory';
                                 }
 
@@ -149,7 +149,7 @@ final class ProductIngredientInfolist
                         IconEntry::make('stock_status')
                             ->label('Stock Status')
                             ->icon(function ($record): string {
-                                if (!$record->ingredient->inventory) {
+                                if (! $record->ingredient->inventory) {
                                     return 'heroicon-o-x-circle';
                                 }
 
@@ -170,7 +170,7 @@ final class ProductIngredientInfolist
                                 return 'heroicon-o-check-circle';
                             })
                             ->color(function ($record): string {
-                                if (!$record->ingredient->inventory) {
+                                if (! $record->ingredient->inventory) {
                                     return 'gray';
                                 }
 
@@ -191,7 +191,7 @@ final class ProductIngredientInfolist
                                 return 'success';
                             })
                             ->formatStateUsing(function ($record): string {
-                                if (!$record->ingredient->inventory) {
+                                if (! $record->ingredient->inventory) {
                                     return 'No inventory data available';
                                 }
 
@@ -216,7 +216,7 @@ final class ProductIngredientInfolist
                         TextEntry::make('reorder_suggestion')
                             ->label('Reorder Suggestion')
                             ->formatStateUsing(function ($record): string {
-                                if (!$record->ingredient->inventory) {
+                                if (! $record->ingredient->inventory) {
                                     return 'Set up inventory to see reorder suggestions';
                                 }
 
@@ -229,10 +229,12 @@ final class ProductIngredientInfolist
 
                                 if ($currentStock <= $minStock) {
                                     $suggested = $maxStock - $currentStock;
+
                                     return "Urgent: Order {$suggested} {$unitLabel} to reach maximum stock";
                                 }
                                 if ($productsPossible <= 20) {
                                     $suggested = ceil($maxStock * 0.6) - $currentStock;
+
                                     return "Consider ordering {$suggested} {$unitLabel} soon";
                                 }
 
@@ -240,7 +242,7 @@ final class ProductIngredientInfolist
                             })
                             ->badge()
                             ->color(function ($record): string {
-                                if (!$record->ingredient->inventory) {
+                                if (! $record->ingredient->inventory) {
                                     return 'gray';
                                 }
 

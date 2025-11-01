@@ -51,7 +51,7 @@ final class Product extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-    public function inventory()
+    public function inventory(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(ProductInventory::class);
     }

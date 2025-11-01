@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Ingredients\Schemas;
 
-use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
-use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -35,7 +33,7 @@ final class IngredientInfolist
                             ->icon(fn ($state) => $state?->getIcon())
                             ->formatStateUsing(fn ($state) => $state?->getLabel()),
                     ]),
-            ]),
+                ]),
 
             Section::make('Related Inventory')
                 ->description('Inventory and stock information (if available)')

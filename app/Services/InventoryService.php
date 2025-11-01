@@ -15,6 +15,7 @@ final class InventoryService
 {
     public function decreaseIngredientStock(Ingredient $ingredient, float $quantity, ?OrderItem $orderItem = null, ?string $reason = null): bool
     {
+        /** @var IngredientInventory|null $inventory */
         $inventory = $ingredient->inventory()->first();
         if (! $inventory) {
             return true; // No inventory means can't track stock
@@ -44,6 +45,7 @@ final class InventoryService
 
     public function restockIngredient(Ingredient $ingredient, float $quantity, ?string $reason = null): bool
     {
+        /** @var IngredientInventory $inventory */
         $inventory = $ingredient->inventory()->firstOrCreate([
             'ingredient_id' => $ingredient->id,
         ], [
@@ -75,6 +77,7 @@ final class InventoryService
 
     public function adjustIngredientStock(Ingredient $ingredient, float $newQuantity, ?string $reason = null): bool
     {
+        /** @var IngredientInventory $inventory */
         $inventory = $ingredient->inventory()->firstOrCreate([
             'ingredient_id' => $ingredient->id,
         ], [
@@ -103,6 +106,7 @@ final class InventoryService
 
     public function recordWaste(Ingredient $ingredient, float $quantity, ?string $reason = null): bool
     {
+        /** @var IngredientInventory|null $inventory */
         $inventory = $ingredient->inventory()->first();
         if (! $inventory) {
             return false;
@@ -149,6 +153,7 @@ final class InventoryService
 
         foreach ($productIngredients as $productIngredient) {
             $ingredient = $productIngredient->ingredient;
+            /** @var IngredientInventory|null $inventory */
             $inventory = $ingredient->inventory()->first();
             $requiredQuantity = $productIngredient->quantity_required * $quantity;
 

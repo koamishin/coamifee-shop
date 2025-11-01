@@ -153,7 +153,7 @@ final class ProductMetricsTable
                         $orders = (int) $record->orders_count;
                         $revenue = (float) $record->total_revenue;
 
-                        if ($orders === 0 && $revenue === 0) {
+                        if ($orders === 0 && $revenue === 0.0) {
                             return '⚪ No Activity';
                         }
 
