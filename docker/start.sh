@@ -76,8 +76,23 @@ php /var/www/html/artisan optimize:clear
 php /var/www/html/artisan optimize
 php /var/www/html/artisan shield:generate --all --panel=admin --no-interaction
 
+# Run database seed if in demo mode
+if [ "$APP_ENV" = "demo" ]; then
+  echo "Running database seed for demo mode..."
+  php /var/www/html/artisan db:seed --class=DatabaseSeeder --force
+fi
+
 php /var/www/html/artisan user:create "$NAME" "$EMAIL" "$PASSWORD"
 php artisan shield:super-admin --no-interaction --panel=admin
+
+# Add daily cron job to refresh demo database if in demo mode
+if [ "$APP_ENV" = "demo" ]; then
+  echo "Setting up daily demo database refresh cron job..."
+  # Add to crontab to run daily at 2 AM
+  (crontab -l 2>/dev/null; echo "0 2 * * * /usr/bin/php /var/www/html/artisan refresh:demo-database >> /var/log/cron.log 2>&1") | crontab -
+  echo "Demo database will refresh daily at 2 AM"
+fi
+
 cron
 
 echo "Coamifee is running! 🚀"
