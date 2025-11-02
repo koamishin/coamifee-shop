@@ -25,7 +25,7 @@ final class DatabaseSeeder extends Seeder
             'password' => Hash::make('password'),
         ]);
 
-        // $user->assignRole('super_admin');
+        $user->assignRole('super_admin');
 
         // Use the CoffeeShopSeeder for existing data
         $this->call(CoffeeShopSeeder::class);

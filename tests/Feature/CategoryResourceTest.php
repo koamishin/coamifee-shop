@@ -7,40 +7,49 @@ use App\Filament\Resources\Categories\Pages\EditCategory;
 use App\Filament\Resources\Categories\Pages\ListCategories;
 use App\Models\Category;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\assertDatabaseHas;
+
 uses(RefreshDatabase::class);
 
-it('can create category', function (): void {
-    // Create a super admin user by directly setting as admin without checking roles
+// Set up authentication for all tests
+beforeEach(function () {
     $user = User::factory()->create();
+    actingAs($user);
 
-    // Bypass permissions by testing the Livewire component directly
-    Livewire::test(
-        CreateCategory::class,
-    )
+    // Set the current panel for Filament testing
+    Filament::setCurrentPanel('admin');
+});
+
+it('can create category', function (): void {
+    $newCategoryData = Category::factory()->make();
+
+    Livewire::test(CreateCategory::class)
+        ->assertOk()
         ->fillForm([
-            'name' => 'Test Category',
-            'description' => 'Test Description',
-            'is_active' => true,
-            'sort_order' => 1,
+            'name' => $newCategoryData->name,
+            'description' => $newCategoryData->description,
+            'is_active' => $newCategoryData->is_active,
+            'sort_order' => $newCategoryData->sort_order,
         ])
         ->call('create')
         ->assertHasNoFormErrors();
 
-    $this->assertDatabaseHas('categories', [
-        'name' => 'Test Category',
-        'description' => 'Test Description',
-        'is_active' => true,
-        'sort_order' => 1,
+    assertDatabaseHas('categories', [
+        'name' => $newCategoryData->name,
+        'description' => $newCategoryData->description,
+        'is_active' => $newCategoryData->is_active,
+        'sort_order' => $newCategoryData->sort_order,
     ]);
 });
 
 it('validates category name is required', function (): void {
-    Livewire::test(
-        CreateCategory::class,
-    )
+    Livewire::test(CreateCategory::class)
+        ->assertOk()
         ->fillForm([
             'name' => '',
             'description' => 'Test Description',
@@ -59,45 +68,45 @@ it('can edit existing category', function (): void {
         'sort_order' => 1,
     ]);
 
-    Livewire::test(
-        EditCategory::class,
-        [
-            'record' => $category->id,
-        ],
-    )
+    $newCategoryData = Category::factory()->make();
+
+    Livewire::test(EditCategory::class, [
+        'record' => $category->id,
+    ])
+        ->assertOk()
         ->fillForm([
-            'name' => 'Updated Name',
-            'description' => 'Updated Description',
-            'is_active' => false,
-            'sort_order' => 2,
+            'name' => $newCategoryData->name,
+            'description' => $newCategoryData->description,
+            'is_active' => $newCategoryData->is_active,
+            'sort_order' => $newCategoryData->sort_order,
         ])
         ->call('save')
         ->assertHasNoFormErrors();
 
-    $this->assertDatabaseHas('categories', [
+    assertDatabaseHas('categories', [
         'id' => $category->id,
-        'name' => 'Updated Name',
-        'description' => 'Updated Description',
-        'is_active' => false,
-        'sort_order' => 2,
+        'name' => $newCategoryData->name,
+        'description' => $newCategoryData->description,
+        'is_active' => $newCategoryData->is_active,
+        'sort_order' => $newCategoryData->sort_order,
     ]);
 });
 
 it('displays categories in table', function (): void {
-    Category::factory()->count(3)->create();
+    $categories = Category::factory()->count(3)->create();
 
-    Livewire::test(
-        ListCategories::class,
-    )->assertSuccessful();
+    Livewire::test(ListCategories::class)
+        ->assertOk()
+        ->assertCanSeeTableRecords($categories);
 });
 
 it('can search categories by name', function (): void {
     $category1 = Category::factory()->create(['name' => 'Coffee Category']);
     $category2 = Category::factory()->create(['name' => 'Tea Category']);
 
-    Livewire::test(
-        ListCategories::class,
-    )
+    Livewire::test(ListCategories::class)
+        ->assertOk()
+        ->assertCanSeeTableRecords([$category1, $category2])
         ->searchTable('Coffee')
         ->assertCanSeeTableRecords([$category1])
         ->assertCanNotSeeTableRecords([$category2]);
@@ -109,9 +118,8 @@ it('displays category columns correctly', function (): void {
         'is_active' => true,
     ]);
 
-    Livewire::test(
-        ListCategories::class,
-    )->assertSuccessful();
+    Livewire::test(ListCategories::class)
+        ->assertOk();
 });
 
 it('displays category status correctly', function (): void {
@@ -124,7 +132,6 @@ it('displays category status correctly', function (): void {
         'is_active' => false,
     ]);
 
-    Livewire::test(
-        ListCategories::class,
-    )->assertSuccessful();
+    Livewire::test(ListCategories::class)
+        ->assertOk();
 });
