@@ -49,6 +49,8 @@ if [ ! -f "$INIT_FLAG" ]; then
 
   # create sqlite database
   touch /var/www/html/storage/database.sqlite
+  chown www-data:www-data /var/www/html/storage/database.sqlite
+  chmod 664 /var/www/html/storage/database.sqlite
 
   # create the flag file to indicate completion of initialization tasks
   touch "$INIT_FLAG"
@@ -64,7 +66,14 @@ chown -R www-data:www-data /var/www/html &&
 # Ensure www-data can write to supervisor log directory
 chown -R www-data:www-data /var/log/supervisor
 
-# Ensure storage directory is writable for supervisord pid file
+# Fix Docker volume permissions - ensure database is writable
+if [ -f /var/www/html/storage/database.sqlite ]; then
+    chown www-data:www-data /var/www/html/storage/database.sqlite
+    chmod 664 /var/www/html/storage/database.sqlite
+fi
+
+# Fix storage directory permissions for Docker volume
+chown -R www-data:www-data /var/www/html/storage
 chmod -R 775 /var/www/html/storage
 
 service php8.4-fpm start
@@ -76,6 +85,10 @@ php /var/www/html/artisan migrate --force
 php /var/www/html/artisan optimize:clear
 php /var/www/html/artisan optimize
 php /var/www/html/artisan shield:generate --all --panel=admin --no-interaction
+
+# Ensure database file permissions are correct after migrations
+chown www-data:www-data /var/www/html/storage/database.sqlite
+chmod 664 /var/www/html/storage/database.sqlite
 
 # Run database seed if in demo mode
 if [ "$APP_ENV" = "demo" ]; then
