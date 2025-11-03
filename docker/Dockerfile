@@ -27,7 +27,8 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 RUN rm -rf /var/www/html
 COPY . /var/www/html
 RUN rm -rf /var/www/html/.git /var/www/html/vendor /var/www/html/node_modules
-RUN composer install --no-dev
+RUN composer install --no-dev --with-all-dependencies
+RUN composer dump-autoload --optimize --classmap-authoritative
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
 

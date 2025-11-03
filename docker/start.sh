@@ -56,6 +56,7 @@ fi
 
 # Create supervisor log directory
 mkdir -p /var/log/supervisor
+mkdir -p /var/www/html/storage/logs
 
 chown -R www-data:www-data /var/www/html &&
   chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
@@ -83,7 +84,7 @@ if [ "$APP_ENV" = "demo" ]; then
 fi
 
 php /var/www/html/artisan user:create "$NAME" "$EMAIL" "$PASSWORD"
-php artisan shield:super-admin --no-interaction --panel=admin
+php /var/www/html/artisan shield:super-admin --no-interaction --panel=admin
 
 # Add daily cron job to refresh demo database if in demo mode
 if [ "$APP_ENV" = "demo" ]; then
