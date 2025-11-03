@@ -58,8 +58,7 @@ dist/
 
 # Database
 database/database.sqlite
-database/factories/*
-database/seeders/*
+
 
 # Config backups
 config/backup.php
