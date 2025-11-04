@@ -1,59 +1,72 @@
 <div class="min-h-screen bg-gradient-to-br from-[#faf8f3] via-[#f5f1e8] to-[#ede8df] dark:from-[#1a1815] dark:via-[#2a2520] dark:to-[#1f1b17] transition-colors duration-300 font-sans">
 
-    <!-- HEADER -->
-    <header class="backdrop-blur-md bg-white/80 dark:bg-[#2a2520]/80 border-b border-[#e8dcc8] dark:border-[#3d3530] sticky top-0 z-50 shadow-sm">
-        <div class="w-full px-4 py-3 flex justify-between items-center">
-
-            <!-- Brand -->
-            <div class="flex items-center gap-4">
-                <div class="flex flex-col">
-                    <h1 class="text-2xl font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8] tracking-tight">
-                        Goodland Café
-                    </h1>
-                    <p class="text-xs text-[#8b7355] dark:text-[#b8a892] font-medium tracking-wide">POS SYSTEM</p>
-                </div>
-                <div class="flex items-center gap-2 ml-4 pl-4 border-l border-[#e8dcc8] dark:border-[#3d3530]">
-                    <div class="w-2.5 h-2.5 bg-[#c17a4a] rounded-full animate-pulse"></div>
-                    <span class="text-xs text-[#8b7355] dark:text-[#b8a892] font-medium">Online</span>
-                </div>
-            </div>
-
-            <!-- Center: Sales Summary -->
-            <div class="hidden lg:flex items-center gap-8 text-sm">
-                <div class="text-center">
-                    <p class="text-[#8b7355] dark:text-[#b8a892] text-xs uppercase tracking-wide">Today's Sales</p>
-                    <p class="text-lg font-bold text-[#c17a4a]">${{ number_format($todaySales ?? 0, 2) }}</p>
-                </div>
-                <div class="w-px h-8 bg-[#e8dcc8] dark:bg-[#3d3530]"></div>
-                <div class="text-center">
-                    <p class="text-[#8b7355] dark:text-[#b8a892] text-xs uppercase tracking-wide">Orders</p>
-                    <p class="text-lg font-bold text-[#2c2416] dark:text-[#f5f1e8]">{{ $todayOrders ?? 0 }}</p>
-                </div>
-            </div>
-
-            <!-- Right Side -->
-            <div class="flex items-center gap-6">
-                <!-- Date -->
-                <div class="text-sm text-[#8b7355] dark:text-[#b8a892] font-medium hidden sm:block">
-                    {{ now()->format('M j, Y • g:i A') }}
+    <!-- COMPACT HEADER -->
+    <header class="backdrop-blur-md bg-white/90 dark:bg-[#2a2520]/90 border-b-2 border-[#c17a4a]/20 dark:border-[#c17a4a]/40 sticky top-0 z-50 shadow-lg">
+        <div class="w-full px-6 py-4">
+            <div class="flex justify-between items-center">
+                <!-- Brand & Status -->
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-[#c17a4a] to-[#a86a3a] rounded-xl flex items-center justify-center shadow-md">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8] tracking-tight">
+                                Goodland Café POS
+                            </h1>
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span class="text-xs text-[#8b7355] dark:text-[#b8a892] font-medium">Live</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Theme Toggle -->
-                <button id="theme-toggle" class="w-12 h-6 rounded-full bg-[#e8dcc8] dark:bg-[#3d3530] relative focus:ring-2 focus:ring-[#c17a4a] transition">
-                    <span id="theme-thumb" class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white dark:bg-[#2a2520] transform transition-transform duration-300"></span>
-                </button>
+                <!-- Center: Quick Stats -->
+                <div class="hidden lg:flex items-center gap-6">
+                    <div class="bg-gradient-to-r from-[#f0e6d2]/50 to-[#ede3d0]/50 dark:from-[#3d3530]/50 dark:to-[#454035]/50 px-4 py-2 rounded-xl border border-[#e8dcc8] dark:border-[#4d4540]">
+                        <div class="flex items-center gap-3">
+                            <div>
+                                <p class="text-xs text-[#8b7355] dark:text-[#b8a892] uppercase tracking-wide font-semibold">Today</p>
+                                <p class="text-2xl font-bold text-[#c17a4a]">${{ number_format($todaySales ?? 0, 2) }}</p>
+                            </div>
+                            <div class="w-px h-8 bg-[#e8dcc8] dark:bg-[#3d3530]"></div>
+                            <div>
+                                <p class="text-xs text-[#8b7355] dark:text-[#b8a892] uppercase tracking-wide font-semibold">Orders</p>
+                                <p class="text-2xl font-bold text-[#2c2416] dark:text-[#f5f1e8]">{{ $todayOrders ?? 0 }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                <!-- Cart Count -->
-                <div class="flex items-center gap-3 bg-gradient-to-r from-[#f0e6d2] to-[#ede3d0] dark:from-[#3d3530] dark:to-[#454035]
-                px-5 py-3 rounded-full border border-[#e8dcc8] dark:border-[#4d4540]
-                shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group">
-                <svg class="w-5 h-5 text-[#c17a4a] group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                    </svg>
-                    <span class="text-sm text-[#2c2416] dark:text-[#f5f1e8] font-bold">{{ $this->getCartItemCount() }}</span>
-                    @if($this->getCartItemCount() > 0)
-                        <div class="w-2 h-2 bg-[#c17a4a] rounded-full animate-ping"></div>
-                    @endif
+                <!-- Right Side Actions -->
+                <div class="flex items-center gap-4">
+                    <!-- Time -->
+                    <div class="hidden md:block text-sm text-[#8b7355] dark:text-[#b8a892] font-medium">
+                        {{ now()->format('g:i A') }}
+                    </div>
+
+                    <!-- Theme Toggle -->
+                    <button id="theme-toggle" class="w-10 h-10 rounded-xl bg-[#f0e6d2] dark:bg-[#3d3530] hover:bg-[#e8dcc8] dark:hover:bg-[#4d4540] transition-colors flex items-center justify-center">
+                        <svg class="w-5 h-5 text-[#c17a4a] dark:text-[#d4956f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                    </button>
+
+                    <!-- Cart Badge -->
+                    <div class="relative">
+                        <div class="flex items-center gap-2 bg-gradient-to-r from-[#c17a4a] to-[#a86a3a] px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                            </svg>
+                            <span class="text-sm text-white font-bold">{{ $this->getCartItemCount() }}</span>
+                        </div>
+                        @if($this->getCartItemCount() > 0)
+                            <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
@@ -65,23 +78,68 @@
         <livewire:sidebar />
 
         <!-- MAIN CONTENT -->
-        <main class="flex-1 px-4 py-6">
+        <main class="flex-1 px-6 py-6">
             <div class="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 <!-- PRODUCTS -->
-                <section class="lg:col-span-2 space-y-4">
-                    <!-- Loading Indicator -->
-                    <div wire:loading wire:target="search,selectedCategory" class="flex justify-center items-center py-8">
-                        <div class="flex items-center gap-2 text-[#c17a4a]">
-                            <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span class="text-sm font-medium">Loading products...</span>
+                <section class="lg:col-span-2 space-y-5">
+
+                    <!-- QUICK DRINKS BAR - Coffee Shop Favorites -->
+                    <div class="bg-white/80 dark:bg-[#2a2520]/80 backdrop-blur-lg rounded-2xl shadow-lg p-5 border border-[#e8dcc8] dark:border-[#3d3530]">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8] flex items-center gap-2">
+                                <svg class="w-5 h-5 text-[#c17a4a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                                Quick Drinks
+                            </h3>
+                            <span class="text-xs text-[#8b7355] dark:text-[#b8a892] font-medium">Popular Beverages</span>
+                        </div>
+
+                        <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                            @forelse($quickAddItems ?? [] as $quickItem)
+                                <button
+                                    wire:key="quick-{{ $quickItem->id }}"
+                                    wire:click="addToCart({{ $quickItem->id }})"
+                                    class="group relative bg-gradient-to-br from-[#faf8f3] to-[#f0e6d2] dark:from-[#3d3530] dark:to-[#2a2520]
+                                           hover:from-[#f0e6d2] hover:to-[#e8dcc8] dark:hover:from-[#4d4540] dark:hover:to-[#3d3530]
+                                           rounded-xl p-4 border-2 border-[#e8dcc8] dark:border-[#4d4540]
+                                           hover:border-[#c17a4a] hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95">
+                                    <div class="flex flex-col items-center gap-2">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-[#c17a4a] to-[#a86a3a] rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                            </svg>
+                                        </div>
+                                        <div class="text-center">
+                                            <p class="text-xs font-bold text-[#2c2416] dark:text-[#f5f1e8] group-hover:text-[#c17a4a] transition-colors line-clamp-1">
+                                                {{ $quickItem->name }}
+                                            </p>
+                                            <p class="text-xs text-[#c17a4a] font-bold mt-0.5">
+                                                ${{ number_format($quickItem->price, 2) }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </button>
+                            @empty
+                                <p class="col-span-full text-xs text-center text-[#8b7355] dark:text-[#b8a892] py-4">No quick items available</p>
+                            @endforelse
                         </div>
                     </div>
 
-                <div wire:loading.remove wire:target="search,selectedCategory" x-data="{ selected: @entangle('selectedProductId') }" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 gap-6 min-h-[200px]">
+                    <!-- Loading Indicator -->
+                    <div wire:loading wire:target="search,selectedCategory" class="flex justify-center items-center py-12">
+                        <div class="flex flex-col items-center gap-3">
+                            <svg class="animate-spin h-8 w-8 text-[#c17a4a]" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-[#c17a4a]">Loading products...</span>
+                        </div>
+                    </div>
+
+                    <!-- PRODUCT GRID - Enhanced for Coffee Shop -->
+                    <div wire:loading.remove wire:target="search,selectedCategory" x-data="{ selected: @entangle('selectedProductId') }" class="grid grid-cols-2 lg:grid-cols-3 gap-5 min-h-[200px]">
                         @foreach($products as $product)
                             <div
                             wire:key="product-{{ $product->id }}"
@@ -91,219 +149,211 @@
                             x-transition:enter="transition ease-in-out duration-300 transform"
                             x-transition:enter-start="opacity-0 scale-90 -translate-y-2"
                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                            x-transition:leave="transition ease-in-out duration-200 transform"
-                            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                            x-transition:leave-end="opacity-0 scale-90 translate-y-2"
                             @click="$wire.addToCart({{ $product->id }}); selected = {{ $product->id }}"
                             :class="selected == {{ $product->id }}
-                            ? 'border-[#c17a4a] ring-2 ring-[#c17a4a]/50 scale-[1.02] shadow-xl'
+                            ? 'border-[#c17a4a] ring-4 ring-[#c17a4a]/30 scale-[1.02] shadow-2xl'
                             : 'border-[#e8dcc8] dark:border-[#4d4540]'"
-                            class="cursor-pointer group bg-gradient-to-br from-[#faf8f3] to-[#f0e6d2]
-                            dark:from-[#3d3530] dark:to-[#2a2520] rounded-2xl p-4 border
-                            hover:border-[#c17a4a] hover:shadow-2xl hover:shadow-[#c17a4a]/10
-                                    transition-all duration-300 active:scale-95 relative overflow-hidden
-                                    before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent
-                                    before:via-white/5 before:to-transparent before:translate-x-[-100%]
-                                    hover:before:translate-x-[100%] before:transition-transform before:duration-700">
-                                <!-- Favorite Button -->
-                                <button
-                                    wire:click.stop="toggleFavorite({{ $product->id }})"
-                                    class="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white/80
-                                        dark:bg-[#1a1815]/80 hover:bg-[#c17a4a] hover:text-white transition">
-                                    <svg class="w-4 h-4 {{ in_array($product->id, $favorites ?? []) ? 'fill-[#c17a4a]' : 'text-[#8b7355]' }}" viewBox="0 0 24 24">
-                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5
-                                                2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09
-                                                C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42
-                                                22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                                    </svg>
-                                </button>
+                            class="cursor-pointer group bg-white dark:bg-[#2a2520] rounded-2xl border-2
+                            hover:border-[#c17a4a] hover:shadow-2xl hover:shadow-[#c17a4a]/20
+                                    transition-all duration-300 active:scale-95 relative overflow-hidden">
 
-                                <!-- Product Image -->
-                                @if($product->image_url)
-                                <div class="relative mb-3">
-                                <img
-                                src="{{ \Illuminate\Support\Facades\Storage::url($product->image_url) }}"
-                                alt="{{ $product->name }}"
-                                class="w-full h-28 object-cover rounded-xl shadow-sm
-                                transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg
-                                group-hover:shadow-[#c17a4a]/20">
-                                <div class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                </div>
-                                @else
-                                    <div class="w-full h-28 bg-gradient-to-br from-[#e8dcc8] to-[#d4c4b0] dark:from-[#4d4540] dark:to-[#3d3530]
-                                        rounded-xl mb-3 flex items-center justify-center shadow-sm">
-                                        <svg class="w-10 h-10 text-[#8b7355] dark:text-[#b8a892]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                        </svg>
-                                    </div>
-                                @endif
-
-                                <!-- Product Info -->
-                                <h4 class="text-sm font-semibold text-[#2c2416] dark:text-[#f5f1e8] truncate
-                                group-hover:text-[#c17a4a] transition-colors duration-300 leading-tight mb-1">
-                                {{ $product->name }}
-                                </h4>
-                                <p class="text-xs text-[#8b7355] dark:text-[#b8a892] mb-3 line-clamp-1 font-medium">
-                                {{ $product->category->name ?? 'Uncategorized' }}
-                                </p>
-
-                                <div class="flex justify-between items-center transition-transform duration-300 group-hover:scale-105">
-                                    <span class="text-[#c17a4a] font-bold text-xs">
-                                        ${{ number_format($product->price, 2) }}
-                                    </span>
-                                    @if(($product->stock ?? 999) < 5)
-                                        <span class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400
-                                                        text-xs px-1.5 py-0.5 rounded font-semibold animate-pulse">
-                                            Low
-                                        </span>
+                                <!-- Product Image - Larger -->
+                                <div class="relative w-full h-48 overflow-hidden rounded-t-xl bg-gradient-to-br from-[#f0e6d2] to-[#e8dcc8] dark:from-[#3d3530] dark:to-[#2a2520]">
+                                    @if($product->image_url)
+                                        <img
+                                        src="{{ \Illuminate\Support\Facades\Storage::url($product->image_url) }}"
+                                        alt="{{ $product->name }}"
+                                        class="w-full h-full object-cover transition-all duration-500 group-hover:scale-110">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    @else
+                                        <div class="w-full h-full flex items-center justify-center">
+                                            <div class="text-center">
+                                                <svg class="w-16 h-16 mx-auto text-[#8b7355] dark:text-[#b8a892] opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                                </svg>
+                                                <p class="text-xs text-[#8b7355] dark:text-[#b8a892] mt-2">No Image</p>
+                                            </div>
+                                        </div>
                                     @endif
+
+                                    <!-- Favorite Badge -->
+                                    <button
+                                        wire:click.stop="toggleFavorite({{ $product->id }})"
+                                        class="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/90 dark:bg-[#1a1815]/90
+                                            backdrop-blur-sm hover:bg-[#c17a4a] hover:scale-110 transition-all duration-300 shadow-lg
+                                            flex items-center justify-center group/fav">
+                                        <svg class="w-5 h-5 {{ in_array($product->id, $favorites ?? []) ? 'fill-[#c17a4a] group-hover/fav:fill-white' : 'text-[#8b7355] group-hover/fav:text-white' }}" viewBox="0 0 24 24">
+                                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5
+                                                    2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09
+                                                    C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42
+                                                    22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                        </svg>
+                                    </button>
+
+                                    <!-- Stock Badge -->
+                                    @if(($product->stock ?? 999) < 5)
+                                        <div class="absolute top-3 left-3 bg-red-500 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow-lg animate-pulse">
+                                            Low Stock
+                                        </div>
+                                    @endif
+                                </div>
+
+                                <!-- Product Info - Enhanced -->
+                                <div class="p-5">
+                                    <div class="mb-3">
+                                        <h4 class="text-base font-bold text-[#2c2416] dark:text-[#f5f1e8] mb-1
+                                        group-hover:text-[#c17a4a] transition-colors duration-300 line-clamp-1">
+                                        {{ $product->name }}
+                                        </h4>
+                                        <p class="text-xs text-[#8b7355] dark:text-[#b8a892] font-medium flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                                            </svg>
+                                            {{ $product->category->name ?? 'Uncategorized' }}
+                                        </p>
+                                    </div>
+
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex flex-col">
+                                            <span class="text-xs text-[#8b7355] dark:text-[#b8a892] font-medium">Price</span>
+                                            <span class="text-2xl font-bold text-[#c17a4a]">
+                                                ${{ number_format($product->price, 2) }}
+                                            </span>
+                                        </div>
+                                        <div class="bg-gradient-to-r from-[#c17a4a] to-[#a86a3a] text-white px-4 py-2 rounded-xl
+                                            opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0
+                                            transition-all duration-300 shadow-lg">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                            </svg>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         @endforeach
                     </div>
 
-                    <!-- Order History Section -->
-                    <div class="bg-white/70 dark:bg-[#2a2520]/70 backdrop-blur-lg rounded-2xl shadow-md p-4 border border-[#e8dcc8] dark:border-[#3d3530]">
-                        <h3 class="text-lg font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8] mb-4">Recent Orders</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto">
+                    <!-- Recent Orders - Streamlined -->
+                    <div class="bg-white/80 dark:bg-[#2a2520]/80 backdrop-blur-lg rounded-2xl shadow-lg p-5 border border-[#e8dcc8] dark:border-[#3d3530]">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8] flex items-center gap-2">
+                                <svg class="w-5 h-5 text-[#c17a4a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Recent Orders
+                            </h3>
+                            <button wire:click="loadRecentOrders" class="text-xs text-[#c17a4a] hover:text-[#a86a3a] font-medium">
+                                Refresh
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 max-h-32 overflow-y-auto">
                             @forelse($recentOrders ?? [] as $order)
                                 <button
+                                    wire:key="recent-{{ $order->id }}"
                                     wire:click="loadOrder({{ $order->id }})"
-                                    class="text-left p-3 bg-[#f0e6d2] dark:bg-[#3d3530] rounded-lg border border-[#e8dcc8] dark:border-[#4d4540] hover:border-[#c17a4a] transition"
+                                    class="text-left p-3 bg-gradient-to-br from-[#f0e6d2] to-[#ede3d0] dark:from-[#3d3530] dark:to-[#454035]
+                                    rounded-xl border border-[#e8dcc8] dark:border-[#4d4540] hover:border-[#c17a4a]
+                                    hover:shadow-md transition-all duration-200 group"
                                 >
-                                    <p class="text-sm font-semibold text-[#2c2416] dark:text-[#f5f1e8]">{{ $order->customer_name ?? 'Order #' . $order->id }}</p>
-                                    <p class="text-xs text-[#8b7355] dark:text-[#b8a892]">${{ number_format($order->total, 2) }} • {{ $order->created_at->format('g:i A') }}</p>
+                                    <p class="text-sm font-bold text-[#2c2416] dark:text-[#f5f1e8] group-hover:text-[#c17a4a] transition-colors">
+                                        {{ $order->customer_name ?? 'Order #' . $order->id }}
+                                    </p>
+                                    <div class="flex items-center justify-between mt-1">
+                                        <span class="text-xs text-[#c17a4a] font-bold">${{ number_format($order->total, 2) }}</span>
+                                        <span class="text-xs text-[#8b7355] dark:text-[#b8a892]">{{ $order->created_at->format('g:i A') }}</span>
+                                    </div>
                                 </button>
                             @empty
-                                <p class="text-sm text-[#8b7355] dark:text-[#b8a892] col-span-2">No recent orders</p>
+                                <p class="text-sm text-[#8b7355] dark:text-[#b8a892] col-span-2 text-center py-4">No recent orders</p>
                             @endforelse
-                        </div>
-                    </div>
-
-                    <!-- Quick Actions Panel -->
-                    <div class="bg-gradient-to-r from-[#faf8f3] to-[#f5f1e8] dark:from-[#2a2520] dark:to-[#1f1b17]
-                                backdrop-blur-lg rounded-2xl shadow-md p-6 border border-[#e8dcc8] dark:border-[#3d3530]">
-                        <h3 class="text-base font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8] mb-4 flex items-center gap-2">
-                            <svg class="w-5 h-5 text-[#c17a4a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                            </svg>
-                            Quick Actions
-                        </h3>
-
-                        <div class="grid grid-cols-2 gap-3">
-                            <!-- Print Report -->
-                            <button
-                                wire:click="printReport"
-                                class="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-[#c17a4a] to-[#a86a3a]
-                                    hover:from-[#d4956f] hover:to-[#b87a4a] text-white rounded-xl font-semibold text-sm
-                                    shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-                                </svg>
-                                <span>Print Report</span>
-                            </button>
-
-                            <!-- Clear All Orders -->
-                            <button
-                                wire:click="clearAllOrders"
-                                class="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-[#dc2626] to-[#b91c1c]
-                                    hover:from-[#ef4444] hover:to-[#dc2626] text-white rounded-xl font-semibold text-sm
-                                    shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                </svg>
-                                <span>Clear All</span>
-                            </button>
-
-                            <!-- Sales Summary -->
-                            <button
-                                wire:click="showSalesSummary"
-                                class="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-[#059669] to-[#047857]
-                                    hover:from-[#10b981] hover:to-[#059669] text-white rounded-xl font-semibold text-sm
-                                    shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                                </svg>
-                                <span>Sales Summary</span>
-                            </button>
-
-                            <!-- Settings -->
-                            <button
-                                wire:click="openSettings"
-                                class="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-[#6b7280] to-[#4b5563]
-                                    hover:from-[#9ca3af] hover:to-[#6b7280] text-white rounded-xl font-semibold text-sm
-                                    shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                </svg>
-                                <span>Settings</span>
-                            </button>
                         </div>
                     </div>
                 </section>
 
-                <!-- CART -->
+                <!-- CART - Coffee Shop Optimized -->
                 <aside class="lg:col-span-1">
-                    <div class="bg-white/70 dark:bg-[#2a2520]/70 backdrop-blur-lg rounded-2xl shadow-md sticky top-24 p-4
-                                h-[calc(100vh-8rem)] border border-[#e8dcc8] dark:border-[#3d3530]
-                                flex flex-col overflow-y-auto overflow-x-hidden">
+                    <div class="bg-white/90 dark:bg-[#2a2520]/90 backdrop-blur-xl rounded-2xl shadow-2xl sticky top-24 p-5
+                                h-[calc(100vh-8rem)] border-2 border-[#e8dcc8] dark:border-[#3d3530]
+                                flex flex-col overflow-hidden">
 
-                        <!-- Header -->
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8]">
-                                Order Summary
-                            </h3>
+                        <!-- Cart Header -->
+                        <div class="flex items-center justify-between mb-5 pb-4 border-b-2 border-[#e8dcc8] dark:border-[#3d3530]">
+                            <div>
+                                <h3 class="text-xl font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8] flex items-center gap-2">
+                                    <svg class="w-6 h-6 text-[#c17a4a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                    </svg>
+                                    Current Order
+                                </h3>
+                                <p class="text-xs text-[#8b7355] dark:text-[#b8a892] mt-1">
+                                    {{ $this->getCartItemCount() }} {{ Str::plural('item', $this->getCartItemCount()) }}
+                                </p>
+                            </div>
+                            @if(!empty($cart))
                             <button wire:click="clearCart"
-                                    class="text-xs text-[#8b7355] hover:text-[#c17a4a]
-                                        dark:text-[#b8a892] dark:hover:text-[#d4956f] transition font-medium">
-                                Clear
+                                    class="px-3 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg
+                                        text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                                Clear All
                             </button>
+                            @endif
                         </div>
 
-                        <!-- Table/Order Number & Order Type -->
-                        <div class="mb-4 space-y-3">
-                            <div>
-                                <label class="block text-xs font-semibold text-[#2c2416] dark:text-[#f5f1e8] mb-2 uppercase tracking-wide">Table / Order #</label>
-                                <input
-                                    type="text"
-                                    wire:model.lazy="tableNumber"
-                                    placeholder="e.g., Table 5 or Order #123"
-                                    class="w-full px-3 py-2 text-sm border border-[#e8dcc8] dark:border-[#3d3530] rounded-lg
-                                           focus:ring-2 focus:ring-[#c17a4a] focus:border-transparent dark:bg-[#1a1815] dark:text-[#f5f1e8]
-                                           placeholder-[#8b7355] dark:placeholder-[#6b5f52] transition"
-                                >
-                            </div>
-                            <div class="flex gap-3">
+                        <!-- Order Type - Prominent -->
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-[#2c2416] dark:text-[#f5f1e8] mb-2 uppercase tracking-wide">
+                                Order Type
+                            </label>
+                            <div class="grid grid-cols-2 gap-2">
                                 <button
                                     wire:click="$set('orderType', 'dine-in')"
-                                    class="flex-1 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300
+                                    class="group relative px-4 py-4 rounded-xl text-sm font-bold transition-all duration-300
                                         {{ $orderType === 'dine-in'
-                                            ? 'bg-gradient-to-r from-[#c17a4a] to-[#a86a3a] text-white shadow-lg scale-105'
-                                            : 'bg-[#f0e6d2] dark:bg-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8] hover:bg-[#e8dcc8] dark:hover:bg-[#4d4540] hover:scale-102' }}"
+                                            ? 'bg-gradient-to-br from-[#c17a4a] to-[#a86a3a] text-white shadow-lg scale-105 ring-4 ring-[#c17a4a]/20'
+                                            : 'bg-[#f0e6d2] dark:bg-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8] hover:bg-[#e8dcc8] dark:hover:bg-[#4d4540]' }}"
                                 >
-                                    <span class="flex items-center justify-center gap-2">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                    <div class="flex flex-col items-center gap-2">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                                         </svg>
-                                        Dine-in
-                                    </span>
+                                        <span>Dine In</span>
+                                    </div>
+                                    @if($orderType === 'dine-in')
+                                        <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                                    @endif
                                 </button>
                                 <button
                                     wire:click="$set('orderType', 'takeout')"
-                                    class="flex-1 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300
+                                    class="group relative px-4 py-4 rounded-xl text-sm font-bold transition-all duration-300
                                         {{ $orderType === 'takeout'
-                                            ? 'bg-gradient-to-r from-[#c17a4a] to-[#a86a3a] text-white shadow-lg scale-105'
-                                            : 'bg-[#f0e6d2] dark:bg-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8] hover:bg-[#e8dcc8] dark:hover:bg-[#4d4540] hover:scale-102' }}"
+                                            ? 'bg-gradient-to-br from-[#c17a4a] to-[#a86a3a] text-white shadow-lg scale-105 ring-4 ring-[#c17a4a]/20'
+                                            : 'bg-[#f0e6d2] dark:bg-[#3d3530] text-[#2c2416] dark:text-[#f5f1e8] hover:bg-[#e8dcc8] dark:hover:bg-[#4d4540]' }}"
                                 >
-                                    <span class="flex items-center justify-center gap-2">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="flex flex-col items-center gap-2">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                                         </svg>
-                                        Takeout
-                                    </span>
+                                        <span>Takeout</span>
+                                    </div>
+                                    @if($orderType === 'takeout')
+                                        <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                                    @endif
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- Table/Order Number -->
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-[#2c2416] dark:text-[#f5f1e8] mb-2 uppercase tracking-wide">
+                                {{ $orderType === 'dine-in' ? 'Table Number' : 'Order Name' }}
+                            </label>
+                            <input
+                                type="text"
+                                wire:model.lazy="tableNumber"
+                                placeholder="{{ $orderType === 'dine-in' ? 'e.g., Table 5' : 'e.g., John' }}"
+                                class="w-full px-4 py-3 text-sm border-2 border-[#e8dcc8] dark:border-[#3d3530] rounded-xl
+                                       focus:ring-4 focus:ring-[#c17a4a]/20 focus:border-[#c17a4a] dark:bg-[#1a1815] dark:text-[#f5f1e8]
+                                       placeholder-[#8b7355] dark:placeholder-[#6b5f52] transition-all font-medium"
+                            >
                         </div>
 
                         <!-- Cart items -->
@@ -1039,7 +1089,6 @@
     const setTheme = (dark) => {
         root.classList.toggle('dark', dark);
         localStorage.setItem(storageKey, dark ? 'dark' : 'light');
-        document.getElementById('theme-thumb').style.transform = dark ? 'translateX(1.5rem)' : 'translateX(0)';
     };
     document.getElementById('theme-toggle')?.addEventListener('click', () => {
         setTheme(!root.classList.contains('dark'));
