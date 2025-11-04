@@ -15,8 +15,10 @@ use App\Services\PosService;
 use BackedEnum;
 use Exception;
 use Filament\Actions;
+use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Locked;
@@ -46,6 +48,8 @@ final class PosPage extends Page
     public float $paidAmount = 0.0;
 
     public float $changeAmount = 0.0;
+
+    public bool $isTabletMode = true;
 
     #[Locked]
     public ?int $currentOrderId = null;
@@ -240,13 +244,24 @@ final class PosPage extends Page
             ->send();
     }
 
-    public function completeOrder(): void
+    public function toggleMode(): void
+    {
+        $this->isTabletMode = ! $this->isTabletMode;
+
+        Notification::make()
+            ->success()
+            ->title('Mode Changed')
+            ->body($this->isTabletMode ? 'Switched to Tablet Mode' : 'Switched to Desktop Mode')
+            ->send();
+    }
+
+    public function createOrder(): void
     {
         if (empty($this->cartItems)) {
             Notification::make()
                 ->warning()
                 ->title('Cart is empty')
-                ->body('Please add items to the cart before completing the order')
+                ->body('Please add items to the cart before creating the order')
                 ->send();
 
             return;
@@ -262,8 +277,8 @@ final class PosPage extends Page
                 'table_number' => $this->tableNumber,
                 'notes' => $this->notes,
                 'total' => $this->totalAmount * 1.10, // Include 10% tax
-                'status' => 'completed',
-                'payment_method' => $this->paymentMethod,
+                'status' => 'pending', // Changed to pending for restaurant-style
+                'payment_method' => null, // Payment will be collected later
             ]);
 
             foreach ($this->cartItems as $item) {
@@ -282,8 +297,9 @@ final class PosPage extends Page
 
             Notification::make()
                 ->success()
-                ->title('Order completed successfully!')
-                ->body("Order #{$order->id} has been processed")
+                ->title('Order created successfully!')
+                ->body("Order #{$order->id} for {$this->tableNumber} has been sent to kitchen")
+                ->duration(5000)
                 ->send();
 
             $this->resetOrder();
@@ -293,7 +309,7 @@ final class PosPage extends Page
 
             Notification::make()
                 ->danger()
-                ->title('Error processing order')
+                ->title('Error creating order')
                 ->body($e->getMessage())
                 ->send();
         }
@@ -380,6 +396,82 @@ final class PosPage extends Page
                 ->color('danger')
                 ->action(fn () => $this->clearCart())
                 ->hidden(fn () => empty($this->cartItems)),
+
+            Actions\Action::make('placeOrder')
+                ->label('Place Order')
+                ->icon('heroicon-o-shopping-bag')
+                ->color('success')
+                ->modalHeading('Confirm Order Details')
+                ->modalWidth('lg')
+                ->form([
+                    Forms\Components\Select::make('customerId')
+                        ->label('Customer')
+                        ->options(fn () => $this->customers->pluck('name', 'id')->toArray())
+                        ->placeholder('Walk-in Customer')
+                        ->searchable()
+                        ->native(false),
+
+                    Forms\Components\TextInput::make('customerName')
+                        ->label('Customer Name')
+                        ->placeholder('Optional for walk-in customers')
+                        ->visible(fn (Forms\Get $get) => ! filled($get('customerId'))),
+
+                    Forms\Components\TextInput::make('tableNumber')
+                        ->label('Table Number')
+                        ->placeholder('e.g., T1, A5')
+                        ->required()
+                        ->visible(fn () => $this->orderType === 'dine_in'),
+
+                    Forms\Components\Textarea::make('notes')
+                        ->label('Special Instructions')
+                        ->placeholder('e.g., Extra hot, no sugar, allergies...')
+                        ->rows(2),
+
+                    Forms\Components\Placeholder::make('order_summary')
+                        ->label('Order Summary')
+                        ->content(function () {
+                            $subtotal = $this->formatCurrency($this->totalAmount);
+                            $tax = $this->formatCurrency($this->totalAmount * 0.10);
+                            $total = $this->formatCurrency($this->totalAmount * 1.10);
+                            $items = count($this->cartItems);
+
+                            return "
+                                <div class='space-y-2 p-4 bg-gray-50 rounded-lg border border-gray-200'>
+                                    <div class='flex justify-between text-sm'>
+                                        <span class='text-gray-600'>Items:</span>
+                                        <span class='font-semibold'>{$items} item(s)</span>
+                                    </div>
+                                    <div class='flex justify-between text-sm'>
+                                        <span class='text-gray-600'>Subtotal:</span>
+                                        <span class='font-medium'>{$subtotal}</span>
+                                    </div>
+                                    <div class='flex justify-between text-sm'>
+                                        <span class='text-gray-600'>Tax (10%):</span>
+                                        <span class='font-medium'>{$tax}</span>
+                                    </div>
+                                    <div class='flex justify-between text-base font-bold border-t border-gray-300 pt-2 mt-2'>
+                                        <span>Total:</span>
+                                        <span class='text-orange-600'>{$total}</span>
+                                    </div>
+                                    <div class='mt-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700'>
+                                        <strong>Note:</strong> Payment will be collected when order is ready
+                                    </div>
+                                </div>
+                            ";
+                        }),
+                ])
+                ->action(function (array $data) {
+                    // Update properties from form
+                    $this->customerId = $data['customerId'] ?? null;
+                    $this->customerName = $data['customerName'] ?? '';
+                    $this->tableNumber = $data['tableNumber'] ?? null;
+                    $this->notes = $data['notes'] ?? '';
+
+                    // Create the order (no payment yet)
+                    $this->createOrder();
+                })
+                ->modalSubmitActionLabel('Confirm & Send to Kitchen')
+                ->visible(fn () => ! empty($this->cartItems)),
         ];
     }
 
