@@ -18,12 +18,14 @@ final class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::query()->firstOrCreate([
+        $user = User::query()->firstOrCreate([
             'email' => 'test@example.com',
         ], [
             'name' => 'Test User',
             'password' => Hash::make('password'),
         ]);
+
+        // $user->assignRole('super_admin');
 
         // Use the CoffeeShopSeeder for existing data
         $this->call(CoffeeShopSeeder::class);

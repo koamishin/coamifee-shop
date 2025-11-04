@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
-use App\Models\Category;
+use App\Enums\Currency;
+// use App\Models\Category; // Not used directly, using PosService instead
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Product;
+// use App\Models\Product; // Not used directly, using PosService instead
+use App\Services\GeneralSettingsService;
+use App\Services\PosService;
 use BackedEnum;
 use Exception;
 use Filament\Actions;
@@ -23,6 +26,8 @@ final class PosPage extends Page
     public array $cartItems = [];
 
     public ?int $selectedCategoryId = null;
+
+    public string $search = '';
 
     public ?int $customerId = null;
 
@@ -51,6 +56,10 @@ final class PosPage extends Page
 
     public Collection $customers;
 
+    public Currency $currency;
+
+    public array $productAvailability = [];
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shopping-cart';
 
     protected static ?int $navigationSort = 1;
@@ -63,32 +72,41 @@ final class PosPage extends Page
 
     protected string $view = 'filament.pages.pos-page';
 
+    private PosService $posService;
+
+    private GeneralSettingsService $settingsService;
+
     public function mount(): void
     {
         $this->loadData();
     }
 
+    public function boot(PosService $posService, GeneralSettingsService $settingsService): void
+    {
+        $this->posService = $posService;
+        $this->settingsService = $settingsService;
+
+        // Initialize currency from settings
+        $currencyCode = $this->settingsService->getCurrency();
+        $this->currency = Currency::from($currencyCode);
+    }
+
     public function loadData(): void
     {
-        $this->categories = Category::where('is_active', true)
-            ->orderBy('sort_order')
-            ->get();
-
+        $this->categories = $this->posService->getActiveCategories();
         $this->customers = Customer::orderBy('name')->get();
         $this->refreshProducts();
     }
 
     public function refreshProducts(): void
     {
-        $query = Product::where('is_active', true);
+        $this->products = $this->posService->getFilteredProducts(
+            $this->selectedCategoryId,
+            $this->search
+        );
 
-        if ($this->selectedCategoryId) {
-            $query->where('category_id', $this->selectedCategoryId);
-        }
-
-        $this->products = $query->with('category')
-            ->orderBy('name')
-            ->get();
+        // Update product availability
+        $this->productAvailability = $this->posService->updateProductAvailability($this->products);
     }
 
     public function selectCategory(?int $categoryId): void
@@ -99,7 +117,18 @@ final class PosPage extends Page
 
     public function addToCart(int $productId): void
     {
-        $product = Product::find($productId);
+        // Check if product can be added to cart
+        if (! $this->posService->canAddToCart($productId)) {
+            Notification::make()
+                ->danger()
+                ->title('Cannot add to cart')
+                ->body('This product is currently out of stock or unavailable')
+                ->send();
+
+            return;
+        }
+
+        $product = $this->products->firstWhere('id', $productId);
 
         if (! $product) {
             Notification::make()
@@ -114,11 +143,25 @@ final class PosPage extends Page
             ->firstWhere('product_id', $productId);
 
         if ($existingItem) {
+            // Check if we can increment quantity
+            $newQuantity = $existingItem['quantity'] + 1;
+            $maxQuantity = $this->posService->getMaxProducibleQuantity($productId);
+
+            if ($newQuantity > $maxQuantity) {
+                Notification::make()
+                    ->warning()
+                    ->title('Maximum quantity reached')
+                    ->body("Only {$maxQuantity} items can be ordered based on available inventory")
+                    ->send();
+
+                return;
+            }
+
             $this->cartItems = collect($this->cartItems)
-                ->map(function ($item) use ($productId) {
+                ->map(function ($item) use ($productId, $newQuantity) {
                     if ($item['product_id'] === $productId) {
-                        $item['quantity']++;
-                        $item['subtotal'] = $item['quantity'] * $item['price'];
+                        $item['quantity'] = $newQuantity;
+                        $item['subtotal'] = $newQuantity * $item['price'];
                     }
 
                     return $item;
@@ -135,6 +178,7 @@ final class PosPage extends Page
         }
 
         $this->calculateTotals();
+        $this->refreshProducts(); // Refresh availability
 
         Notification::make()
             ->success()
@@ -148,6 +192,7 @@ final class PosPage extends Page
         unset($this->cartItems[$index]);
         $this->cartItems = array_values($this->cartItems);
         $this->calculateTotals();
+        $this->refreshProducts(); // Refresh availability
     }
 
     public function updateQuantity(int $index, int $quantity): void
@@ -159,9 +204,23 @@ final class PosPage extends Page
         }
 
         if (isset($this->cartItems[$index])) {
+            $productId = $this->cartItems[$index]['product_id'];
+            $maxQuantity = $this->posService->getMaxProducibleQuantity($productId);
+
+            if ($quantity > $maxQuantity) {
+                Notification::make()
+                    ->warning()
+                    ->title('Maximum quantity reached')
+                    ->body("Only {$maxQuantity} items can be ordered based on available inventory")
+                    ->send();
+
+                return;
+            }
+
             $this->cartItems[$index]['quantity'] = $quantity;
             $this->cartItems[$index]['subtotal'] = $quantity * $this->cartItems[$index]['price'];
             $this->calculateTotals();
+            $this->refreshProducts(); // Refresh availability
         }
     }
 
@@ -258,6 +317,54 @@ final class PosPage extends Page
         return 'full';
     }
 
+    /**
+     * Format amount with currency symbol
+     */
+    public function formatCurrency(float $amount): string
+    {
+        return $this->currency->formatAmount($amount);
+    }
+
+    /**
+     * Get currency symbol
+     */
+    public function getCurrencySymbol(): string
+    {
+        return $this->currency->getSymbol();
+    }
+
+    /**
+     * Get currency decimals
+     */
+    public function getCurrencyDecimals(): int
+    {
+        return $this->currency->getDecimals();
+    }
+
+    /**
+     * Check if product can be added to cart
+     */
+    public function canAddToCart(int $productId): bool
+    {
+        return $this->posService->canAddToCart($productId);
+    }
+
+    /**
+     * Get stock status for product
+     */
+    public function getStockStatus(int $productId): string
+    {
+        return $this->posService->getStockStatus($productId);
+    }
+
+    /**
+     * Get maximum producible quantity for product
+     */
+    public function getMaxProducibleQuantity(int $productId): int
+    {
+        return $this->posService->getMaxProducibleQuantity($productId);
+    }
+
     protected function getActions(): array
     {
         return [
@@ -279,6 +386,6 @@ final class PosPage extends Page
     private function calculateTotals(): void
     {
         $this->totalAmount = collect($this->cartItems)->sum('subtotal');
-        $this->changeAmount = $this->paidAmount - $this->totalAmount;
+        $this->changeAmount = $this->paidAmount - ($this->totalAmount * 1.10); // Include tax in change calculation
     }
 }

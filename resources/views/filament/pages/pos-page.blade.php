@@ -1,243 +1,261 @@
 <x-filament-panels::page>
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
-        <!-- Header -->
-        <div class="bg-white shadow-sm border-b border-gray-200">
-            <div class="px-6 py-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                        <h1 class="text-2xl font-bold text-gray-900">Point of Sale</h1>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                            {{ now()->format('M j, Y H:i') }}
-                        </span>
-                        @if(auth()->user())
-                            <div class="flex items-center space-x-2">
-                                @if(auth()->user()->avatar_url)
-                                    <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}" class="w-8 h-8 rounded-full">
-                                @else
-                                    <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                                        <span class="text-sm font-medium text-gray-600">{{ substr(auth()->user()->name, 0, 1) }}</span>
-                                    </div>
-                                @endif
-                                <span class="text-sm font-medium text-gray-700">{{ auth()->user()->name }}</span>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content -->
-        <div class="flex h-[calc(100vh-80px)]">
-            <!-- Left Side - Products -->
-            <div class="flex-1 flex flex-col p-6 space-y-4">
-                <!-- Categories -->
+    <div class="min-h-screen bg-gray-50 flex flex-col border-red-500">
+        <!-- Main Content Grid - Tablet Optimized -->
+        <div class="flex-1 grid grid-cols-1 lg:grid-cols-10 gap-4 p-4 overflow-hidden">
+            <!-- Left Side - Products Section (Tablet: Full Width, Desktop: 8 cols) -->
+            <div class="lg:col-span-8 flex flex-col space-y-4 min-h-0">
+                <!-- Categories - Touch-Friendly Tabs -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-semibold text-gray-900">Categories</h3>
-                        <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
+                        <div class="bg-primary-100 text-primary-800 px-3 py-1 rounded-full text-sm font-medium">
                             {{ $categories?->count() ?? 0 }} categories
-                        </span>
+                        </div>
                     </div>
-                    <div class="flex flex-wrap gap-2">
-                        <button
-                            wire:click="selectCategory(null)"
-                            wire:key="category-all"
-                            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 {{
-                                $selectedCategoryId === null
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }}"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                            </svg>
-                            All Products
-                        </button>
-                        @if(isset($categories) && $categories->count() > 0)
-                            @foreach($categories as $category)
-                                <button
-                                    wire:click="selectCategory({{ $category->id }})"
-                                    wire:key="category-{{ $category->id }}"
-                                    class="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 {{
-                                        $selectedCategoryId === $category->id
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }}"
-                                >
-                                    @if($category->icon)
-                                        <span>{{ $category->icon }}</span>
-                                    @endif
-                                    {{ $category->name }}
-                                </button>
-                            @endforeach
-                        @endif
+
+                    <!-- Scrollable Categories for Tablets -->
+                    <div class="overflow-x-auto pb-2">
+                        <div class="flex gap-3 min-w-max">
+                            <!-- All Categories Button -->
+                            <button
+                                wire:click="selectCategory(null)"
+                                wire:key="category-all"
+                                class="inline-flex items-center px-6 py-3 rounded-xl text-base font-medium transition-all duration-200 cursor-pointer min-w-[120px] justify-center {{
+                                    $selectedCategoryId === null
+                                        ? 'bg-primary-600 text-white shadow-lg scale-105 border-2 border-primary-600'
+                                        : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-primary-300 hover:bg-primary-50'
+                                }}"
+                            >
+                                <x-filament::icon icon="heroicon-o-squares-2x2" class="w-5 h-5 mr-2 shrink-0" />
+                                <span>All</span>
+                                @if($selectedCategoryId === null)
+                                    <div class="ml-2 w-2 h-2 bg-white rounded-full"></div>
+                                @endif
+                            </button>
+
+                            <!-- Category Buttons -->
+                            @if(isset($categories) && $categories->count() > 0)
+                                @foreach($categories as $category)
+                                    <button
+                                        wire:click="selectCategory({{ $category->id }})"
+                                        wire:key="category-{{ $category->id }}"
+                                        class="inline-flex items-center px-6 py-3 rounded-xl text-base font-medium transition-all duration-200 cursor-pointer min-w-[120px] justify-center {{
+                                            $selectedCategoryId === $category->id
+                                                ? 'bg-primary-600 text-white shadow-lg scale-105 border-2 border-primary-600'
+                                                : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-primary-300 hover:bg-primary-50'
+                                        }}"
+                                    >
+                                        @if($category->icon)
+                                            @if(str_starts_with($category->icon, '<svg'))
+                                                <div class="w-5 h-5 mr-2 shrink-0">{!! $category->icon !!}</div>
+                                            @else
+                                                <x-filament::icon icon="{{ $category->icon }}" class="w-5 h-5 mr-2 shrink-0" />
+                                            @endif
+                                        @else
+                                            <x-filament::icon icon="heroicon-o-tag" class="w-5 h-5 mr-2 shrink-0" />
+                                        @endif
+                                        <span>{{ $category->name }}</span>
+                                        @if($selectedCategoryId === $category->id)
+                                            <div class="ml-2 w-2 h-2 bg-white rounded-full"></div>
+                                        @endif
+                                    </button>
+                                @endforeach
+                            @endif
+                        </div>
                     </div>
                 </div>
 
-                <!-- Search Bar -->
+                <!-- Search Bar - Large Touch Target -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
                     <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                            </svg>
-                        </div>
+                        <x-filament::icon icon="heroicon-o-magnifying-glass" class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input
-                            wire:model.live="search"
                             type="text"
+                            wire:model.live.debounce.300ms="search"
                             placeholder="Search products..."
-                            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            class="w-full pl-12 pr-4 py-4 text-base border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         >
                     </div>
                 </div>
 
-                <!-- Products Grid -->
+                <!-- Products Grid - Touch-Friendly Cards -->
                 <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 p-4 overflow-hidden">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold text-gray-900">Products</h3>
-                        <div class="flex items-center space-x-2">
-                            <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
-                                {{ $products?->count() ?? 0 }} items
-                            </span>
-                            <div class="flex bg-gray-100 rounded-lg p-1">
-                                <button class="p-1 rounded bg-white shadow-sm">
-                                    <svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-                                    </svg>
-                                </button>
-                                <button class="p-1 rounded">
-                                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                                    </svg>
-                                </button>
-                            </div>
+                        <div class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-medium">
+                            {{ $products?->count() ?? 0 }} items
                         </div>
                     </div>
 
-                    <div class="h-[calc(100%-60px)] overflow-y-auto">
+                    <div class="h-full overflow-y-auto">
                         @if(isset($products) && $products->count() > 0)
-                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                            <!-- Grid: Always 3 columns for better visibility -->
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 @foreach($products as $product)
-                                    <div
-                                        wire:click="addToCart({{ $product->id }})"
-                                        wire:key="product-{{ $product->id }}"
-                                        class="group cursor-pointer bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl p-4 hover:border-blue-400 hover:shadow-lg transition-all duration-300 hover:scale-105"
-                                    >
-                                        <div class="aspect-square mb-3 rounded-lg overflow-hidden bg-gray-100">
-                                            @if($product->image_url)
-                                                <img
-                                                    src="{{ $product->image_url }}"
-                                                    alt="{{ $product->name }}"
-                                                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                                                >
-                                            @else
-                                                <div class="w-full h-full flex items-center justify-center">
-                                                    <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                                    </svg>
+                                    @php
+                                        $isInCart = collect($this->cartItems)->contains('product_id', $product->id);
+                                        $stockStatus = $this->getStockStatus($product->id);
+                                    @endphp
+
+                                    <div wire:key="product-{{ $product->id }}">
+                                        <!-- Product Card -->
+                                        <div
+                                            class="bg-linear-to-br from-gray-50 to-white border-2 {{
+                                                $isInCart
+                                                    ? 'border-primary-500 bg-primary-50 shadow-lg'
+                                                    : 'border-gray-200'
+                                            }} rounded-xl p-4 hover:border-primary-400 hover:shadow-xl transition-all duration-300 hover:scale-105 {{
+                                                $stockStatus === 'out_of_stock'
+                                                    ? 'opacity-60 cursor-not-allowed'
+                                                    : 'cursor-pointer'
+                                            }}"
+                                            wire:click="addToCart({{ $product->id }})"
+                                            {{ $stockStatus === 'out_of_stock' ? 'wire:click.prevent' : '' }}
+                                        >
+                                            <!-- Product Image - Large Touch Area -->
+                                            <div class="aspect-square mb-4 rounded-lg overflow-hidden bg-gray-100 relative">
+                                                @if($product->image_url)
+                                                    <img
+                                                        src="{{ $product->image_url }}"
+                                                        alt="{{ $product->name }}"
+                                                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                                    >
+                                                @else
+                                                    <div class="w-full h-full flex items-center justify-center bg-linear-to-br from-gray-100 to-gray-200">
+                                                        <x-filament::icon icon="heroicon-o-photo" class="w-12 h-12 text-gray-400" />
+                                                    </div>
+                                                @endif
+
+                                                <!-- Stock Status Badge -->
+                                                @if($stockStatus === 'low_stock')
+                                                    <div class="absolute top-2 right-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
+                                                        Low Stock
+                                                    </div>
+                                                @elseif($stockStatus === 'out_of_stock')
+                                                    <div class="absolute top-2 right-2 bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
+                                                        Out of Stock
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            <!-- Product Info -->
+                                            <h4 class="font-semibold text-gray-900 mb-2 line-clamp-2 text-base">{{ $product->name }}</h4>
+                                            <p class="text-sm text-gray-500 mb-3 line-clamp-2">{{ $product->description ?? 'No description' }}</p>
+
+                                            <!-- Price and Stock -->
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-xl font-bold {{ $isInCart ? 'text-primary-600' : 'text-gray-900' }}">
+                                                    {{ $this->formatCurrency($product->price) }}
+                                                </span>
+                                                @if($stockStatus === 'in_stock')
+                                                    <div class="text-sm text-gray-500">
+                                                        Available
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            <!-- Cart Indicator -->
+                                            @if($isInCart)
+                                                <div class="absolute top-2 left-2 bg-primary-600 text-white px-2 py-1 rounded-full text-xs font-medium">
+                                                    <x-filament::icon icon="heroicon-o-check" class="w-3 h-3 mr-1 inline" />
+                                                    In Cart
                                                 </div>
-                                            @endif
-                                        </div>
-                                        <div class="space-y-1">
-                                            <h4 class="font-semibold text-gray-900 text-sm truncate">{{ $product->name }}</h4>
-                                            <p class="text-lg font-bold text-blue-600">${{ number_format($product->price, 2) }}</p>
-                                            @if($product->category)
-                                                <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
-                                                    {{ $product->category->name }}
-                                                </span>
-                                            @endif
-                                            @if(isset($product->stock_quantity) && $product->stock_quantity <= 10)
-                                                <span class="inline-block px-2 py-1 text-xs bg-red-100 text-red-600 rounded-full">
-                                                    Low Stock: {{ $product->stock_quantity }}
-                                                </span>
                                             @endif
                                         </div>
                                     </div>
                                 @endforeach
                             </div>
                         @else
-                            <div class="flex flex-col items-center justify-center h-full py-16">
-                                <svg class="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
-                                </svg>
-                                <p class="text-gray-500 text-lg font-medium">No products found</p>
-                                <p class="text-gray-400 text-sm mt-1">Try adjusting your search or category filter</p>
+                            <div class="flex flex-col items-center justify-center h-64 text-gray-500">
+                                <x-filament::icon icon="heroicon-o-inbox" class="w-20 h-20 mb-6 text-gray-300" />
+                                <h3 class="text-xl font-medium text-gray-900 mb-2">No products found</h3>
+                                <p class="text-base text-gray-500">Try adjusting your category selection or search terms</p>
                             </div>
                         @endif
                     </div>
                 </div>
             </div>
 
-            <!-- Right Side - Order Panel -->
-            <div class="w-96 bg-white border-l border-gray-200 flex flex-col">
-                <!-- Order Information -->
-                <div class="p-4 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Order Details</h3>
+
+                <!-- Order Information - Fixed Height -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4 shrink-0">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <x-filament::icon icon="heroicon-o-clipboard-document-list" class="w-5 h-5 mr-2" />
+                        Order Details
+                    </h3>
+
                     <div class="space-y-3">
                         <!-- Customer Selection -->
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Customer</label>
-                            <select wire:model.live="customerId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                <option value="">Walk-in Customer</option>
-                                @if(isset($customers) && $customers->count() > 0)
-                                    @foreach($customers as $customer)
-                                        <option value="{{ $customer->id }}">{{ $customer->name }}</option>
-                                    @endforeach
-                                @endif
-                            </select>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Customer</label>
+                            <div class="relative">
+                                <x-filament::icon icon="heroicon-o-users" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <select
+                                    wire:model.live="customerId"
+                                    class="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 appearance-none bg-white"
+                                >
+                                    <option value="">Walk-in Customer</option>
+                                    @if(isset($customers) && $customers->count() > 0)
+                                        @foreach($customers as $customer)
+                                            <option value="{{ $customer->id }}">{{ $customer->name }}</option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                            </div>
                         </div>
 
                         <!-- Customer Name (if not selected) -->
                         @if(!$customerId)
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 mb-1">Customer Name</label>
-                                <input
-                                    type="text"
-                                    wire:model.live="customerName"
-                                    placeholder="Enter customer name"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                >
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Customer Name</label>
+                                <div class="relative">
+                                    <x-filament::icon icon="heroicon-o-user" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        wire:model.live="customerName"
+                                        placeholder="Enter customer name"
+                                        class="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                    >
+                                </div>
                             </div>
                         @endif
 
                         <!-- Order Type -->
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Order Type</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Order Type</label>
                             <div class="grid grid-cols-3 gap-2">
                                 <button
                                     wire:click="$set('orderType', 'dine_in')"
-                                    class="p-2 text-xs rounded border-2 transition-colors text-center {{
+                                    class="px-2 py-2 text-sm rounded-lg border transition-all duration-200 text-center flex flex-col items-center {{
                                         $orderType === 'dine_in'
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                            ? 'border-primary-500 bg-primary-50 text-primary-700'
+                                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
                                     }}"
                                 >
-                                    🍽️ Dine In
+                                    <span class="text-lg mb-1">🍽️</span>
+                                    <span class="text-xs font-medium">Dine In</span>
                                 </button>
                                 <button
                                     wire:click="$set('orderType', 'takeaway')"
-                                    class="p-2 text-xs rounded border-2 transition-colors text-center {{
+                                    class="px-2 py-2 text-sm rounded-lg border transition-all duration-200 text-center flex flex-col items-center {{
                                         $orderType === 'takeaway'
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                            ? 'border-primary-500 bg-primary-50 text-primary-700'
+                                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
                                     }}"
                                 >
-                                    🥡 Takeaway
+                                    <span class="text-lg mb-1">🥡</span>
+                                    <span class="text-xs font-medium">Takeaway</span>
                                 </button>
                                 <button
                                     wire:click="$set('orderType', 'delivery')"
-                                    class="p-2 text-xs rounded border-2 transition-colors text-center {{
+                                    class="px-2 py-2 text-sm rounded-lg border transition-all duration-200 text-center flex flex-col items-center {{
                                         $orderType === 'delivery'
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                            ? 'border-primary-500 bg-primary-50 text-primary-700'
+                                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
                                     }}"
                                 >
-                                    🚗 Delivery
+                                    <span class="text-lg mb-1">🚗</span>
+                                    <span class="text-xs font-medium">Delivery</span>
                                 </button>
                             </div>
                         </div>
@@ -245,18 +263,14 @@
                         <!-- Table Number (for dine-in) -->
                         @if($orderType === 'dine_in')
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 mb-1">Table Number</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Table Number</label>
                                 <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
-                                        </svg>
-                                    </div>
+                                    <x-filament::icon icon="heroicon-o-rectangle-stack" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <input
                                         type="text"
                                         wire:model.live="tableNumber"
                                         placeholder="e.g., T1, A12"
-                                        class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        class="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                                     >
                                 </div>
                             </div>
@@ -264,192 +278,182 @@
 
                         <!-- Order Notes -->
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Order Notes</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Order Notes</label>
                             <textarea
                                 wire:model.live="notes"
                                 placeholder="Special instructions..."
                                 rows="2"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
                             ></textarea>
                         </div>
                     </div>
                 </div>
 
-                <!-- Cart Items -->
-                <div class="flex-1 flex flex-col overflow-hidden">
-                    <div class="p-4 border-b border-gray-200 bg-gray-50">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold text-gray-900">Shopping Cart</h3>
-                            @if(!empty($cartItems))
-                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                                    {{ array_sum(array_column($cartItems, 'quantity')) }} items
-                                </span>
-                            @endif
-                        </div>
+                <!-- Cart - Fixed Height with Internal Scroll -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4 flex flex-col h-[45vh]">
+                    <div class="flex items-center justify-between mb-3 shrink-0">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                            <x-filament::icon icon="heroicon-o-shopping-cart" class="w-5 h-5 mr-2" />
+                            Cart
+                        </h3>
+                        @if(!empty($this->cartItems))
+                            <button
+                                wire:click="clearCart"
+                                class="text-sm text-red-600 hover:text-red-700 font-medium flex items-center px-3 py-1 rounded-lg hover:bg-red-50 transition-colors"
+                            >
+                                <x-filament::icon icon="heroicon-o-trash" class="w-4 h-4 mr-2" />
+                                Clear
+                            </button>
+                        @endif
                     </div>
 
-                    <div class="flex-1 overflow-y-auto p-4">
-                        @if(!empty($cartItems))
+                    <div class="flex-1 overflow-y-auto">
+                        @if(!empty($this->cartItems))
                             <div class="space-y-3">
-                                @foreach($cartItems as $index => $item)
+                                @foreach($this->cartItems as $index => $item)
                                     <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                                        <div class="flex justify-between items-start mb-2">
+                                        <div class="flex items-start justify-between mb-2">
                                             <div class="flex-1">
-                                                <h4 class="font-medium text-gray-900 text-sm">{{ $item['name'] }}</h4>
-                                                <p class="text-xs text-gray-500">${{ number_format($item['price'], 2) }} each</p>
+                                                <h4 class="font-medium text-sm text-gray-900">{{ $item['name'] }}</h4>
+                                                <p class="text-xs text-gray-500">{{ $this->formatCurrency($item['price']) }} each</p>
                                             </div>
                                             <button
                                                 wire:click="removeFromCart({{ $index }})"
-                                                class="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                                class="text-red-500 hover:text-red-700 p-1 rounded-lg hover:bg-red-50 transition-colors"
                                             >
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                </svg>
+                                                <x-filament::icon icon="heroicon-o-x-mark" class="w-4 h-4" />
                                             </button>
                                         </div>
+
+                                        <!-- Quantity Controls - Large Touch Targets -->
                                         <div class="flex items-center justify-between">
                                             <div class="flex items-center space-x-2">
                                                 <button
                                                     wire:click="updateQuantity({{ $index }}, {{ $item['quantity'] - 1 }})"
-                                                    class="w-6 h-6 rounded border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center"
+                                                    class="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors touch-manipulation"
                                                 >
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
-                                                    </svg>
+                                                    <x-filament::icon icon="heroicon-o-minus" class="w-3 h-3" />
                                                 </button>
-                                                <input
-                                                    type="number"
-                                                    wire:model.live="cartItems.{{ $index }}.quantity"
-                                                    wire:change="updateQuantity({{ $index }}, $event.target.value)"
-                                                    class="w-12 text-center border border-gray-300 rounded px-1 py-0.5 text-sm"
-                                                    min="1"
-                                                    value="{{ $item['quantity'] }}"
-                                                >
+                                                <span class="w-12 text-center font-medium text-sm">{{ $item['quantity'] }}</span>
                                                 <button
                                                     wire:click="updateQuantity({{ $index }}, {{ $item['quantity'] + 1 }})"
-                                                    class="w-6 h-6 rounded border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center"
+                                                    class="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors touch-manipulation"
                                                 >
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                                    </svg>
+                                                    <x-filament::icon icon="heroicon-o-plus" class="w-3 h-3" />
                                                 </button>
                                             </div>
-                                            <p class="font-bold text-gray-900">${{ number_format($item['subtotal'], 2) }}</p>
+                                            <span class="font-semibold text-sm text-gray-900">
+                                                {{ $this->formatCurrency($item['subtotal']) }}
+                                            </span>
                                         </div>
                                     </div>
                                 @endforeach
                             </div>
                         @else
-                            <div class="flex flex-col items-center justify-center h-full text-center">
-                                <svg class="w-16 h-16 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                </svg>
-                                <p class="text-gray-500 text-sm font-medium">Cart is empty</p>
-                                <p class="text-gray-400 text-xs mt-1">Add products to start an order</p>
+                            <div class="flex flex-col items-center justify-center h-32 text-gray-500">
+                                <x-filament::icon icon="heroicon-o-shopping-cart" class="w-12 h-12 mb-3 text-gray-300" />
+                                <h3 class="text-base font-medium text-gray-900 mb-1">Cart is empty</h3>
+                                <p class="text-sm text-gray-500">Add products to get started</p>
                             </div>
                         @endif
                     </div>
                 </div>
 
-                <!-- Payment Section -->
-                @if(!empty($cartItems))
-                    <div class="border-t border-gray-200 bg-gray-50 p-4 space-y-4">
-                        <!-- Payment Method -->
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-2">Payment Method</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button
-                                    wire:click="$set('paymentMethod', 'cash')"
-                                    class="p-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center gap-2 {{
-                                        $paymentMethod === 'cash'
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                            : 'border-gray-200 hover:border-gray-300'
-                                    }}"
-                                >
-                                    💵 Cash
-                                </button>
-                                <button
-                                    wire:click="$set('paymentMethod', 'card')"
-                                    class="p-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center gap-2 {{
-                                        $paymentMethod === 'card'
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                            : 'border-gray-200 hover:border-gray-300'
-                                    }}"
-                                >
-                                    💳 Card
-                                </button>
-                            </div>
-                        </div>
+                <!-- Payment Section - Fixed at Bottom -->
+                @if(!empty($this->cartItems))
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 shrink-0 mt-auto">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                            <x-filament::icon icon="heroicon-o-credit-card" class="w-5 h-5 mr-2" />
+                            Payment
+                        </h3>
 
-                        <!-- Amount Input (for cash payments) -->
-                        @if($paymentMethod === 'cash')
+                        <div class="space-y-3">
+                            <!-- Payment Method -->
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 mb-2">Paid Amount</label>
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                    </div>
-                                    <input
-                                        type="number"
-                                        wire:model.live="paidAmount"
-                                        placeholder="0.00"
-                                        step="0.01"
-                                        min="0"
-                                        class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button
+                                        wire:click="$set('paymentMethod', 'cash')"
+                                        class="px-3 py-2 text-sm rounded-lg border transition-all duration-200 flex items-center justify-center {{
+                                            $paymentMethod === 'cash'
+                                                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                                                : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                                        }}"
                                     >
+                                        <x-filament::icon icon="heroicon-o-banknotes" class="w-4 h-4 mr-2" />
+                                        Cash
+                                    </button>
+                                    <button
+                                        wire:click="$set('paymentMethod', 'card')"
+                                        class="px-3 py-2 text-sm rounded-lg border transition-all duration-200 flex items-center justify-center {{
+                                            $paymentMethod === 'card'
+                                                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                                                : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                                        }}"
+                                    >
+                                        <x-filament::icon icon="heroicon-o-credit-card" class="w-4 h-4 mr-2" />
+                                        Card
+                                    </button>
                                 </div>
                             </div>
-                        @endif
 
-                        <!-- Order Summary -->
-                        <div class="bg-white rounded-lg p-4 border border-gray-200 space-y-2">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Subtotal:</span>
-                                <span class="font-medium">${{ number_format($totalAmount, 2) }}</span>
+                            <!-- Summary -->
+                            <div class="space-y-2 border-t border-gray-200 pt-3">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Subtotal</span>
+                                    <span class="font-medium">{{ $this->formatCurrency($totalAmount) }}</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Tax (10%)</span>
+                                    <span class="font-medium">{{ $this->formatCurrency($totalAmount * 0.10) }}</span>
+                                </div>
+                                <div class="flex justify-between text-lg font-semibold text-gray-900 border-t border-gray-200 pt-2">
+                                    <span>Total</span>
+                                    <span>{{ $this->formatCurrency($totalAmount * 1.10) }}</span>
+                                </div>
                             </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Tax (10%):</span>
-                                <span class="font-medium">${{ number_format($totalAmount * 0.10, 2) }}</span>
-                            </div>
-                            <div class="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">
-                                <span>Total:</span>
-                                <span class="text-blue-600">${{ number_format($totalAmount * 1.10, 2) }}</span>
-                            </div>
-                            @if($paymentMethod === 'cash' && $paidAmount > 0)
-                                <div class="flex justify-between text-sm pt-2 border-t border-gray-200">
-                                    <span class="text-gray-600">Change:</span>
-                                    <span class="font-bold {{ $changeAmount >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                                        ${{ number_format(abs($changeAmount - ($totalAmount * 0.10)), 2) }}
-                                    </span>
+
+                            <!-- Cash Payment Input -->
+                            @if($paymentMethod === 'cash')
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $this->getCurrencySymbol() }} Received</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">{{ $this->getCurrencySymbol() }}</span>
+                                        <input
+                                            type="number"
+                                            wire:model.live="paidAmount"
+                                            step="{{ '0.' . str_repeat('0', $this->getCurrencyDecimals() - 1) . '1' }}"
+                                            placeholder="0.00"
+                                            class="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                        >
+                                    </div>
+                                    @if($changeAmount > 0)
+                                        <div class="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                                            <p class="text-green-700 font-medium">Change: {{ $this->formatCurrency($changeAmount) }}</p>
+                                        </div>
+                                    @endif
                                 </div>
                             @endif
-                        </div>
 
-                        <!-- Complete Order Button -->
-                        <button
-                            wire:click="completeOrder"
-                            wire:loading.attr="disabled"
-                            wire:target="completeOrder"
-                            class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                        >
-                            <span wire:loading.remove class="flex items-center justify-center gap-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                Complete Order
-                            </span>
-                            <span wire:loading class="flex items-center justify-center gap-2">
-                                <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                </svg>
-                                Processing...
-                            </span>
-                        </button>
+                            <!-- Complete Order Button -->
+                            <button
+                                wire:click="completeOrder"
+                                wire:loading.attr="disabled"
+                                class="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 text-white font-medium py-2.5 rounded-lg transition-colors duration-200 flex items-center justify-center text-sm"
+                            >
+                                <span wire:loading.remove class="flex items-center">
+                                    <x-filament::icon icon="heroicon-o-check-circle" class="w-4 h-4 mr-2" />
+                                    Complete Order
+                                </span>
+                                <span wire:loading class="flex items-center">
+                                    <x-filament::icon icon="heroicon-o-arrow-path" class="w-4 h-4 mr-2 animate-spin" />
+                                    Processing...
+                                </span>
+                            </button>
+                        </div>
                     </div>
                 @endif
             </div>
         </div>
-    </div>
+
 </x-filament-panels::page>
