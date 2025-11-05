@@ -18,6 +18,7 @@ final class OrderItem extends Model
         'quantity',
         'price',
         'notes',
+        'is_served',
     ];
 
     protected $casts = [
@@ -25,11 +26,13 @@ final class OrderItem extends Model
         'product_id' => 'integer',
         'quantity' => 'integer',
         'price' => 'decimal:2',
+        'is_served' => 'boolean',
     ];
 
     protected $appends = [
         'total_quantity',
         'total_revenue',
+        'subtotal',
     ];
 
     public function order(): BelongsTo
@@ -48,6 +51,11 @@ final class OrderItem extends Model
     }
 
     public function getTotalRevenueAttribute(): float
+    {
+        return (float) ($this->quantity * $this->price);
+    }
+
+    public function getSubtotalAttribute(): float
     {
         return (float) ($this->quantity * $this->price);
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\OrdersProcessing;
 use App\Filament\Pages\PosPage;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -30,14 +31,16 @@ final class CashierPanelProvider extends PanelProvider
             ->id('cashier')
             ->path('cashier')
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Emerald,
             ])
             ->topNavigation()
+            // ->login()
             ->discoverResources(in: app_path('Filament/Cashier/Resources'), for: 'App\Filament\Cashier\Resources')
             ->discoverPages(in: app_path('Filament/Cashier/Pages'), for: 'App\Filament\Cashier\Pages')
             ->pages([
                 Dashboard::class,
                 PosPage::class,
+                OrdersProcessing::class,
             ])
             ->viteTheme('resources/css/filament/admin/theme.css')
 

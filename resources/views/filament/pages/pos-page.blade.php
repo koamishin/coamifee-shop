@@ -260,13 +260,9 @@
                                     <span class="text-orange-100">Subtotal</span>
                                     <span class="font-medium">{{ $this->formatCurrency($totalAmount) }}</span>
                                 </div>
-                                <div class="flex justify-between">
-                                    <span class="text-orange-100">Tax (10%)</span>
-                                    <span class="font-medium">{{ $this->formatCurrency($totalAmount * 0.10) }}</span>
-                                </div>
                                 <div class="flex justify-between text-base font-bold border-t border-white/30 pt-1">
                                     <span>TOTAL</span>
-                                    <span>{{ $this->formatCurrency($totalAmount * 1.10) }}</span>
+                                    <span>{{ $this->formatCurrency($totalAmount) }}</span>
                                 </div>
                             </div>
                         </div>

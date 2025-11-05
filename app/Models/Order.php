@@ -18,6 +18,13 @@ final class Order extends Model
         'customer_id',
         'order_type',
         'payment_method',
+        'payment_status',
+        'subtotal',
+        'discount_type',
+        'discount_value',
+        'discount_amount',
+        'add_ons',
+        'add_ons_total',
         'total',
         'status',
         'table_number',
@@ -26,6 +33,11 @@ final class Order extends Model
 
     protected $casts = [
         'total' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'discount_value' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'add_ons' => 'array',
+        'add_ons_total' => 'decimal:2',
         'customer_id' => 'integer',
     ];
 

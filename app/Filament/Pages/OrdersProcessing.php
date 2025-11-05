@@ -1,0 +1,410 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Filament\Pages;
+
+use App\Enums\Currency;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Services\GeneralSettingsService;
+use BackedEnum;
+use Exception;
+use Filament\Actions;
+use Filament\Forms;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\HtmlString;
+
+final class OrdersProcessing extends Page
+{
+    public string $statusFilter = 'all';
+
+    public bool $isTabletMode = true;
+
+    public Currency $currency;
+
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-clipboard-document-list';
+
+    protected string $view = 'filament.pages.orders-processing';
+
+    protected static ?string $navigationLabel = 'Orders';
+
+    protected static ?string $title = 'Orders Processing';
+
+    protected static ?int $navigationSort = 2;
+
+    private GeneralSettingsService $settingsService;
+
+    public function boot(GeneralSettingsService $settingsService): void
+    {
+        $this->settingsService = $settingsService;
+
+        // Initialize currency from settings
+        $currencyCode = $this->settingsService->getCurrency();
+        $this->currency = Currency::from($currencyCode);
+    }
+
+    public function mount(): void
+    {
+        // Load tablet mode preference from session
+        $this->isTabletMode = session('pos_tablet_mode', true);
+    }
+
+    public function getOrders()
+    {
+        $query = Order::with(['items.product', 'customer'])
+            ->latest();
+
+        if ($this->statusFilter !== 'all') {
+            $query->where('status', $this->statusFilter);
+        }
+
+        return $query->get();
+    }
+
+    public function filterByStatus(string $status): void
+    {
+        $this->statusFilter = $status;
+    }
+
+    public function toggleServed(int $itemId): void
+    {
+        try {
+            DB::beginTransaction();
+
+            $item = OrderItem::findOrFail($itemId);
+            $item->update(['is_served' => ! $item->is_served]);
+
+            // Check if all items in the order are served
+            $order = $item->order;
+            $allItemsServed = $order->items()->where('is_served', false)->count() === 0;
+
+            // Update order status based on item completion
+            if ($allItemsServed && $order->items()->count() > 0) {
+                $order->update(['status' => 'completed']);
+            } else {
+                // If any item is not served, set order back to pending
+                if ($order->status === 'completed') {
+                    $order->update(['status' => 'pending']);
+                }
+            }
+
+            DB::commit();
+
+            Notification::make()
+                ->success()
+                ->title('Item Status Updated')
+                ->body($item->is_served ? 'Item marked as served' : 'Item marked as not served')
+                ->send();
+
+            $this->dispatch('$refresh');
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            Notification::make()
+                ->danger()
+                ->title('Error')
+                ->body($e->getMessage())
+                ->send();
+        }
+    }
+
+    public function toggleMode(): void
+    {
+        $this->isTabletMode = ! $this->isTabletMode;
+
+        // Save preference to session
+        session(['pos_tablet_mode' => $this->isTabletMode]);
+
+        Notification::make()
+            ->success()
+            ->title('Mode Changed')
+            ->body($this->isTabletMode ? 'Switched to Tablet Mode' : 'Switched to Desktop Mode')
+            ->send();
+    }
+
+    /**
+     * Format amount with currency symbol
+     */
+    public function formatCurrency(float $amount): string
+    {
+        return $this->currency->formatAmount($amount);
+    }
+
+    /**
+     * Get currency symbol
+     */
+    public function getCurrencySymbol(): string
+    {
+        return $this->currency->getSymbol();
+    }
+
+    /**
+     * Get currency decimals
+     */
+    public function getCurrencyDecimals(): int
+    {
+        return $this->currency->getDecimals();
+    }
+
+    public function collectPaymentAction(): Actions\Action
+    {
+        return Actions\Action::make('collectPayment')
+            ->modalHeading(fn (array $arguments) => 'Collect Payment - Order #'.$arguments['orderId'])
+            ->modalWidth('lg')
+            ->fillForm(function (array $arguments): array {
+                $order = Order::find($arguments['orderId']);
+
+                return [
+                    'orderId' => $arguments['orderId'],
+                    'total' => (float) $order->total,
+                ];
+            })
+            ->form([
+                Forms\Components\Hidden::make('orderId'),
+
+                Forms\Components\Radio::make('paymentMethod')
+                    ->label('Payment Method')
+                    ->options([
+                        'cash' => 'Cash',
+                        'card' => 'Credit/Debit Card',
+                    ])
+                    ->default('cash')
+                    ->inline()
+                    ->required()
+                    ->reactive(),
+
+                Section::make('Order Summary')
+                    ->schema([
+                        Forms\Components\Placeholder::make('order_details')
+                            ->label('')
+                            ->content(function ($get) {
+                                $order = Order::find($get('orderId'));
+                                $subtotal = (float) $order->subtotal ?? (float) $order->total;
+                                $existingDiscount = (float) ($order->discount_amount ?? 0);
+                                $existingAddOns = (float) ($order->add_ons_total ?? 0);
+                                $discountAmount = $existingDiscount;
+
+                                if ($get('discountType') && $get('discountValue')) {
+                                    if ($get('discountType') === 'percentage') {
+                                        $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
+                                    } else {
+                                        $discountAmount = (float) $get('discountValue');
+                                    }
+                                }
+
+                                $total = $subtotal - $discountAmount + $existingAddOns;
+
+                                $subtotalFormatted = $this->formatCurrency($subtotal);
+                                $totalFormatted = $this->formatCurrency($total);
+                                $discountFormatted = $this->formatCurrency($discountAmount);
+                                $addOnsFormatted = $this->formatCurrency($existingAddOns);
+
+                                $discountHtml = $discountAmount > 0 ? "
+                                    <div class='flex justify-between text-sm text-green-600'>
+                                        <span>Discount:</span>
+                                        <span class='font-medium'>- {$discountFormatted}</span>
+                                    </div>
+                                " : '';
+
+                                $addOnsHtml = $existingAddOns > 0 ? "
+                                    <div class='flex justify-between text-sm text-blue-600'>
+                                        <span>Add-ons:</span>
+                                        <span class='font-medium'>+ {$addOnsFormatted}</span>
+                                    </div>
+                                " : '';
+
+                                return new HtmlString("
+                                    <div class='space-y-2 p-4 bg-gray-50 rounded-lg'>
+                                        <div class='flex justify-between text-sm'>
+                                            <span class='text-gray-600'>Subtotal:</span>
+                                            <span class='font-medium'>{$subtotalFormatted}</span>
+                                        </div>
+                                        {$discountHtml}
+                                        {$addOnsHtml}
+                                        <div class='flex justify-between text-xl font-bold border-t border-gray-300 pt-2'>
+                                            <span>Total:</span>
+                                            <span class='text-orange-600'>{$totalFormatted}</span>
+                                        </div>
+                                    </div>
+                                ");
+                            }),
+                    ]),
+
+                Section::make('Apply Discount (Optional)')
+                    ->schema([
+                        Forms\Components\Select::make('discountType')
+                            ->label('Discount Type')
+                            ->options([
+                                'percentage' => 'Percentage (%)',
+                                'fixed' => 'Fixed Amount ('.$this->getCurrencySymbol().')',
+                            ])
+                            ->placeholder('No discount')
+                            ->reactive(),
+
+                        Forms\Components\TextInput::make('discountValue')
+                            ->label(fn ($get) => $get('discountType') === 'percentage' ? 'Percentage' : 'Amount')
+                            ->numeric()
+                            ->suffix(fn ($get) => $get('discountType') === 'percentage' ? '%' : $this->getCurrencySymbol())
+                            ->visible(fn ($get) => filled($get('discountType')))
+                            ->reactive()
+                            ->minValue(0)
+                            ->maxValue(fn ($get) => $get('discountType') === 'percentage' ? 100 : 9999),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
+
+                Section::make('Payment Details')
+                    ->schema([
+                        // Hidden field to store the amount (always present)
+                        Forms\Components\Hidden::make('paidAmount')
+                            ->default(0),
+
+                        // Slide-over Numpad for Tablet Mode
+                        View::make('filament.components.numpad-slideover')
+                            ->viewData(function ($get) {
+                                $order = Order::find($get('orderId'));
+
+                                return [
+                                    'orderId' => $get('orderId'),
+                                    'order' => $order,
+                                    'currency' => $this->getCurrencySymbol(),
+                                ];
+                            })
+                            ->visible(fn ($get) => $get('paymentMethod') === 'cash' && $this->isTabletMode),
+
+                        // Regular Input for Desktop Mode
+                        Forms\Components\TextInput::make('paidAmountDesktop')
+                            ->label('Cash Received')
+                            ->numeric()
+                            ->prefix($this->getCurrencySymbol())
+                            ->step(0.01)
+                            ->default(0)
+                            ->required()
+                            ->reactive()
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(function ($state, $set) {
+                                $set('paidAmount', $state);
+                            })
+                            ->visible(fn ($get) => $get('paymentMethod') === 'cash' && ! $this->isTabletMode),
+
+                        Forms\Components\Placeholder::make('change_display')
+                            ->label('Change')
+                            ->content(function ($get) {
+                                $order = Order::find($get('orderId'));
+                                $subtotal = (float) $order->subtotal ?? (float) $order->total;
+                                $existingDiscount = (float) ($order->discount_amount ?? 0);
+                                $existingAddOns = (float) ($order->add_ons_total ?? 0);
+                                $discountAmount = $existingDiscount;
+
+                                if ($get('discountType') && $get('discountValue')) {
+                                    if ($get('discountType') === 'percentage') {
+                                        $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
+                                    } else {
+                                        $discountAmount = (float) $get('discountValue');
+                                    }
+                                }
+
+                                $total = $subtotal - $discountAmount + $existingAddOns;
+                                $paidAmount = (float) ($get('paidAmount') ?? $get('paidAmountDesktop') ?? 0);
+                                $change = max(0.0, $paidAmount - $total);
+
+                                return new HtmlString('<div class="text-2xl font-bold text-green-600">'.$this->formatCurrency($change).'</div>');
+                            })
+                            ->visible(fn ($get) => $get('paymentMethod') === 'cash' && ! $this->isTabletMode && (float) ($get('paidAmountDesktop') ?? 0) > 0),
+                    ]),
+            ])
+            ->action(function (array $data) {
+                try {
+                    DB::beginTransaction();
+
+                    $order = Order::findOrFail($data['orderId']);
+
+                    // Calculate discount
+                    $subtotal = (float) ($order->subtotal ?? $order->total);
+                    $existingAddOns = (float) ($order->add_ons_total ?? 0);
+                    $discountAmount = (float) ($order->discount_amount ?? 0);
+
+                    if (! empty($data['discountType']) && ! empty($data['discountValue'])) {
+                        if ($data['discountType'] === 'percentage') {
+                            $discountAmount = $subtotal * ((float) $data['discountValue'] / 100);
+                        } else {
+                            $discountAmount = (float) $data['discountValue'];
+                        }
+                    }
+
+                    $finalTotal = $subtotal - $discountAmount + $existingAddOns;
+
+                    // Validate cash payment
+                    if ($data['paymentMethod'] === 'cash') {
+                        if ((float) $data['paidAmount'] < $finalTotal) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Insufficient Payment')
+                                ->body('Cash received is less than the total amount')
+                                ->send();
+
+                            return;
+                        }
+                    }
+
+                    $order->update([
+                        'status' => 'completed',
+                        'payment_status' => 'paid',
+                        'payment_method' => $data['paymentMethod'],
+                        'subtotal' => $subtotal,
+                        'discount_type' => $data['discountType'] ?? null,
+                        'discount_value' => $data['discountValue'] ?? null,
+                        'discount_amount' => $discountAmount,
+                        'total' => $finalTotal,
+                    ]);
+
+                    DB::commit();
+
+                    Notification::make()
+                        ->success()
+                        ->title('Payment Collected')
+                        ->body("Order #{$order->id} completed. Total: ".$this->formatCurrency($finalTotal))
+                        ->send();
+
+                    $this->dispatch('$refresh');
+                } catch (Exception $e) {
+                    DB::rollBack();
+
+                    Notification::make()
+                        ->danger()
+                        ->title('Error')
+                        ->body($e->getMessage())
+                        ->send();
+                }
+            })
+            ->modalSubmitActionLabel('Complete Order');
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('toggleMode')
+                ->label($this->isTabletMode ? 'Desktop Mode' : 'Tablet Mode')
+                ->icon($this->isTabletMode ? 'heroicon-o-computer-desktop' : 'heroicon-o-device-tablet')
+                ->color('gray')
+                ->action(fn () => $this->toggleMode()),
+
+            Actions\Action::make('refresh')
+                ->label('Refresh')
+                ->icon('heroicon-o-arrow-path')
+                ->action(fn () => $this->dispatch('$refresh')),
+        ];
+    }
+
+    protected function getActions(): array
+    {
+        return [
+            $this->collectPaymentAction(),
+        ];
+    }
+}
