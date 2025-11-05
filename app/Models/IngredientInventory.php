@@ -37,4 +37,27 @@ final class IngredientInventory extends Model
     {
         return $this->belongsTo(Ingredient::class);
     }
+
+    /**
+     * Boot model and add validation.
+     */
+    protected static function booted(): void
+    {
+        self::saving(function (IngredientInventory $inventory) {
+            $validator = validator()->make($inventory->getAttributes(), [
+                'ingredient_id' => 'required|exists:ingredients,id',
+                'current_stock' => 'required|numeric|min:0',
+                'min_stock_level' => 'nullable|numeric|min:0',
+                'max_stock_level' => 'nullable|numeric|min:0',
+                'reorder_level' => 'nullable|numeric|min:0',
+                'unit_cost' => 'nullable|numeric|min:0',
+                'location' => 'nullable|string|max:255',
+                'supplier_info' => 'nullable|string|max:500',
+            ]);
+
+            if ($validator->fails()) {
+                throw new \Illuminate\Validation\ValidationException($validator);
+            }
+        });
+    }
 }

@@ -30,8 +30,7 @@ final class CreateUserCommand extends Command
             'is_admin' => $this->option('role') === 'super_admin',
         ]);
 
-            $user->assignRole('super_admin');
-
+        $user->assignRole('super_admin');
 
         $this->info('User created!');
     }

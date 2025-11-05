@@ -38,7 +38,7 @@ final class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(\App\Filament\Pages\Auth\Login::class)
             ->topbar(false)
             ->colors([
                 'primary' => Color::Amber,
@@ -89,6 +89,31 @@ final class AdminPanelProvider extends PanelProvider
                     ->setTitle('General Settings')
                     ->setNavigationLabel('General Settings'),
             ])
-            ->authMiddleware([Authenticate::class]);
+            ->authMiddleware([Authenticate::class])
+            // Configure demo mode restrictions
+            ->when(config('app.env') === 'demo', function (Panel $panel) {
+                // Apply production-like restrictions for demo mode
+                $panel
+                    ->renderHook(
+                        'panels::head.end',
+                        fn (): string => '<style>
+                            .demo-banner {
+                                background: #f59e0b;
+                                color: white;
+                                padding: 8px 16px;
+                                text-align: center;
+                                font-weight: 600;
+                                position: fixed;
+                                top: 0;
+                                left: 0;
+                                right: 0;
+                                z-index: 9999;
+                            }
+                        </style>
+                        <div class="demo-banner">
+                            DEMO MODE - This is a demonstration environment
+                        </div>'
+                    );
+            });
     }
 }
