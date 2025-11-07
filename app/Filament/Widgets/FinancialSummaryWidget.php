@@ -23,16 +23,16 @@ final class FinancialSummaryWidget extends BaseWidget
         $lastMonth = Date::now()->subMonth()->startOfMonth();
 
         return [
-            Stat::make('This Month Revenue',
+            Stat::make('This Month Sales',
                 Order::query()->whereDate('created_at', '>=', $thisMonth)->sum('total'))
                 ->description('$'.number_format(
                     Order::query()->whereDate('created_at', '>=', $thisMonth)->sum('total'), 2))
-                ->description('Revenue from '.$thisMonth->format('F j'))
+                ->description('Sales from '.$thisMonth->format('F j'))
                 ->descriptionIcon('heroicon-m-arrow-trending-up')
                 ->color('success')
                 ->chart($this->getMonthlyChart()),
 
-            Stat::make('Last Month Revenue',
+            Stat::make('Last Month Sales',
                 Order::query()->whereDate('created_at', '>=', $lastMonth)
                     ->whereDate('created_at', '<', $thisMonth)
                     ->sum('total'))
@@ -74,8 +74,8 @@ final class FinancialSummaryWidget extends BaseWidget
 
     private function getMonthlyChart(): array
     {
-        // Get last 30 days of revenue
-        $data = Order::query()->selectRaw('DATE(created_at) as date, SUM(total) as revenue')
+        // Get last 30 days of sales
+        $data = Order::query()->selectRaw('DATE(created_at) as date, SUM(total) as sales')
             ->where('created_at', '>=', now()->subDays(29))
             ->groupBy('date')
             ->orderBy('date', 'asc')
@@ -85,7 +85,7 @@ final class FinancialSummaryWidget extends BaseWidget
         for ($i = 29; $i >= 0; $i--) {
             $date = now()->subDays($i)->format('Y-m-d');
             $dayData = $data->firstWhere('date', $date);
-            $chart[] = $dayData ? (float) $dayData->revenue : 0;
+            $chart[] = $dayData ? (float) $dayData->sales : 0;
         }
 
         return $chart;

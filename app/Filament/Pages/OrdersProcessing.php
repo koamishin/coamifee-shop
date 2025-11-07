@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use App\Enums\Currency;
+use App\Enums\DiscountType;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\GeneralSettingsService;
@@ -18,6 +19,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
+use JaOcero\RadioDeck\Forms\Components\RadioDeck;
 
 final class OrdersProcessing extends Page
 {
@@ -167,16 +169,25 @@ final class OrdersProcessing extends Page
             ->form([
                 Forms\Components\Hidden::make('orderId'),
 
-                Forms\Components\Radio::make('paymentMethod')
+                RadioDeck::make('paymentMethod')
                     ->label('Payment Method')
                     ->options([
                         'cash' => 'Cash',
                         'card' => 'Credit/Debit Card',
                     ])
+                    ->descriptions([
+                        'cash' => 'Accept cash payment from customer',
+                        'card' => 'Accept credit or debit card payment',
+                    ])
+                    ->icons([
+                        'cash' => 'heroicon-o-banknotes',
+                        'card' => 'heroicon-o-credit-card',
+                    ])
                     ->default('cash')
-                    ->inline()
                     ->required()
-                    ->reactive(),
+                    ->reactive()
+                    ->columns(2)
+                    ->color('primary'),
 
                 Section::make('Order Summary')
                     ->schema([
@@ -190,11 +201,8 @@ final class OrdersProcessing extends Page
                                 $discountAmount = $existingDiscount;
 
                                 if ($get('discountType') && $get('discountValue')) {
-                                    if ($get('discountType') === 'percentage') {
-                                        $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
-                                    } else {
-                                        $discountAmount = (float) $get('discountValue');
-                                    }
+                                    // All discounts are percentage-based
+                                    $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
                                 }
 
                                 $total = $subtotal - $discountAmount + $existingAddOns;
@@ -239,21 +247,33 @@ final class OrdersProcessing extends Page
                     ->schema([
                         Forms\Components\Select::make('discountType')
                             ->label('Discount Type')
-                            ->options([
-                                'percentage' => 'Percentage (%)',
-                                'fixed' => 'Fixed Amount ('.$this->getCurrencySymbol().')',
-                            ])
+                            ->options(DiscountType::getOptions())
                             ->placeholder('No discount')
-                            ->reactive(),
+                            ->reactive()
+                            ->live()
+                            ->afterStateUpdated(function ($state, $set) {
+                                if (! empty($state)) {
+                                    $discountType = DiscountType::from($state);
+                                    $percentage = $discountType->getPercentage();
+
+                                    if ($percentage !== null) {
+                                        $set('discountValue', $percentage);
+                                    } else {
+                                        $set('discountValue', null);
+                                    }
+                                }
+                            })
+                            ->helperText(fn ($state) => ! empty($state) ? DiscountType::from($state)->getDescription() : null),
 
                         Forms\Components\TextInput::make('discountValue')
-                            ->label(fn ($get) => $get('discountType') === 'percentage' ? 'Percentage' : 'Amount')
+                            ->label('Discount Value')
                             ->numeric()
-                            ->suffix(fn ($get) => $get('discountType') === 'percentage' ? '%' : $this->getCurrencySymbol())
-                            ->visible(fn ($get) => filled($get('discountType')))
+                            ->suffix('%')
+                            ->visible(fn ($get) => ! empty($get('discountType')) && DiscountType::from($get('discountType'))->requiresCustomValue())
                             ->reactive()
                             ->minValue(0)
-                            ->maxValue(fn ($get) => $get('discountType') === 'percentage' ? 100 : 9999),
+                            ->maxValue(100)
+                            ->helperText('Enter percentage (0-100)'),
                     ])
                     ->columns(2)
                     ->collapsible(),
@@ -302,11 +322,8 @@ final class OrdersProcessing extends Page
                                 $discountAmount = $existingDiscount;
 
                                 if ($get('discountType') && $get('discountValue')) {
-                                    if ($get('discountType') === 'percentage') {
-                                        $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
-                                    } else {
-                                        $discountAmount = (float) $get('discountValue');
-                                    }
+                                    // All discounts are percentage-based
+                                    $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
                                 }
 
                                 $total = $subtotal - $discountAmount + $existingAddOns;
@@ -330,23 +347,23 @@ final class OrdersProcessing extends Page
                     $discountAmount = (float) ($order->discount_amount ?? 0);
 
                     if (! empty($data['discountType']) && ! empty($data['discountValue'])) {
-                        if ($data['discountType'] === 'percentage') {
-                            $discountAmount = $subtotal * ((float) $data['discountValue'] / 100);
-                        } else {
-                            $discountAmount = (float) $data['discountValue'];
-                        }
+                        // All discounts are percentage-based
+                        $discountAmount = $subtotal * ((float) $data['discountValue'] / 100);
                     }
 
                     $finalTotal = $subtotal - $discountAmount + $existingAddOns;
 
                     // Validate cash payment
                     if ($data['paymentMethod'] === 'cash') {
-                        if ((float) $data['paidAmount'] < $finalTotal) {
+                        $paidAmount = (float) ($data['paidAmount'] ?? 0);
+                        if ($paidAmount < $finalTotal) {
                             Notification::make()
                                 ->danger()
                                 ->title('Insufficient Payment')
-                                ->body('Cash received is less than the total amount')
+                                ->body("Cash received ({$this->formatCurrency($paidAmount)}) is less than the total amount ({$this->formatCurrency($finalTotal)})")
                                 ->send();
+
+                            DB::rollBack();
 
                             return;
                         }

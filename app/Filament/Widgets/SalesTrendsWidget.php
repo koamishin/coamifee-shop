@@ -23,7 +23,7 @@ final class SalesTrendsWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $data = Order::query()->selectRaw('DATE(created_at) as date, COUNT(*) as orders, SUM(total) as revenue')
+        $data = Order::query()->selectRaw('DATE(created_at) as date, COUNT(*) as orders, SUM(total) as sales')
             ->where('created_at', '>=', Date::now()->subDays(6))
             ->where('created_at', '<=', Date::now())
             ->groupBy('date')
@@ -32,7 +32,7 @@ final class SalesTrendsWidget extends ChartWidget
 
         $labels = [];
         $ordersData = [];
-        $revenueData = [];
+        $salesData = [];
 
         // Fill in missing days with zeros
         $startDate = Date::now()->subDays(6);
@@ -47,7 +47,7 @@ final class SalesTrendsWidget extends ChartWidget
 
             $labels[] = $currentDate->format('M j');
             $ordersData[] = $dayData ? $dayData->orders : 0;
-            $revenueData[] = $dayData ? (float) $dayData->revenue : 0;
+            $salesData[] = $dayData ? (float) $dayData->sales : 0;
 
             $currentDate->addDay();
         }
@@ -65,8 +65,8 @@ final class SalesTrendsWidget extends ChartWidget
                     'tension' => 0.4,
                 ],
                 [
-                    'label' => 'Revenue ($)',
-                    'data' => $revenueData,
+                    'label' => 'Sales ($)',
+                    'data' => $salesData,
                     'backgroundColor' => 'rgba(34, 197, 94, 0.1)',
                     'borderColor' => 'rgba(34, 197, 94, 1)',
                     'borderWidth' => 2,

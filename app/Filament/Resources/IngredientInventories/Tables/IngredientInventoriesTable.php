@@ -60,25 +60,6 @@ final class IngredientInventoriesTable
                     ->color('danger')
                     ->icon('heroicon-o-arrow-down'),
 
-                TextColumn::make('max_stock_level')
-                    ->label('Max Stock')
-                    ->description('Maximum capacity')
-                    ->numeric(decimalPlaces: 3, thousandsSeparator: ',')
-                    ->sortable()
-                    ->alignRight()
-                    ->color('success')
-                    ->icon('heroicon-o-arrow-up')
-                    ->placeholder('Not set'),
-
-                TextColumn::make('reorder_level')
-                    ->label('Reorder At')
-                    ->description('Reorder threshold')
-                    ->numeric(decimalPlaces: 3, thousandsSeparator: ',')
-                    ->sortable()
-                    ->alignRight()
-                    ->color('warning')
-                    ->icon('heroicon-o-bell-alert'),
-
                 TextColumn::make('unit_cost')
                     ->label('Cost/Unit')
                     ->description('Cost per unit')
@@ -87,40 +68,15 @@ final class IngredientInventoriesTable
                     ->alignRight()
                     ->placeholder('Not set')
                     ->icon('heroicon-o-tag'),
-
-                TextColumn::make('location')
-                    ->label('Location')
-                    ->description('Storage location')
-                    ->searchable()
-                    ->sortable()
-                    ->limit(20)
-                    ->placeholder('Not specified')
-                    ->icon('heroicon-o-map-pin'),
-
-                TextColumn::make('supplier_info')
-                    ->label('Supplier')
-                    ->description('Supplier information')
-                    ->searchable()
-                    ->sortable()
-                    ->limit(25)
-                    ->placeholder('Not specified')
-                    ->icon('heroicon-o-building-office'),
             ])
             ->filters([
                 SelectFilter::make('ingredient.unit_type')
                     ->label('Unit Type')
                     ->options(UnitType::getOptions()),
-                SelectFilter::make('location')
-                    ->label('Location')
-                    ->options(fn () => \App\Models\IngredientInventory::distinct()->pluck('location', 'location')->filter()->toArray()),
 
                 Filter::make('low_stock')
                     ->label('Low Stock')
                     ->query(fn ($query) => $query->whereRaw('current_stock <= min_stock_level')),
-
-                Filter::make('needs_reorder')
-                    ->label('Needs Reorder')
-                    ->query(fn ($query) => $query->whereRaw('current_stock <= reorder_level')),
             ])
             ->actions([
                 ViewAction::make(),
