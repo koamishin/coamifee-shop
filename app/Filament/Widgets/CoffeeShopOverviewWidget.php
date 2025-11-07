@@ -30,9 +30,9 @@ final class CoffeeShopOverviewWidget extends BaseWidget
                 ->color('success')
                 ->chart([0, 2, 5, 3, 8, 12, 15]),
 
-            Stat::make('Today\'s Revenue', Order::query()->whereDate('created_at', $today)->sum('total'))
+            Stat::make('Today\'s Sales', Order::query()->whereDate('created_at', $today)->sum('total'))
                 ->description('$'.number_format(Order::query()->whereDate('created_at', $today)->sum('total'), 2))
-                ->description('Revenue from today')
+                ->description('Sales from today')
                 ->descriptionIcon('heroicon-m-currency-dollar')
                 ->color('primary'),
 

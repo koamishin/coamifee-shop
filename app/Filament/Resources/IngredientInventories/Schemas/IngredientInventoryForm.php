@@ -107,19 +107,6 @@ final class IngredientInventoryForm
                         ]),
 
                         Grid::make(2)->schema([
-                            TextInput::make('reorder_level')
-                                ->label('Reorder Level')
-                                ->numeric()
-                                ->step(0.001)
-                                ->minValue(0)
-                                ->placeholder('e.g., 500')
-                                ->helperText(
-                                    'Automatically reorder when stock falls below this level',
-                                )
-                                ->prefixIcon('heroicon-o-bell-alert')
-                                ->suffix(self::getUnitSuffix(...))
-                                ->columnSpan(1),
-
                             TextInput::make('min_stock_level')
                                 ->label('Minimum Stock')
                                 ->numeric()
@@ -132,51 +119,14 @@ final class IngredientInventoryForm
                                 ->columnSpan(1),
                         ]),
 
-                        Grid::make(2)->schema([
-                            TextInput::make('max_stock_level')
-                                ->label('Maximum Stock')
-                                ->numeric()
-                                ->step(0.001)
-                                ->minValue(0)
-                                ->placeholder('e.g., 10000')
-                                ->helperText('Maximum stock capacity')
-                                ->prefixIcon('heroicon-o-arrow-up')
-                                ->suffix(self::getUnitSuffix(...))
-                                ->columnSpan(1),
-
-                            TextInput::make('location')
-                                ->label('Storage Location')
-                                ->placeholder(
-                                    'e.g., Main Storage, Fridge A, Freezer B1',
-                                )
-                                ->helperText(
-                                    'Physical location where this ingredient is stored',
-                                )
-                                ->prefixIcon('heroicon-o-map-pin')
-                                ->columnSpan(1),
-                        ]),
-
-                        Grid::make(2)->schema([
-                            TextInput::make('supplier_info')
-                                ->label('Supplier Information')
-                                ->placeholder(
-                                    'e.g., Local Coffee Roasters - Contact: 555-0123',
-                                )
-                                ->helperText(
-                                    'Supplier details and contact information',
-                                )
-                                ->prefixIcon('heroicon-o-building-office')
-                                ->columnSpanFull(),
-                        ]),
-
                         Section::make('Stock Status & Analysis')
                             ->description(
-                                'Current inventory status and recommendations',
+                                'Current inventory status',
                             )
                             ->icon('heroicon-o-chart-pie')
                             ->collapsible()
                             ->schema([
-                                Grid::make(4)->schema([
+                                Grid::make(2)->schema([
                                     Placeholder::make('stock_status')
                                         ->label('Stock Status')
                                         ->content(
@@ -188,20 +138,6 @@ final class IngredientInventoryForm
                                         ->label('Stock Level')
                                         ->content(
                                             self::getStockPercentage(...),
-                                        )
-                                        ->columnSpan(1),
-
-                                    Placeholder::make('days_until_reorder')
-                                        ->label('Days Until Reorder')
-                                        ->content(
-                                            self::getDaysUntilReorder(...),
-                                        )
-                                        ->columnSpan(1),
-
-                                    Placeholder::make('recommended_order')
-                                        ->label('Recommended Order')
-                                        ->content(
-                                            self::getRecommendedOrder(...),
                                         )
                                         ->columnSpan(1),
                                 ]),
