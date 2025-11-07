@@ -3,49 +3,61 @@
 <div
     x-data="{
         open: false,
-        amount: @entangle('data.paidAmount').live,
+        amount: 0,
         total: 0,
         discountAmount: 0,
         currency: '{{ $currency }}',
 
         init() {
             this.calculateTotal();
+            // Initialize amount from wire (in Filament modal context)
+            this.amount = parseFloat(this.getFormData('paidAmount') || 0);
+        },
 
-            // Listen for discount changes
-            this.$watch('$wire.data.discountType', () => this.calculateTotal());
-            this.$watch('$wire.data.discountValue', () => this.calculateTotal());
+        getFormData(key) {
+            // Access Filament modal form data
+            const mountedActions = $wire.mountedActionsData || {};
+            const actionData = mountedActions[0] || {};
+            return actionData[key];
+        },
+
+        setFormData(key, value) {
+            // Set Filament modal form data
+            if (!$wire.mountedActionsData) $wire.mountedActionsData = [{}];
+            if (!$wire.mountedActionsData[0]) $wire.mountedActionsData[0] = {};
+            $wire.mountedActionsData[0][key] = value;
         },
 
         calculateTotal() {
             const order = @js($order ?? null);
             if (!order) return;
 
-            const subtotal = parseFloat(order.total);
+            const subtotal = parseFloat(order.subtotal || order.total);
+            const existingAddOns = parseFloat(order.add_ons_total || 0);
             let discount = 0;
 
-            const discountType = this.$wire.data?.discountType;
-            const discountValue = parseFloat(this.$wire.data?.discountValue || 0);
+            const discountType = this.getFormData('discountType');
+            const discountValue = parseFloat(this.getFormData('discountValue') || 0);
 
             if (discountType && discountValue) {
-                if (discountType === 'percentage') {
-                    discount = subtotal * (discountValue / 100);
-                } else {
-                    discount = discountValue;
-                }
+                // All discounts are percentage-based
+                discount = subtotal * (discountValue / 100);
             }
 
             this.discountAmount = discount;
-            this.total = subtotal - discount;
+            this.total = subtotal - discount + existingAddOns;
         },
 
         appendNumber(num) {
-            let current = this.amount.toString();
-            if (current === '0' || current === '') {
-                this.amount = num.toString();
+            let current = String(this.amount || '0');
+            if (current === '0') {
+                this.amount = num;
+            } else if (current.includes('.')) {
+                // If there's a decimal, just append
+                this.amount = parseFloat(current + num);
             } else {
-                this.amount = current + num.toString();
+                this.amount = parseFloat(current + num);
             }
-            this.amount = parseFloat(this.amount) || 0;
         },
 
         appendDecimal() {
@@ -160,12 +172,18 @@
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between">
                         <span class="text-gray-600">Subtotal:</span>
-                        <span class="font-medium" x-text="currency + ({{ $order->total ?? 0 }}).toFixed(2)"></span>
+                        <span class="font-medium" x-text="currency + ({{ $order->subtotal ?? $order->total ?? 0 }}).toFixed(2)"></span>
                     </div>
                     <div x-show="discountAmount > 0" class="flex justify-between text-green-600">
                         <span>Discount:</span>
                         <span class="font-medium">- <span x-text="currency + discountAmount.toFixed(2)"></span></span>
                     </div>
+                    @if(($order->add_ons_total ?? 0) > 0)
+                    <div class="flex justify-between text-blue-600">
+                        <span>Add-ons:</span>
+                        <span class="font-medium">+ <span x-text="currency + ({{ $order->add_ons_total ?? 0 }}).toFixed(2)"></span></span>
+                    </div>
+                    @endif
                     <div class="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
                         <span>Total:</span>
                         <span class="text-orange-600" x-text="currency + total.toFixed(2)"></span>
@@ -281,7 +299,7 @@
             {{-- Done Button --}}
             <button
                 type="button"
-                @click="open = false"
+                @click="setFormData('paidAmount', amount); open = false"
                 class="w-full py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-bold text-lg transition-all hover:scale-105 active:scale-95 shadow-lg"
                 :disabled="!isValid"
                 :class="{ 'opacity-50 cursor-not-allowed': !isValid }"

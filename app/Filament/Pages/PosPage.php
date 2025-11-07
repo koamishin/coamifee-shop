@@ -26,6 +26,7 @@ use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
+use JaOcero\RadioDeck\Forms\Components\RadioDeck;
 use Livewire\Attributes\Locked;
 
 final class PosPage extends Page
@@ -485,17 +486,25 @@ final class PosPage extends Page
                         ->placeholder('e.g., Extra hot, no sugar, allergies...')
                         ->rows(2),
 
-                    Forms\Components\Radio::make('paymentTiming')
+                    RadioDeck::make('paymentTiming')
                         ->label('Payment Timing')
                         ->options([
                             'pay_later' => 'Pay Later (After meal is ready)',
                             'pay_now' => 'Pay Now (Immediate payment)',
                         ])
+                        ->descriptions([
+                            'pay_later' => 'Payment will be collected when order is ready',
+                            'pay_now' => 'Customer will pay immediately before order is sent to kitchen',
+                        ])
+                        ->icons([
+                            'pay_later' => 'heroicon-o-clock',
+                            'pay_now' => 'heroicon-o-banknotes',
+                        ])
                         ->default('pay_later')
-                        ->inline()
                         ->required()
                         ->reactive()
-                        ->helperText(fn ($state) => $state === 'pay_now' ? 'Customer will pay immediately before order is sent to kitchen' : 'Payment will be collected when order is ready'),
+                        ->columns(2)
+                        ->color('primary'),
 
                     Section::make('Payment Details')
                         ->schema([
