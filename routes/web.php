@@ -11,10 +11,12 @@ use App\Livewire\Settings\Profile;
 use App\Livewire\Settings\TwoFactor;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
-Route::get('/', fn (): Factory|View => view('welcome'))->name('home');
+Route::get('/', fn (): RedirectResponse => redirect()->route('filament.cashier.auth.login'));
 
 Route::get('dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])

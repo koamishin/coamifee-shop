@@ -314,16 +314,7 @@ final class ProductMetricsTable
             ->emptyStateDescription(
                 'No metrics have been recorded for products yet. Start tracking product performance.',
             )
-            ->emptyStateActions([
-                Action::make('create_first')
-                    ->label('Create Product Metric')
-                    ->icon('heroicon-o-plus')
-                    ->url(
-                        route(
-                            'filament.admin.resources.product-metrics.create',
-                        ),
-                    ),
-            ])
+
             ->poll('60s'); // Refresh every minute for real-time updates
     }
 }

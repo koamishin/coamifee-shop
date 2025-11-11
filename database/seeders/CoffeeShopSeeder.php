@@ -314,7 +314,6 @@ final class CoffeeShopSeeder extends Seeder
                 'description' => 'Traditional Filipino noodle dish',
                 'preparation_time' => 15,
                 'is_active' => true,
-                'sku' => 'PC-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addPancitRecipe($product, $ingredients, str_contains($name, '4-6 PAX'));
@@ -411,7 +410,6 @@ final class CoffeeShopSeeder extends Seeder
                 'description' => 'Classic pasta dish',
                 'preparation_time' => 20,
                 'is_active' => true,
-                'sku' => 'PS-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addPastaRecipe($product, $ingredients);
@@ -488,7 +486,6 @@ final class CoffeeShopSeeder extends Seeder
                 'description' => 'Sweet homemade dessert',
                 'preparation_time' => 5,
                 'is_active' => true,
-                'sku' => 'DS-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addDessertRecipe($product, $ingredients);
@@ -598,7 +595,6 @@ final class CoffeeShopSeeder extends Seeder
                 'description' => 'Crispy appetizer',
                 'preparation_time' => 15,
                 'is_active' => true,
-                'sku' => 'PP-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addPicaPicaRecipe($product, $ingredients);
@@ -667,7 +663,6 @@ final class CoffeeShopSeeder extends Seeder
                 'description' => 'Fresh and healthy salad',
                 'preparation_time' => 10,
                 'is_active' => true,
-                'sku' => 'SL-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addSaladRecipe($product, $ingredients);
@@ -761,7 +756,6 @@ final class CoffeeShopSeeder extends Seeder
                 'description' => 'Crispy fried potatoes',
                 'preparation_time' => 8,
                 'is_active' => true,
-                'sku' => 'FR-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addFriesRecipe($product, $ingredients);
@@ -826,7 +820,6 @@ final class CoffeeShopSeeder extends Seeder
                 'description' => 'Gourmet burger',
                 'preparation_time' => 12,
                 'is_active' => true,
-                'sku' => 'BG-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addBurgerRecipe($product, $ingredients);
@@ -894,7 +887,6 @@ final class CoffeeShopSeeder extends Seeder
                 'description' => 'Fresh sandwich',
                 'preparation_time' => 8,
                 'is_active' => true,
-                'sku' => 'SW-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addSandwichRecipe($product, $ingredients);
@@ -972,7 +964,6 @@ final class CoffeeShopSeeder extends Seeder
                 'description' => 'Fluffy omelette',
                 'preparation_time' => 10,
                 'is_active' => true,
-                'sku' => 'OM-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addOmeletteRecipe($product, $ingredients);
@@ -1058,7 +1049,6 @@ final class CoffeeShopSeeder extends Seeder
                 'description' => 'Filipino breakfast combo',
                 'preparation_time' => 15,
                 'is_active' => true,
-                'sku' => 'SG-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addSilogRecipe($product, $ingredients);
@@ -1136,7 +1126,6 @@ final class CoffeeShopSeeder extends Seeder
                 'description' => 'Sizzling hot plate',
                 'preparation_time' => 20,
                 'is_active' => true,
-                'sku' => 'HP-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addHotPlateRecipe($product, $ingredients);
@@ -1203,7 +1192,6 @@ final class CoffeeShopSeeder extends Seeder
                 'description' => 'Beef dish with rice',
                 'preparation_time' => 18,
                 'is_active' => true,
-                'sku' => 'BR-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addBeefRiceMealRecipe($product, $ingredients);
@@ -1301,7 +1289,6 @@ final class CoffeeShopSeeder extends Seeder
                 'description' => 'Chicken dish with rice',
                 'preparation_time' => 16,
                 'is_active' => true,
-                'sku' => 'CR-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addChickenRiceMealRecipe($product, $ingredients);
@@ -1398,7 +1385,6 @@ final class CoffeeShopSeeder extends Seeder
                 'description' => 'Specialty rice meal',
                 'preparation_time' => 18,
                 'is_active' => true,
-                'sku' => 'OR-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addOtherRiceMealRecipe($product, $ingredients);
@@ -1485,7 +1471,6 @@ final class CoffeeShopSeeder extends Seeder
                 'description' => 'Side dish',
                 'preparation_time' => 5,
                 'is_active' => true,
-                'sku' => 'AO-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addAddOnRecipe($product, $ingredients);
