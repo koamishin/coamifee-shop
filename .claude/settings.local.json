@@ -11,7 +11,10 @@
       "Bash(docker build:*)",
       "Bash(composer show:*)",
       "Bash(composer require:*)",
-      "Bash(gh pr create:*)"
+      "Bash(gh pr create:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr edit:*)",
+      "Bash(test:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
