@@ -30,6 +30,7 @@ final class CashierPanelProvider extends PanelProvider
         return $panel
             ->id('cashier')
             ->path('cashier')
+            ->login()
             ->colors([
                 'primary' => Color::Emerald,
             ])
@@ -62,6 +63,26 @@ final class CashierPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->when(config('app.env') === 'demo', function (Panel $panel) {
+                // Apply production-like restrictions for demo mode
+                $panel
+                    ->renderHook(
+                        'panels::head.end',
+                        fn (): string => '<style>
+                            .demo-banner {
+                                background: #f59e0b;
+                                color: white;
+                                padding: 8px 16px;
+                                text-align: center;
+                                font-weight: 600;
+                         
+                            }
+                        </style>
+                        <div class="demo-banner">
+                            DEMO MODE - This is a demonstration environment
+                        </div>'
+                    );
+            });;
     }
 }
