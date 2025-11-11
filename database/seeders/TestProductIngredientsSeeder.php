@@ -103,7 +103,6 @@ final class TestProductIngredientsSeeder extends Seeder
                     'description' => "Test product for UI demonstration - {$productData['name']}",
                     'preparation_time' => rand(5, 20),
                     'is_active' => true,
-                    'sku' => 'TEST-'.mb_strtoupper(str_replace(' ', '-', $productData['name'])),
                 ])
             );
 

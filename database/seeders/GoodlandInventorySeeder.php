@@ -345,7 +345,6 @@ final class GoodlandInventorySeeder extends Seeder
                 'description' => 'Refreshing beverage',
                 'preparation_time' => 5,
                 'is_active' => true,
-                'sku' => 'BV-'.mb_strtoupper(str_replace(' ', '-', $name)),
             ]);
 
             $this->addBeverageRecipe($product, $ingredients);

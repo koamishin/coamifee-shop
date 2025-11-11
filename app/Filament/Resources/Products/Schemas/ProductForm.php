@@ -38,12 +38,13 @@ final class ProductForm
 
                         TextInput::make('sku')
                             ->label('SKU')
-                            ->placeholder('e.g., PROD-001')
+                            ->placeholder('Auto-generated on save')
                             ->helperText(
-                                'Stock Keeping Unit for inventory tracking',
+                                'Automatically generated from product name',
                             )
                             ->maxLength(50)
-                            ->unique(ignoreRecord: true),
+                            ->disabled()
+                            ->dehydrated(false),
 
                         Select::make('category_id')
                             ->label('Category')
@@ -70,7 +71,7 @@ final class ProductForm
                             ->columnSpanFull(),
                     ]),
                 ])
-                ->columns(2),
+                ->columns(1),
 
             Section::make('Pricing & Inventory')
                 ->description('Set pricing and inventory details.')
@@ -94,14 +95,6 @@ final class ProductForm
                             ->step(0.01)
                             ->helperText('Your cost for this product')
                             ->default(0),
-
-                        TextInput::make('stock_quantity')
-                            ->label('Stock Quantity')
-                            ->numeric()
-                            ->default(0)
-                            ->minValue(0)
-                            ->helperText('Available stock quantity')
-                            ->live(onBlur: true),
 
                         TextInput::make('min_stock_level')
                             ->label('Minimum Stock')
@@ -159,7 +152,7 @@ final class ProductForm
             Section::make('Status & Settings')
                 ->description('Configure product availability and settings.')
                 ->schema([
-                    Grid::make(2)->schema([
+                    Grid::make(1)->schema([
                         Toggle::make('is_active')
                             ->label('Available')
                             ->default(true)
