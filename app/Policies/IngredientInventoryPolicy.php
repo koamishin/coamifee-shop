@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\IngredientInventory;
 use Illuminate\Auth\Access\HandlesAuthorization;
-use Illuminate\Foundation\Auth\User as AuthUser;
 
-final class IngredientInventoryPolicy
+class IngredientInventoryPolicy
 {
     use HandlesAuthorization;
-
+    
     public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('ViewAny:IngredientInventory');
@@ -66,4 +66,5 @@ final class IngredientInventoryPolicy
     {
         return $authUser->can('Reorder:IngredientInventory');
     }
+
 }

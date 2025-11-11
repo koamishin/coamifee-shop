@@ -8,6 +8,7 @@ use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 final class DatabaseSeeder extends Seeder
 {
@@ -18,6 +19,9 @@ final class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
+        // Create super_admin role if it doesn't exist
+        Role::firstOrCreate(['name' => 'super_admin'], ['guard_name' => 'web']);
+
         $user = User::query()->firstOrCreate([
             'email' => 'test@example.com',
         ], [
@@ -25,6 +29,7 @@ final class DatabaseSeeder extends Seeder
             'password' => Hash::make('password'),
         ]);
 
+        // Assign super_admin role to test user
         $user->assignRole('super_admin');
 
         // Use the CoffeeShopSeeder for existing data
