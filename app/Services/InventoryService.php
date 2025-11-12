@@ -8,11 +8,17 @@ use App\Models\Ingredient;
 use App\Models\IngredientInventory;
 use App\Models\InventoryTransaction;
 use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\ProductIngredient;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 
 final class InventoryService
 {
+    public function __construct(
+        private readonly UnitConversionService $unitConversionService
+    ) {}
+
     public function decreaseIngredientStock(Ingredient $ingredient, float $quantity, ?OrderItem $orderItem = null, ?string $reason = null): bool
     {
         /** @var IngredientInventory|null $inventory */
@@ -160,6 +166,102 @@ final class InventoryService
             if (! $inventory || $inventory->current_stock < $requiredQuantity) {
                 return false;
             }
+        }
+
+        return true;
+    }
+
+    /**
+     * Deduct inventory for a product when it's ordered.
+     * Handles unit conversion automatically (e.g., 250ml from inventory in liters).
+     *
+     * @param  Product|int  $product  The product or product ID
+     * @param  int  $quantity  Number of products ordered
+     * @param  OrderItem|null  $orderItem  Optional order item for tracking
+     * @return bool True if successful, false if insufficient inventory
+     */
+    public function deductInventoryForProduct(Product|int $product, int $quantity = 1, ?OrderItem $orderItem = null): bool
+    {
+        // Load product if ID was provided
+        if (is_int($product)) {
+            $product = Product::query()->find($product);
+            if (! $product) {
+                return false;
+            }
+        }
+
+        // Get all ingredients for the product
+        $productIngredients = $product->ingredients()
+            ->with('ingredient.inventory')
+            ->get();
+
+        // First, verify all ingredients are available
+        foreach ($productIngredients as $productIngredient) {
+            /** @var ProductIngredient $productIngredient */
+            $ingredient = $productIngredient->ingredient;
+            if (! $ingredient) {
+                return false;
+            }
+
+            /** @var Ingredient $ingredient */
+            $inventory = $ingredient->inventory;
+            if (! $inventory) {
+                return false; // No inventory tracking means we can't deduct
+            }
+
+            // Calculate required quantity (recipe quantity * number of products ordered)
+            $requiredQuantity = $productIngredient->quantity_required * $quantity;
+
+            // Get inventory unit type from the ingredient
+            $inventoryUnitType = $ingredient->unit_type;
+
+            // For now, we assume recipe uses same unit as inventory
+            // In future, you could store recipe unit separately
+            $recipeUnitType = $inventoryUnitType;
+
+            // Normalize to inventory unit if different
+            try {
+                $normalizedQuantity = $this->unitConversionService->normalizeToInventoryUnit(
+                    $requiredQuantity,
+                    $recipeUnitType,
+                    $inventoryUnitType
+                );
+            } catch (InvalidArgumentException $e) {
+                // Cannot convert units - fail the operation
+                return false;
+            }
+
+            // Check if enough stock is available
+            if ($inventory->current_stock < $normalizedQuantity) {
+                return false;
+            }
+        }
+
+        // All ingredients available - proceed with deduction
+        foreach ($productIngredients as $productIngredient) {
+            /** @var ProductIngredient $productIngredient */
+            $ingredient = $productIngredient->ingredient;
+            /** @var Ingredient $ingredient */
+            $inventory = $ingredient->inventory;
+
+            $requiredQuantity = $productIngredient->quantity_required * $quantity;
+            $inventoryUnitType = $ingredient->unit_type;
+            $recipeUnitType = $inventoryUnitType;
+
+            // Normalize quantity
+            $normalizedQuantity = $this->unitConversionService->normalizeToInventoryUnit(
+                $requiredQuantity,
+                $recipeUnitType,
+                $inventoryUnitType
+            );
+
+            // Deduct from inventory
+            $this->decreaseIngredientStock(
+                $ingredient,
+                $normalizedQuantity,
+                $orderItem,
+                "Product order: {$product->name} (x{$quantity})"
+            );
         }
 
         return true;
