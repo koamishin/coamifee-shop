@@ -407,21 +407,25 @@ final class Pos extends Component
             return;
         }
 
-        $this->cart = [];
+        // First, validate that all items can be produced with current inventory
         foreach ($order->items as $item) {
             /** @var OrderItem $item */
-            $cartItemId = $item->product_id;
-
-            // Check if we can produce this item
-            if ($this->posService->canAddToCart($item->product_id) === false) {
+            if (! $this->canProduceCartQuantity($item->product_id, $item->quantity)) {
                 $productName = $item->product->name ?? 'Unknown Product';
                 $this->dispatch('insufficient-inventory', [
                     'message' => "Cannot duplicate order: Insufficient ingredients for {$productName}",
                     'product_name' => $productName,
                 ]);
 
-                continue;
+                return;
             }
+        }
+
+        // If all validations pass, populate the cart
+        $this->cart = [];
+        foreach ($order->items as $item) {
+            /** @var OrderItem $item */
+            $cartItemId = $item->product_id;
 
             $this->cart[$cartItemId] = [
                 'id' => $item->product_id,
@@ -557,7 +561,15 @@ final class Pos extends Component
     public function incrementQuantity(int $productId): void
     {
         if (isset($this->cart[$productId])) {
-            if (! $this->posService->canAddToCart($productId)) {
+            // Try to increment and check if we can still produce all items in cart
+            $this->cart[$productId]['quantity']++;
+            
+            // Check if we can produce this quantity with current inventory
+            $currentQuantity = $this->cart[$productId]['quantity'];
+            if (! $this->canProduceCartQuantity($productId, $currentQuantity)) {
+                // Revert the increment
+                $this->cart[$productId]['quantity']--;
+                
                 $this->dispatch('insufficient-inventory', [
                     'message' => 'Cannot increase quantity: Insufficient ingredients',
                     'product_id' => $productId,
@@ -565,7 +577,7 @@ final class Pos extends Component
 
                 return;
             }
-            $this->cart[$productId]['quantity']++;
+            
             $this->calculateTotals();
             $this->updateProductAvailability();
         }
@@ -771,5 +783,36 @@ final class Pos extends Component
         $this->subtotal = $totals['subtotal'];
         $this->taxAmount = $totals['tax_amount'];
         $this->total = $totals['total'];
+    }
+
+    private function canProduceCartQuantity(int $productId, int $quantity): bool
+    {
+        $product = Product::query()->find($productId);
+        if (! $product) {
+            return false;
+        }
+
+        $ingredients = $product->ingredients()->with('ingredient.inventory')->get();
+        
+        foreach ($ingredients as $productIngredient) {
+            /** @var ProductIngredient $productIngredient */
+            $ingredient = $productIngredient->ingredient;
+            if ($ingredient === null) {
+                return false;
+            }
+
+            /** @var Ingredient $ingredient */
+            $inventory = $ingredient->inventory;
+            if (! $inventory) {
+                return false;
+            }
+
+            $requiredAmount = $productIngredient->quantity_required * $quantity;
+            if ($inventory->current_stock < $requiredAmount) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

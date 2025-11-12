@@ -52,7 +52,7 @@ test('can increment cart item quantity', function (): void {
         ->assertSet('cart.'.$this->product->id.'.quantity', 2);
 });
 
-todo('cannot increment beyond available inventory', function (): void {
+test('cannot increment beyond available inventory', function (): void {
     // Get both ingredients used in the product
     $coffeeIngredient = Ingredient::where('name', 'Coffee Beans')->first();
     $milkIngredient = Ingredient::where('name', 'Milk')->first();
@@ -163,7 +163,7 @@ test('can duplicate existing order', function (): void {
         ->assertSet('cart.'.$this->product->id.'.quantity', 2);
 });
 
-todo('cannot duplicate order with insufficient inventory', function (): void {
+test('cannot duplicate order with insufficient inventory', function (): void {
     // Create order with 3 units
     $order = Order::factory()->create();
     OrderItem::factory()->create([

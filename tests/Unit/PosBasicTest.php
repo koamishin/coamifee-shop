@@ -58,21 +58,30 @@ test('discount can be applied', function (): void {
 });
 
 test('discount can be removed', function (): void {
-    $pos = new Pos();
-    $pos->cart = [
-        '1' => ['price' => 10.0, 'quantity' => 1],
-    ];
-    $pos->discountPercentage = 10;
-    $pos->discountApplied = true;
-    $pos->discountAmount = 1;
+    $component = Livewire::test(Pos::class);
+    $component->set('cart', [
+        '1' => [
+            'id' => 1,
+            'name' => 'Test Product',
+            'price' => 10.0,
+            'quantity' => 1,
+            'image' => null,
+        ],
+    ]);
+    $component->set('discountPercentage', 10);
+    $component->call('applyDiscount');
 
-    $pos->removeDiscount();
+    // Verify discount is applied
+    $component->assertSet('discountApplied', true);
+    $component->assertSet('discountAmount', 1.0);
 
-    expect($pos->discountPercentage)->toBe(0);
-    expect($pos->discountApplied)->toBeFalse();
-    // TODO: Fix this assertion - removeDiscount method behavior needs investigation
-    // expect($pos->discountAmount)->toEqual(0.0);
-})->skip();
+    // Now remove the discount
+    $component->call('removeDiscount');
+
+    $component->assertSet('discountPercentage', 0);
+    $component->assertSet('discountApplied', false);
+    $component->assertSet('discountAmount', 0);
+});
 
 test('customer discount code valid', function (): void {
     $component = Livewire::test(Pos::class);

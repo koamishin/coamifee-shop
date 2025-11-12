@@ -42,7 +42,7 @@ final class IngredientsTable
                 TextColumn::make('inventory.current_stock')
                     ->label('Stock')
                     ->description('Current stock level')
-                    ->numeric(decimalPlaces: 2, thousandsSeparator: ',')
+                    ->numeric(decimalPlaces: 1, thousandsSeparator: ',')
                     ->sortable()
                     ->alignRight()
                     ->weight('medium')

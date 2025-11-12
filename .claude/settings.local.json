@@ -14,7 +14,8 @@
       "Bash(gh pr create:*)",
       "Bash(gh pr view:*)",
       "Bash(gh pr edit:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(composer test:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
