@@ -34,6 +34,14 @@ final class IngredientForm
                                     'Enter the full name of the ingredient',
                                 )
                                 ->columnSpan(1),
+                            TextInput::make('sku')
+                                ->label('SKU')
+                                ->placeholder('Auto-generated on save')
+                                ->helperText('Automatically generated from ingredient name')
+                                ->maxLength(50)
+                                ->disabled()
+                                ->dehydrated(false)
+                                ->columnSpan(1),
                             Select::make('unit_type')
                                 ->label('Unit of Measurement')
                                 ->required()
