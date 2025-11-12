@@ -53,6 +53,14 @@ test('updates product availability for all products', function (): void {
     // Test that all products have availability data
     $availability = $component->get('productAvailability');
 
+    // Availability should not be empty
+    expect($availability)->not->toBeEmpty();
+    
+    // Check that products have the expected structure
+    foreach ($availability as $productId => $data) {
+        expect($data)->toHaveKeys(['can_produce', 'max_quantity', 'stock_status']);
+    }
+
     // Should have availability for both test products
     expect($availability)->toHaveKey($this->product->id);
     expect($availability)->toHaveKey($this->unavailableProduct->id);
@@ -88,8 +96,10 @@ test('calculates max producible quantity', function (): void {
 
     $component = Livewire::test(Sidebar::class);
     $availability = $component->get('productAvailability');
+    
     // Find the correct product in availability array
-    $productAvailability = $availability[$this->product->id] ?? null;
+    expect($availability)->toHaveKey($this->product->id);
+    $productAvailability = $availability[$this->product->id];
     expect($productAvailability['max_quantity'])->toBe(10);
 });
 
@@ -105,10 +115,17 @@ test('filters products by selected category', function (): void {
         'category_id' => $foodCategory->id,
     ]);
 
-    Livewire::test(Sidebar::class)
-        ->set('selectedCategory', $coffeeCategory->id)
-        ->assertViewHas('products', fn ($products): bool => $products->contains('id', $coffeeProduct->id) &&
-            ! $products->contains('id', $foodProduct->id));
+    $component = Livewire::test(Sidebar::class);
+    
+    // Select the coffee category
+    $component->call('selectCategory', $coffeeCategory->id);
+    
+    // Get the filtered products
+    $products = $component->viewData('products');
+    
+    // Verify filtering works
+    expect($products->contains('id', $coffeeProduct->id))->toBeTrue();
+    expect($products->contains('id', $foodProduct->id))->toBeFalse();
 });
 
 test('refreshes inventory on event', function (): void {
@@ -165,20 +182,22 @@ test('handles multiple ingredients for availability', function (): void {
     );
 });
 
-todo('ignores untrackable ingredients for availability', function (): void {
-    // Since all ingredients are now trackable after database migration,
-    // this test concept needs to be re-evaluated
-    $sugarIngredient = Ingredient::factory()->create();
+test('handles ingredients without inventory correctly', function (): void {
+    // Create an ingredient without inventory
+    $sugarIngredient = Ingredient::factory()->create([
+        'name' => 'Sugar',
+        'unit_type' => 'grams',
+    ]);
     ProductIngredient::factory()->create([
         'product_id' => $this->product->id,
         'ingredient_id' => $sugarIngredient->id,
         'quantity_required' => 50,
     ]);
 
-    // Product should still be available
+    // Product should be unavailable because sugar has no inventory
     Livewire::test(Sidebar::class)->assertSet(
         'productAvailability.'.$this->product->id.'.can_produce',
-        true,
+        false,
     );
 });
 
@@ -216,6 +235,7 @@ beforeEach(function (): void {
         'name' => 'Available Latte',
         'price' => 4.5,
         'category_id' => $category->id,
+        'is_active' => true,
     ]);
 
     ProductIngredient::factory()->create([
@@ -229,6 +249,7 @@ beforeEach(function (): void {
         'name' => 'Unavailable Latte',
         'price' => 4.5,
         'category_id' => $category->id,
+        'is_active' => true,
     ]);
 
     ProductIngredient::factory()->create([

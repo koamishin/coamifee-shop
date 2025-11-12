@@ -8,7 +8,7 @@
         <!-- Header -->
         <header class="w-full max-w-4xl mx-auto px-4 pt-3 pb-2">
             <nav class="flex items-center justify-between">
-                <a href="{{ route('home') }}" class="flex items-center space-x-2 group" wire:navigate>
+                <a href="{{ route('dashboard') }}" class="flex items-center space-x-2 group" wire:navigate>
                     <div class="w-5 h-5 bg-gradient-to-br from-amber-500 to-orange-600 rounded flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
                         <svg class="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 2C13.1 2 14 2.9 14 4V5H16C17.1 5 18 5.9 18 7V8H20C21.1 8 22 8.9 22 10V12C22 13.1 21.1 14 20 14H18V16C18 17.1 17.1 18 16 18H14V20C14 21.1 13.1 22 12 22S10 21.1 10 20V18H8C6.9 18 6 17.1 6 16V14H4C2.9 14 2 13.1 2 12V10C2 8.9 2.9 8 4 8H6V7C6 5.9 6.9 5 8 5H10V4C10 2.9 10.9 2 12 2Z"/>
@@ -18,9 +18,9 @@
                 </a>
 
                 <div class="flex items-center space-x-2">
-                    <a href="{{ route('home') }}"
+                    <a href="{{ route('dashboard') }}"
                        class="px-3 py-1.5 bg-white/80 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800 text-gray-900 dark:text-white rounded-md font-medium transition-all duration-200 shadow-md hover:shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-sm text-xs">
-                        ← Back to Home
+                        ← Back to Dashboard
                     </a>
                 </div>
             </nav>

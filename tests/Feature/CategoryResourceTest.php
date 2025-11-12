@@ -18,8 +18,31 @@ uses(RefreshDatabase::class);
 
 // Set up authentication for all tests
 beforeEach(function () {
+    // Create the super_admin role
+    app('cache')->clear();
+    $role = \Spatie\Permission\Models\Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
+
+    // Create the permissions
+    \Spatie\Permission\Models\Permission::create(['name' => 'ViewAny:Category', 'guard_name' => 'web']);
+    \Spatie\Permission\Models\Permission::create(['name' => 'View:Category', 'guard_name' => 'web']);
+    \Spatie\Permission\Models\Permission::create(['name' => 'Create:Category', 'guard_name' => 'web']);
+    \Spatie\Permission\Models\Permission::create(['name' => 'Update:Category', 'guard_name' => 'web']);
+    \Spatie\Permission\Models\Permission::create(['name' => 'Delete:Category', 'guard_name' => 'web']);
+
+    // Assign all permissions to super_admin role
+    $role->givePermissionTo([
+        'ViewAny:Category',
+        'View:Category',
+        'Create:Category',
+        'Update:Category',
+        'Delete:Category',
+    ]);
+
     $user = User::factory()->create();
     actingAs($user);
+
+    // Grant super_admin role to user
+    $user->assignRole('super_admin');
 
     // Set the current panel for Filament testing
     Filament::setCurrentPanel('admin');

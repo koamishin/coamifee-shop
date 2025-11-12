@@ -172,13 +172,25 @@ enum Currency: string
     }
 
     /**
-     * Format an amount with the currency symbol (symbol always before value)
+     * Format an amount with the currency symbol
      */
     public function formatAmount(float $amount): string
     {
         $decimals = $this->getDecimals();
         $formattedAmount = number_format($amount, $decimals, '.', '');
+        $symbol = $this->getSymbol();
 
-        return $this->getSymbol().$formattedAmount;
+        // Currencies with symbol after the amount
+        if (in_array($this, [self::EUR])) {
+            return $formattedAmount.$symbol;
+        }
+
+        // Currencies with space between symbol and amount
+        if (in_array($this, [self::BRL])) {
+            return $symbol.' '.$formattedAmount;
+        }
+
+        // Default: symbol before the amount
+        return $symbol.$formattedAmount;
     }
 }

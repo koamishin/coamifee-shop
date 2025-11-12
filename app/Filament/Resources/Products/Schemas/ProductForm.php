@@ -86,24 +86,6 @@ final class ProductForm
                             ->step(0.01)
                             ->helperText('Current selling price')
                             ->live(onBlur: true),
-
-                        TextInput::make('cost_price')
-                            ->label('Cost Price')
-                            ->prefix(self::getCurrencyPrefix())
-                            ->suffix(self::getCurrencySuffix())
-                            ->numeric()
-                            ->step(0.01)
-                            ->helperText('Your cost for this product')
-                            ->default(0),
-
-                        TextInput::make('min_stock_level')
-                            ->label('Minimum Stock')
-                            ->numeric()
-                            ->default(5)
-                            ->minValue(0)
-                            ->helperText(
-                                'Alert when stock falls below this level',
-                            ),
                     ]),
                 ])
                 ->columns(1),
@@ -122,14 +104,6 @@ final class ProductForm
                         ->columnSpanFull(),
 
                     Grid::make(2)->schema([
-                        TextInput::make('preparation_time')
-                            ->label('Preparation Time')
-                            ->numeric()
-                            ->default(5)
-                            ->minValue(1)
-                            ->suffix(' minutes')
-                            ->helperText('Average preparation time in minutes'),
-
                         FileUpload::make('image_url')
                             ->label('Product Image')
                             ->image()
