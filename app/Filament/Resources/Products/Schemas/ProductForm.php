@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Products\Schemas;
 
+use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
@@ -166,8 +167,8 @@ final class ProductForm
                                         ->required()
                                         ->distinct()
                                         ->reactive()
-                                        ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                            // Auto-update quantity when ingredient changes
+                                        ->afterStateUpdated(function ($state, callable $set) {
+                                            // Reset quantity when ingredient changes
                                             $set('quantity_required', null);
                                         })
                                         ->helperText('Select ingredient from inventory'),
@@ -178,7 +179,23 @@ final class ProductForm
                                         ->required()
                                         ->minValue(0.001)
                                         ->step(0.001)
-                                        ->placeholder('e.g., 2.5')
+                                        ->placeholder(function (callable $get) {
+                                            $ingredientId = $get('ingredient_id');
+                                            if (! $ingredientId) {
+                                                return 'e.g., 250 or 0.25';
+                                            }
+
+                                            $ingredient = \App\Models\Ingredient::find($ingredientId);
+                                            if (! $ingredient) {
+                                                return 'e.g., 250 or 0.25';
+                                            }
+
+                                            return match ($ingredient->unit_type) {
+                                                UnitType::MILLILITERS, UnitType::LITERS => '250 (ml) or 0.25 (L)',
+                                                UnitType::GRAMS, UnitType::KILOGRAMS => '250 (g) or 0.25 (kg)',
+                                                default => 'e.g., 2.5'
+                                            };
+                                        })
                                         ->suffix(function (callable $get) {
                                             $ingredientId = $get('ingredient_id');
                                             if (! $ingredientId) {
@@ -187,9 +204,29 @@ final class ProductForm
 
                                             $ingredient = \App\Models\Ingredient::find($ingredientId);
 
-                                            return $ingredient->unit_type->getLabel();
+                                            return match ($ingredient->unit_type) {
+                                                UnitType::MILLILITERS, UnitType::LITERS => 'ml or L',
+                                                UnitType::GRAMS, UnitType::KILOGRAMS => 'g or kg',
+                                                default => $ingredient->unit_type->getLabel()
+                                            };
                                         })
-                                        ->helperText('Amount needed per product')
+                                        ->helperText(function (callable $get) {
+                                            $ingredientId = $get('ingredient_id');
+                                            if (! $ingredientId) {
+                                                return 'Amount needed per product';
+                                            }
+
+                                            $ingredient = \App\Models\Ingredient::find($ingredientId);
+                                            if (! $ingredient) {
+                                                return 'Amount needed per product';
+                                            }
+
+                                            return match ($ingredient->unit_type) {
+                                                UnitType::MILLILITERS, UnitType::LITERS => 'Use 250 for ml or 0.25 for L',
+                                                UnitType::GRAMS, UnitType::KILOGRAMS => 'Use 250 for grams or 0.25 for kg',
+                                                default => 'Amount needed per product'
+                                            };
+                                        })
                                         ->live(onBlur: true),
                                 ])
                                 ->columnSpanFull(),
@@ -260,10 +297,12 @@ final class ProductForm
                             if (isset($state['ingredient_id']) && $state['ingredient_id']) {
                                 $ingredient = \App\Models\Ingredient::find($state['ingredient_id']);
                                 if ($ingredient) {
-                                    $quantity = $state['quantity_required'] ?? 0;
-                                    $unit = $ingredient->unit_type->getLabel();
+                                    $quantity = (float) ($state['quantity_required'] ?? 0);
 
-                                    return "{$ingredient->name} ({$quantity} {$unit})";
+                                    // Intelligently determine the unit based on value magnitude
+                                    $displayUnit = self::detectInputUnit($quantity, $ingredient->unit_type);
+
+                                    return "{$ingredient->name} ({$quantity} {$displayUnit})";
                                 }
                             }
 
@@ -278,5 +317,50 @@ final class ProductForm
                 ->columns(1)
                 ->collapsed(fn ($context): bool => $context === 'edit'),
         ]);
+    }
+
+    /**
+     * Convert user input quantity to inventory base unit.
+     * Intelligently detects if the input is in small (ml/g) or large (L/kg) units.
+     *
+     * @param  float  $quantity  The input quantity
+     * @param  UnitType  $inventoryUnitType  The ingredient's inventory unit type
+     * @return float The quantity normalized to inventory unit
+     */
+    public static function normalizeQuantityToInventoryUnit(float $quantity, UnitType $inventoryUnitType): float
+    {
+        $conversionService = app(UnitConversionService::class);
+
+        return match ($inventoryUnitType) {
+            UnitType::MILLILITERS => $quantity, // Already in ml
+            UnitType::LITERS => $quantity >= 10
+                ? $conversionService->convert($quantity, UnitType::MILLILITERS, UnitType::LITERS) // Convert ml to L
+                : $quantity, // Already in L
+            UnitType::GRAMS => $quantity, // Already in g
+            UnitType::KILOGRAMS => $quantity >= 10
+                ? $conversionService->convert($quantity, UnitType::GRAMS, UnitType::KILOGRAMS) // Convert g to kg
+                : $quantity, // Already in kg
+            default => $quantity
+        };
+    }
+
+    /**
+     * Intelligently detect which unit the user likely meant based on the value magnitude.
+     * For example: 250 likely means ml/g, while 0.25 likely means L/kg.
+     *
+     * @param  float  $quantity  The input quantity
+     * @param  UnitType  $inventoryUnitType  The ingredient's inventory unit type
+     * @return string The detected unit label for display
+     */
+    private static function detectInputUnit(float $quantity, UnitType $inventoryUnitType): string
+    {
+        return match ($inventoryUnitType) {
+            // For volume: if >= 10, likely ml; if < 10, likely L
+            UnitType::MILLILITERS, UnitType::LITERS => $quantity >= 10 ? 'ml' : 'L',
+            // For weight: if >= 10, likely g; if < 10, likely kg
+            UnitType::GRAMS, UnitType::KILOGRAMS => $quantity >= 10 ? 'g' : 'kg',
+            // For pieces, just use as-is
+            default => $inventoryUnitType->getLabel()
+        };
     }
 }

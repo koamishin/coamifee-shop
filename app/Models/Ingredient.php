@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\UnitType;
+use BinaryCats\Sku\HasSku;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,9 +14,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 final class Ingredient extends Model
 {
     use HasFactory;
+    use HasSku;
 
     protected $fillable = [
         'name',
+        'sku',
         'description',
         'unit_type',
         'is_trackable',
