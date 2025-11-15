@@ -22,6 +22,8 @@ COPY docker/php.ini /etc/php/8.4/fpm/conf.d/99-vito.ini
 
 # Install composer dependencies using multi-stage build
 FROM composer:latest AS composer-deps
+RUN apk add --no-cache icu-dev \
+    && docker-php-ext-install intl
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-autoloader
@@ -42,6 +44,7 @@ FROM oven/bun:1.3.2-alpine AS assets
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
+COPY --from=composer-deps /app/vendor ./vendor
 COPY . .
 RUN bun run build
 
