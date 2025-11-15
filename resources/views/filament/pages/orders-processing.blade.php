@@ -119,9 +119,23 @@
                                     </span>
 
                                     {{-- Item Name --}}
-                                    <span class="font-medium {{ $item->is_served ? 'text-gray-400 line-through' : 'text-gray-900' }}">
-                                        {{ $item->product->name }}
-                                    </span>
+                                    <div class="flex flex-col">
+                                        <span class="font-medium {{ $item->is_served ? 'text-gray-400 line-through' : 'text-gray-900' }}">
+                                            {{ $item->product->name }}
+                                        </span>
+                                        @if($item->variant_name)
+                                            <span class="text-xs {{ $item->is_served ? 'text-gray-400' : 'text-gray-500' }} flex items-center gap-1">
+                                                @if(strtolower($item->variant_name) === 'hot')
+                                                    <x-filament::icon icon="heroicon-o-fire" class="w-3 h-3 text-orange-500" />
+                                                @elseif(strtolower($item->variant_name) === 'cold' || strtolower($item->variant_name) === 'iced')
+                                                    <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                    </svg>
+                                                @endif
+                                                <span>({{ $item->variant_name }})</span>
+                                            </span>
+                                        @endif
+                                    </div>
                                 </div>
 
                                 {{-- Item Subtotal --}}

@@ -15,6 +15,8 @@ final class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'product_id',
+        'product_variant_id',
+        'variant_name',
         'quantity',
         'price',
         'notes',
@@ -24,6 +26,7 @@ final class OrderItem extends Model
     protected $casts = [
         'order_id' => 'integer',
         'product_id' => 'integer',
+        'product_variant_id' => 'integer',
         'quantity' => 'integer',
         'price' => 'decimal:2',
         'is_served' => 'boolean',
@@ -43,6 +46,11 @@ final class OrderItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 
     public function getTotalQuantityAttribute(): int
