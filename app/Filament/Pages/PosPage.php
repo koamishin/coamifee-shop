@@ -65,6 +65,10 @@ final class PosPage extends Page
 
     public array $addOns = [];
 
+    public ?int $selectedProductForVariant = null;
+
+    public ?int $selectedVariantId = null;
+
     #[Locked]
     public ?int $currentOrderId = null;
 
@@ -124,7 +128,7 @@ final class PosPage extends Page
         $this->products = $this->posService->getFilteredProducts(
             $this->selectedCategoryId,
             $this->search
-        );
+        )->load('activeVariants');
 
         // Update product availability
         $this->productAvailability = $this->posService->updateProductAvailability($this->products);
@@ -136,7 +140,7 @@ final class PosPage extends Page
         $this->refreshProducts();
     }
 
-    public function addToCart(int $productId): void
+    public function addToCart(int $productId, ?int $variantId = null): void
     {
         // Check if product can be added to cart
         if (! $this->posService->canAddToCart($productId)) {
@@ -160,10 +164,38 @@ final class PosPage extends Page
             return;
         }
 
-        $existingItem = collect($this->cartItems)
-            ->firstWhere('product_id', $productId);
+        // Check if product has variants and no variant was selected
+        if ($product->hasVariants() && ! $variantId) {
+            // Store product for variant selection and trigger modal
+            $this->selectedProductForVariant = $productId;
 
-        if ($existingItem) {
+            return;
+        }
+
+        // Get variant information if variant is selected
+        $variant = null;
+        $variantName = null;
+        $productPrice = $product->price;
+
+        if ($variantId) {
+            $variant = $product->activeVariants()->find($variantId);
+            if ($variant) {
+                $variantName = $variant->name;
+                $productPrice = $variant->price;
+            }
+        }
+
+        // Check for existing item with same product AND variant
+        $existingItemKey = null;
+        foreach ($this->cartItems as $key => $item) {
+            if ($item['product_id'] === $productId && ($item['variant_id'] ?? null) === $variantId) {
+                $existingItemKey = $key;
+                break;
+            }
+        }
+
+        if ($existingItemKey !== null) {
+            $existingItem = $this->cartItems[$existingItemKey];
             // Check if we can increment quantity
             $newQuantity = $existingItem['quantity'] + 1;
             $maxQuantity = $this->posService->getMaxProducibleQuantity($productId);
@@ -178,34 +210,38 @@ final class PosPage extends Page
                 return;
             }
 
-            $this->cartItems = collect($this->cartItems)
-                ->map(function ($item) use ($productId, $newQuantity) {
-                    if ($item['product_id'] === $productId) {
-                        $item['quantity'] = $newQuantity;
-                        $item['subtotal'] = $newQuantity * $item['price'];
-                    }
-
-                    return $item;
-                })
-                ->toArray();
+            $this->cartItems[$existingItemKey]['quantity'] = $newQuantity;
+            $this->cartItems[$existingItemKey]['subtotal'] = $newQuantity * $this->cartItems[$existingItemKey]['price'];
         } else {
+            $displayName = $product->name;
+            if ($variantName) {
+                $displayName .= " ({$variantName})";
+            }
+
             $this->cartItems[] = [
                 'product_id' => $productId,
-                'name' => $product->name,
-                'price' => $product->price,
+                'variant_id' => $variantId,
+                'variant_name' => $variantName,
+                'name' => $displayName,
+                'price' => $productPrice,
                 'quantity' => 1,
-                'subtotal' => $product->price,
+                'subtotal' => $productPrice,
             ];
         }
 
         $this->calculateTotals();
         $this->refreshProducts(); // Refresh availability
 
+        $notificationBody = $displayName ?? $product->name;
         Notification::make()
             ->success()
             ->title('Added to cart')
-            ->body("{$product->name} added to cart")
+            ->body("{$notificationBody} added to cart")
             ->send();
+
+        // Clear variant selection
+        $this->selectedProductForVariant = null;
+        $this->selectedVariantId = null;
     }
 
     public function removeFromCart(int $index): void
@@ -275,6 +311,19 @@ final class PosPage extends Page
             ->send();
     }
 
+    public function selectVariant(int $variantId): void
+    {
+        if ($this->selectedProductForVariant) {
+            $this->addToCart($this->selectedProductForVariant, $variantId);
+        }
+    }
+
+    public function closeVariantSelection(): void
+    {
+        $this->selectedProductForVariant = null;
+        $this->selectedVariantId = null;
+    }
+
     public function createOrder(): void
     {
         if (empty($this->cartItems)) {
@@ -335,6 +384,8 @@ final class PosPage extends Page
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item['product_id'],
+                    'product_variant_id' => $item['variant_id'] ?? null,
+                    'variant_name' => $item['variant_name'] ?? null,
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],
                     'subtotal' => $item['subtotal'],

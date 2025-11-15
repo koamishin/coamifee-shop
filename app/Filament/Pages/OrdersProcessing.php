@@ -58,7 +58,7 @@ final class OrdersProcessing extends Page
 
     public function getOrders()
     {
-        $query = Order::with(['items.product', 'customer'])
+        $query = Order::with(['items.product', 'items.variant', 'customer'])
             ->latest();
 
         if ($this->statusFilter !== 'all') {
