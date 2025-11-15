@@ -26,6 +26,9 @@ final class IngredientInfolist
                             ->label('Ingredient Name')
                             ->size('text-lg')
                             ->weight('bold'),
+                        TextEntry::make('sku')
+                            ->label('SKU CODE')
+                            ->weight('bold'),
                         TextEntry::make('unit_type')
                             ->label('Unit')
                             ->badge()
@@ -48,15 +51,9 @@ final class IngredientInfolist
                                 self::getStockColor(...),
                             )
                             ->placeholder('No inventory set'),
-                        TextEntry::make('inventory.unit_cost')
-                            ->label('Unit Cost')
-                            ->money(self::getMoneyConfig())
-                            ->icon('heroicon-o-tag')
-                            ->placeholder('Not set'),
+
                     ]),
-                    TextEntry::make('inventory.location')
-                        ->label('Storage Location')
-                        ->placeholder('Not specified'),
+
                 ]),
 
             Section::make('System Information')
