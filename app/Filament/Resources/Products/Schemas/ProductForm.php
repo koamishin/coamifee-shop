@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Products\Schemas;
 
+use App\Enums\BeverageVariant;
 use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
 use Filament\Forms\Components\FileUpload;
@@ -53,6 +54,8 @@ final class ProductForm
                             ->searchable()
                             ->preload()
                             ->required()
+                            ->reactive()
+                            ->live()
                             ->helperText(
                                 'Select the category this product belongs to',
                             )
@@ -70,24 +73,40 @@ final class ProductForm
                                 ]),
                             )
                             ->columnSpanFull(),
+
+                        // Variant toggle - only visible for Beverages category
+                        Toggle::make('has_variants')
+                            ->label('This beverage has Hot & Cold variants')
+                            ->helperText('Enable to set different prices for Hot and Cold versions')
+                            ->default(fn ($record) => $record ? $record->hasVariants() : false)
+                            ->reactive()
+                            ->live()
+                            ->dehydrated(false)
+                            ->visible(fn (callable $get) => (int) $get('category_id') === 1)
+                            ->columnSpanFull(),
                     ]),
                 ])
                 ->columns(1),
 
-            Section::make('Pricing & Inventory')
-                ->description('Set pricing and inventory details.')
+            Section::make('Pricing')
+                ->description('Configure pricing for this product.')
+                ->icon('heroicon-o-currency-dollar')
                 ->schema([
-                    Grid::make(2)->schema([
-                        TextInput::make('price')
-                            ->label('Price')
-                            ->prefix(self::getCurrencyPrefix())
-                            ->suffix(self::getCurrencySuffix())
-                            ->numeric()
-                            ->required()
-                            ->step(0.01)
-                            ->helperText('Current selling price')
-                            ->live(onBlur: true),
-                    ]),
+                    Grid::make(2)
+                        ->schema([
+                            TextInput::make('price')
+                                ->label('Product Price')
+                                ->prefix(self::getCurrencyPrefix())
+                                ->suffix(self::getCurrencySuffix())
+                                ->numeric()
+                                ->required(fn (callable $get) => ! ((int) $get('category_id') === 1 && $get('has_variants') === true))
+                                ->step(0.01)
+                                ->helperText(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true
+                                    ? 'For beverages with variants, set prices for Hot and Cold variants below'
+                                    : 'Set the selling price for this product')
+                                ->live(onBlur: true)
+                                ->hidden(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true),
+                        ]),
                 ])
                 ->columns(1),
 
@@ -124,28 +143,59 @@ final class ProductForm
                 ])
                 ->columns(2),
 
-            Section::make('Status & Settings')
-                ->description('Configure product availability and settings.')
+            // Beverage Variants Section - only visible when toggle is enabled
+            Section::make('Beverage Variants (Hot & Cold)')
+                ->description('Set prices for Hot and Cold versions of this beverage.')
+                ->icon('heroicon-o-fire')
+                ->visible(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true)
                 ->schema([
-                    Grid::make(1)->schema([
-                        Toggle::make('is_active')
-                            ->label('Available')
-                            ->default(true)
-                            ->helperText('Enable this product for sale')
-                            ->columnSpan(1),
+                    Repeater::make('variants')
+                        ->label('Hot & Cold Prices')
+                        ->relationship('variants')
+                        ->schema([
+                            Grid::make(2)->schema([
+                                Select::make('name')
+                                    ->label('Variant Type')
+                                    ->options(BeverageVariant::getOptions())
+                                    ->required()
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->helperText('Hot or Cold beverage'),
 
-                        TextInput::make('sort_order')
-                            ->label('Sort Order')
-                            ->numeric()
-                            ->default(0)
-                            ->minValue(0)
-                            ->helperText(
-                                'Display order (lower numbers appear first)',
-                            )
-                            ->columnSpan(1),
-                    ]),
+                                TextInput::make('price')
+                                    ->label('Price')
+                                    ->prefix(self::getCurrencyPrefix())
+                                    ->suffix(self::getCurrencySuffix())
+                                    ->numeric()
+                                    ->required()
+                                    ->step(0.01)
+                                    ->helperText('Price for this variant')
+                                    ->live(onBlur: true),
+                            ]),
+                        ])
+                        ->columns(1)
+                        ->itemLabel(function (array $state): string {
+                            if (isset($state['name']) && $state['name']) {
+                                $price = $state['price'] ?? 0;
+                                $icon = $state['name'] === 'Hot' ? '🔥' : '❄️';
+
+                                return "{$icon} {$state['name']} - ".self::getCurrencyPrefix().number_format($price, 2);
+                            }
+
+                            return 'New Variant';
+                        })
+                        ->defaultItems(2)
+                        ->default([
+                            ['name' => BeverageVariant::HOT->value, 'is_default' => true, 'is_active' => true, 'sort_order' => 0],
+                            ['name' => BeverageVariant::COLD->value, 'is_default' => false, 'is_active' => true, 'sort_order' => 1],
+                        ])
+                        ->addable(false)
+                        ->deletable(false)
+                        ->reorderable(false)
+                        ->collapsible()
+                        ->helperText('Set the price for Hot and Cold versions of this beverage'),
                 ])
-                ->columns(2),
+                ->columns(1),
 
             Section::make('Recipe & Ingredients')
                 ->description(
