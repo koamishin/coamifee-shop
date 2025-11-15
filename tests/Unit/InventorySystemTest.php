@@ -71,7 +71,7 @@ test('inventory service stock decrease', function (): void {
         'location' => 'Main Storage',
     ]);
 
-    $inventoryService = new InventoryService();
+    $inventoryService = app(InventoryService::class);
 
     // Test decreasing stock
     $result = $inventoryService->decreaseIngredientStock($ingredient, 100);
