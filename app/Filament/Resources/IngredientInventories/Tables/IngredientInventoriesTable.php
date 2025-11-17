@@ -60,14 +60,7 @@ final class IngredientInventoriesTable
                     ->color('danger')
                     ->icon('heroicon-o-arrow-down'),
 
-                TextColumn::make('unit_cost')
-                    ->label('Cost/Unit')
-                    ->description('Cost per unit')
-                    ->money(self::getMoneyConfig())
-                    ->sortable()
-                    ->alignRight()
-                    ->placeholder('Not set')
-                    ->icon('heroicon-o-tag'),
+                
             ])
             ->filters([
                 SelectFilter::make('ingredient.unit_type')
