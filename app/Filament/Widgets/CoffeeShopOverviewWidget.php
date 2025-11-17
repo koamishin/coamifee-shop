@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Product;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 
 final class CoffeeShopOverviewWidget extends BaseWidget
@@ -23,6 +24,9 @@ final class CoffeeShopOverviewWidget extends BaseWidget
         Date::now()->startOfWeek();
         Date::now()->startOfMonth();
 
+        $currency = app(\App\Services\GeneralSettingsService::class)->getCurrency();
+        $todaysSales = Order::query()->whereDate('created_at', $today)->sum('total');
+
         return [
             Stat::make('Today\'s Orders', Order::query()->whereDate('created_at', $today)->count())
                 ->description('Orders placed today')
@@ -30,16 +34,16 @@ final class CoffeeShopOverviewWidget extends BaseWidget
                 ->color('success')
                 ->chart([0, 2, 5, 3, 8, 12, 15]),
 
-            Stat::make('Today\'s Sales', Order::query()->whereDate('created_at', $today)->sum('total'))
-                ->description('$'.number_format(Order::query()->whereDate('created_at', $today)->sum('total'), 2))
-                ->description('Sales from today')
-                ->descriptionIcon('heroicon-m-currency-dollar')
+            Stat::make('Today\'s Sales', number_format($todaysSales, 2))
+                ->description("{$currency} ".number_format($todaysSales, 2).' from today')
+                ->descriptionIcon('mdi-currency-php')
                 ->color('primary'),
 
             Stat::make('Active Products', Product::query()->count())
                 ->description('Total products available')
                 ->descriptionIcon('heroicon-m-shopping-bag')
                 ->color('info'),
+            // Auth::attempt()
 
             Stat::make('Low Stock Alerts', $this->getLowStockCount())
                 ->description('Ingredients needing restock')

@@ -23,10 +23,10 @@ final class SalesTrendsWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $data = Order::query()->selectRaw('DATE(created_at) as date, COUNT(*) as orders, SUM(total) as sales')
-            ->where('created_at', '>=', Date::now()->subDays(6))
-            ->where('created_at', '<=', Date::now())
-            ->groupBy('date')
+        $data = Order::query()->selectRaw('date(created_at) as date, COUNT(*) as order_count, SUM(total) as sales')
+            ->where('created_at', '>=', Date::now()->subDays(6)->startOfDay())
+            ->where('created_at', '<=', Date::now()->endOfDay())
+            ->groupByRaw('date(created_at)')
             ->orderBy('date', 'asc')
             ->get();
 
@@ -35,8 +35,8 @@ final class SalesTrendsWidget extends ChartWidget
         $salesData = [];
 
         // Fill in missing days with zeros
-        $startDate = Date::now()->subDays(6);
-        $endDate = Date::now();
+        $startDate = Date::now()->subDays(6)->startOfDay();
+        $endDate = Date::now()->endOfDay();
         $currentDate = $startDate->copy();
 
         $dataByDate = $data->keyBy('date');
@@ -46,11 +46,13 @@ final class SalesTrendsWidget extends ChartWidget
             $dayData = $dataByDate->get($dateStr);
 
             $labels[] = $currentDate->format('M j');
-            $ordersData[] = $dayData ? $dayData->orders : 0;
+            $ordersData[] = $dayData ? (int) $dayData->order_count : 0;
             $salesData[] = $dayData ? (float) $dayData->sales : 0;
 
             $currentDate->addDay();
         }
+
+        $currency = app(\App\Services\GeneralSettingsService::class)->getCurrency();
 
         return [
             'labels' => $labels,
@@ -65,7 +67,7 @@ final class SalesTrendsWidget extends ChartWidget
                     'tension' => 0.4,
                 ],
                 [
-                    'label' => 'Sales ($)',
+                    'label' => "Sales ({$currency})",
                     'data' => $salesData,
                     'backgroundColor' => 'rgba(34, 197, 94, 0.1)',
                     'borderColor' => 'rgba(34, 197, 94, 1)',

@@ -86,8 +86,8 @@ final class ProductMetricsTable
                     ),
 
                 TextColumn::make('total_revenue')
-                    ->label('Revenue')
-                    ->description('Total revenue generated')
+                    ->label('Sales')
+                    ->description('Total sales generated')
                     ->money(self::getMoneyConfig())
                     ->sortable()
                     ->alignRight()
@@ -103,13 +103,13 @@ final class ProductMetricsTable
                     ->alignRight()
                     ->formatStateUsing(function ($record): string|HtmlString {
                         $orders = (int) $record->orders_count;
-                        $revenue = (float) $record->total_revenue;
+                        $sales = (float) $record->total_revenue;
 
                         if ($orders === 0) {
                             return self::formatCurrency(0);
                         }
 
-                        $aov = $revenue / $orders;
+                        $aov = $sales / $orders;
                         $color =
                             $aov >= 50
                                 ? '#10b981'
@@ -125,13 +125,13 @@ final class ProductMetricsTable
                     }),
 
                 TextColumn::make('revenue_per_day')
-                    ->label('Revenue/Day')
-                    ->description('Revenue per day in period')
+                    ->label('Sales/Day')
+                    ->description('Sales per day in period')
                     ->money(self::getMoneyConfig())
                     ->sortable()
                     ->alignRight()
                     ->formatStateUsing(function ($record): float {
-                        $revenue = (float) $record->total_revenue;
+                        $sales = (float) $record->total_revenue;
                         $period = $record->period_type ?? 'daily';
 
                         $days = match ($period) {
@@ -141,7 +141,7 @@ final class ProductMetricsTable
                             default => 1,
                         };
 
-                        return $revenue / $days;
+                        return $sales / $days;
                     })
                     ->color('info'),
 
@@ -151,13 +151,13 @@ final class ProductMetricsTable
                     ->badge()
                     ->formatStateUsing(function ($record): string {
                         $orders = (int) $record->orders_count;
-                        $revenue = (float) $record->total_revenue;
+                        $sales = (float) $record->total_revenue;
 
-                        if ($orders === 0 && $revenue === 0.0) {
+                        if ($orders === 0 && $sales === 0.0) {
                             return '⚪ No Activity';
                         }
 
-                        $aov = $orders > 0 ? $revenue / $orders : 0;
+                        $aov = $orders > 0 ? $sales / $orders : 0;
 
                         if ($aov >= 50 && $orders >= 10) {
                             return '🟢 Excellent';

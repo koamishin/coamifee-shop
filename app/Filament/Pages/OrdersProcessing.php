@@ -9,6 +9,7 @@ use App\Enums\DiscountType;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\GeneralSettingsService;
+use App\Services\OrderProcessingService;
 use BackedEnum;
 use Exception;
 use Filament\Actions;
@@ -41,9 +42,12 @@ final class OrdersProcessing extends Page
 
     private GeneralSettingsService $settingsService;
 
-    public function boot(GeneralSettingsService $settingsService): void
+    private OrderProcessingService $orderProcessingService;
+
+    public function boot(GeneralSettingsService $settingsService, OrderProcessingService $orderProcessingService): void
     {
         $this->settingsService = $settingsService;
+        $this->orderProcessingService = $orderProcessingService;
 
         // Initialize currency from settings
         $currencyCode = $this->settingsService->getCurrency();
@@ -88,6 +92,21 @@ final class OrdersProcessing extends Page
             // Update order status based on item completion
             if ($allItemsServed && $order->items()->count() > 0) {
                 $order->update(['status' => 'completed']);
+
+                // Process inventory deduction when order is completed
+                $inventoryProcessed = $this->orderProcessingService->processOrder($order);
+
+                if (! $inventoryProcessed) {
+                    DB::rollBack();
+
+                    Notification::make()
+                        ->danger()
+                        ->title('Error Processing Order')
+                        ->body('Failed to deduct inventory for this order')
+                        ->send();
+
+                    return;
+                }
             } else {
                 // If any item is not served, set order back to pending
                 if ($order->status === 'completed') {
@@ -379,6 +398,21 @@ final class OrdersProcessing extends Page
                         'discount_amount' => $discountAmount,
                         'total' => $finalTotal,
                     ]);
+
+                    // Process inventory deduction when payment is collected
+                    $inventoryProcessed = $this->orderProcessingService->processOrder($order);
+
+                    if (! $inventoryProcessed) {
+                        DB::rollBack();
+
+                        Notification::make()
+                            ->danger()
+                            ->title('Error Processing Inventory')
+                            ->body('Failed to deduct inventory for this order. Payment not collected.')
+                            ->send();
+
+                        return;
+                    }
 
                     DB::commit();
 
