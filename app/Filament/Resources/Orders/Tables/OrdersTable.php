@@ -13,7 +13,6 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -28,187 +27,190 @@ final class OrdersTable
             ->columns([
                 TextColumn::make('id')
                     ->label('Order #')
-                    ->description('Order identification number')
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->size('sm'),
+                    ->size('sm')
+                    ->prefix('#'),
 
                 TextColumn::make('customer_name')
                     ->label('Customer')
-                    ->description('Customer name')
                     ->searchable()
                     ->sortable()
                     ->weight('medium')
-                    ->limit(25),
+                    ->limit(25)
+                    ->description(fn ($record) => $record->customer_id ? 'Registered Account' : 'Guest'),
 
                 TextColumn::make('customer.name')
                     ->label('Account')
-                    ->description('Registered customer account')
-                    ->placeholder('Guest Customer')
+                    ->placeholder('Guest')
                     ->badge()
-                    ->color(
-                        fn ($record): string => $record->customer_id
-                            ? 'success'
-                            : 'gray',
-                    )
+                    ->color(fn ($record): string => $record->customer_id ? 'success' : 'gray')
                     ->searchable()
-                    ->sortable()
-                    ->formatStateUsing(
-                        fn ($state): string => $state ? 'Registered' : 'Guest',
-                    ),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('order_type')
                     ->label('Type')
-                    ->description('Order fulfillment type')
                     ->badge()
-                    ->icon(
-                        fn ($state): Heroicon => match ($state) {
-                            'dine-in' => Heroicon::ArrowTrendingDown,
-                            'takeaway' => Heroicon::ArrowTrendingUp,
-                            'delivery' => Heroicon::Truck,
-                            default => Heroicon::QuestionMarkCircle,
-                        },
-                    )
-                    ->color(
-                        fn ($state): string => match ($state) {
-                            'dine-in' => 'success',
-                            'takeaway' => 'info',
-                            'delivery' => 'warning',
-                            default => 'gray',
-                        },
-                    )
-                    ->formatStateUsing(
-                        fn ($state): string => match ($state) {
-                            'dine-in' => 'Dine In',
-                            'takeaway' => 'Takeaway',
-                            'delivery' => 'Delivery',
-                            default => ucfirst((string) $state),
-                        },
-                    )
-                    ->searchable()
-                    ->sortable(),
-
-                TextColumn::make('status')
-                    ->label('Status')
-                    ->description('Current order status')
-                    ->badge()
-                    ->icon(
-                        fn ($state): string => match ($state) {
-                            'pending' => 'heroicon-o-clock',
-                            'confirmed' => 'heroicon-o-check-circle',
-                            'preparing' => 'heroicon-o-arrow-path',
-                            'ready' => 'heroicon-o-bell',
-                            'served' => 'heroicon-o-restaurant',
-                            'completed' => 'heroicon-o-check',
-                            'cancelled' => 'heroicon-o-x-circle',
-                            default => 'heroicon-o-question-mark-circle',
-                        },
-                    )
-                    ->color(
-                        fn ($state): string => match ($state) {
-                            'pending' => 'warning',
-                            'confirmed' => 'info',
-                            'preparing' => 'primary',
-                            'ready' => 'success',
-                            'served' => 'success',
-                            'completed' => 'success',
-                            'cancelled' => 'danger',
-                            default => 'gray',
-                        },
-                    )
-                    ->formatStateUsing(
-                        fn ($state): string => match ($state) {
-                            'pending' => 'Pending',
-                            'confirmed' => 'Confirmed',
-                            'preparing' => 'Preparing',
-                            'ready' => 'Ready',
-                            'served' => 'Served',
-                            'completed' => 'Completed',
-                            'cancelled' => 'Cancelled',
-                            default => ucfirst((string) $state),
-                        },
-                    )
-                    ->searchable()
-                    ->sortable(),
-
-                TextColumn::make('payment_method')
-                    ->label('Payment')
-                    ->description('Payment method used')
-                    ->badge()
-                    ->icon(
-                        fn ($state): string => match ($state) {
-                            'cash' => 'heroicon-o-banknotes',
-                            'card' => 'heroicon-o-credit-card',
-                            'digital' => 'heroicon-o-device-phone-mobile',
-                            'bank_transfer' => 'heroicon-o-building-office',
-                            default => 'heroicon-o-question-mark-circle',
-                        },
-                    )
-                    ->color(
-                        fn ($state): string => match ($state) {
-                            'cash' => 'warning',
-                            'card' => 'success',
-                            'digital' => 'primary',
-                            'bank_transfer' => 'info',
-                            default => 'gray',
-                        },
-                    )
-                    ->formatStateUsing(
-                        fn ($state): string => match ($state) {
-                            'cash' => 'Cash',
-                            'card' => 'Card',
-                            'digital' => 'Digital',
-                            'bank_transfer' => 'Bank Transfer',
-                            default => ucfirst(str_replace('_', ' ', $state)),
-                        },
-                    )
+                    ->icon(fn ($state): string => match ($state) {
+                        'dine_in', 'dine-in' => 'heroicon-o-building-storefront',
+                        'takeaway' => 'heroicon-o-shopping-bag',
+                        'delivery' => 'heroicon-o-truck',
+                        default => 'heroicon-o-question-mark-circle',
+                    })
+                    ->color(fn ($state): string => match ($state) {
+                        'dine_in', 'dine-in' => 'success',
+                        'takeaway' => 'info',
+                        'delivery' => 'warning',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn ($state): string => match ($state) {
+                        'dine_in', 'dine-in' => 'Dine In',
+                        'takeaway' => 'Takeaway',
+                        'delivery' => 'Delivery',
+                        default => ucfirst(str_replace('_', ' ', (string) $state)),
+                    })
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('table_number')
                     ->label('Table')
-                    ->description('Table number for dine-in')
                     ->badge()
                     ->icon('heroicon-o-building-office-2')
-                    ->color('gray')
+                    ->color('primary')
                     ->placeholder('-')
+                    ->formatStateUsing(fn ($state): string => $state ? str_replace('_', ' ', ucfirst($state)) : '-')
                     ->searchable()
                     ->sortable()
-                    ->visible(
-                        fn ($record): bool => $record?->order_type === 'dine-in',
-                    ),
+                    ->toggleable(),
+
+                TextColumn::make('items_count')
+                    ->label('Items')
+                    ->badge()
+                    ->color('info')
+                    ->alignCenter()
+                    ->counts('items')
+                    ->suffix(' items'),
+
+                TextColumn::make('subtotal')
+                    ->label('Subtotal')
+                    ->money(self::getMoneyConfig())
+                    ->sortable()
+                    ->alignRight()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('discount_amount')
+                    ->label('Discount')
+                    ->money(self::getMoneyConfig())
+                    ->sortable()
+                    ->alignRight()
+                    ->placeholder('-')
+                    ->color('danger')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('add_ons_total')
+                    ->label('Add-ons')
+                    ->money(self::getMoneyConfig())
+                    ->sortable()
+                    ->alignRight()
+                    ->placeholder('-')
+                    ->color('success')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('total')
                     ->label('Total')
-                    ->description('Order total amount')
                     ->money(self::getMoneyConfig())
                     ->sortable()
                     ->alignRight()
                     ->weight('bold')
-                    ->size('lg'),
+                    ->size('lg')
+                    ->color('success'),
 
-                TextColumn::make('items_count')
-                    ->label('Items')
-                    ->description('Number of items')
+                TextColumn::make('payment_method')
+                    ->label('Payment')
                     ->badge()
-                    ->color('info')
-                    ->sortable()
-                    ->alignCenter()
-                    ->getStateUsing(fn ($record) => $record->items->count()),
+                    ->icon(fn ($state): string => match ($state) {
+                        'cash' => 'heroicon-o-banknotes',
+                        'card' => 'heroicon-o-credit-card',
+                        'digital' => 'heroicon-o-device-phone-mobile',
+                        'bank_transfer' => 'heroicon-o-building-library',
+                        default => 'heroicon-o-question-mark-circle',
+                    })
+                    ->color(fn ($state): string => match ($state) {
+                        'cash' => 'warning',
+                        'card' => 'success',
+                        'digital' => 'primary',
+                        'bank_transfer' => 'info',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn ($state): string => match ($state) {
+                        'cash' => 'Cash',
+                        'card' => 'Card',
+                        'digital' => 'Digital',
+                        'bank_transfer' => 'Bank',
+                        default => ucfirst(str_replace('_', ' ', $state)),
+                    })
+                    ->searchable()
+                    ->sortable(),
 
-                TextColumn::make('created_at')
-                    ->label('Created')
-                    ->description('Order placed date')
-                    ->dateTime('M j, Y g:i A')
+                TextColumn::make('payment_status')
+                    ->label('Payment Status')
+                    ->badge()
+                    ->icon(fn ($state): string => match ($state) {
+                        'paid' => 'heroicon-o-check-circle',
+                        'pending' => 'heroicon-o-clock',
+                        'failed' => 'heroicon-o-x-circle',
+                        default => 'heroicon-o-question-mark-circle',
+                    })
+                    ->color(fn ($state): string => match ($state) {
+                        'paid' => 'success',
+                        'pending' => 'warning',
+                        'failed' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn ($state): string => ucfirst((string) $state))
+                    ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
+                TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->icon(fn ($state): string => match ($state) {
+                        'pending' => 'heroicon-o-clock',
+                        'confirmed' => 'heroicon-o-check-circle',
+                        'preparing' => 'heroicon-o-arrow-path',
+                        'ready' => 'heroicon-o-bell-alert',
+                        'served' => 'heroicon-o-check-badge',
+                        'completed' => 'heroicon-o-check',
+                        'cancelled' => 'heroicon-o-x-circle',
+                        default => 'heroicon-o-question-mark-circle',
+                    })
+                    ->color(fn ($state): string => match ($state) {
+                        'pending' => 'warning',
+                        'confirmed' => 'info',
+                        'preparing' => 'primary',
+                        'ready' => 'success',
+                        'served' => 'success',
+                        'completed' => 'success',
+                        'cancelled' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn ($state): string => ucfirst((string) $state))
+                    ->searchable()
+                    ->sortable(),
+
+                TextColumn::make('created_at')
+                    ->label('Order Date')
+                    ->dateTime('M j, Y')
+                    ->sortable()
+                    ->description(fn ($record) => $record->created_at->diffForHumans()),
+
                 TextColumn::make('updated_at')
-                    ->label('Updated')
-                    ->description('Last updated')
+                    ->label('Last Updated')
                     ->dateTime('M j, Y g:i A')
                     ->sortable()
+                    ->since()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('created_at', 'desc')
@@ -216,29 +218,40 @@ final class OrdersTable
                 SelectFilter::make('order_type')
                     ->label('Order Type')
                     ->options([
-                        'dine-in' => '🍽️ Dine In',
-                        'takeaway' => '🥤 Takeaway',
-                        'delivery' => '🚚 Delivery',
+                        'dine_in' => 'Dine In',
+                        'dine-in' => 'Dine In (Legacy)',
+                        'takeaway' => 'Takeaway',
+                        'delivery' => 'Delivery',
                     ]),
                 SelectFilter::make('status')
-                    ->label('Status')
+                    ->label('Order Status')
                     ->options([
-                        'pending' => '⏰ Pending',
-                        'confirmed' => '✅ Confirmed',
-                        'preparing' => '🔄 Preparing',
-                        'ready' => '🔔 Ready',
-                        'served' => '🍽️ Served',
-                        'completed' => '✅ Completed',
-                        'cancelled' => '❌ Cancelled',
-                    ]),
+                        'pending' => 'Pending',
+                        'confirmed' => 'Confirmed',
+                        'preparing' => 'Preparing',
+                        'ready' => 'Ready',
+                        'served' => 'Served',
+                        'completed' => 'Completed',
+                        'cancelled' => 'Cancelled',
+                    ])
+                    ->multiple(),
                 SelectFilter::make('payment_method')
                     ->label('Payment Method')
                     ->options([
-                        'cash' => '💵 Cash',
-                        'card' => '💳 Card',
-                        'digital' => '📱 Digital Wallet',
-                        'bank_transfer' => '🏦 Bank Transfer',
-                    ]),
+                        'cash' => 'Cash',
+                        'card' => 'Card',
+                        'digital' => 'Digital Wallet',
+                        'bank_transfer' => 'Bank Transfer',
+                    ])
+                    ->multiple(),
+                SelectFilter::make('payment_status')
+                    ->label('Payment Status')
+                    ->options([
+                        'paid' => 'Paid',
+                        'pending' => 'Pending',
+                        'failed' => 'Failed',
+                    ])
+                    ->multiple(),
             ])
             ->actions([
                 ActionGroup::make([
