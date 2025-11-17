@@ -40,6 +40,7 @@ final class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login(\App\Filament\Pages\Auth\Login::class)
             ->topbar(false)
+            ->spa(true)
             ->colors([
                 'primary' => Color::Amber,
             ])

@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM ubuntu:24.04 AS base
 
 WORKDIR /var/www/html
 
@@ -20,17 +20,37 @@ RUN apt-get install -y software-properties-common curl zip unzip gcc nginx redis
 COPY docker/php.ini /etc/php/8.4/cli/conf.d/99-vito.ini
 COPY docker/php.ini /etc/php/8.4/fpm/conf.d/99-vito.ini
 
-# composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Install composer dependencies using multi-stage build
+FROM composer:latest AS composer-deps
+RUN apk add --no-cache icu-dev \
+    && docker-php-ext-install intl
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-autoloader
+COPY . .
+RUN composer dump-autoload --optimize --classmap-authoritative
 
 # app
+FROM base AS app
 RUN rm -rf /var/www/html
 COPY . /var/www/html
-RUN rm -rf /var/www/html/.git /var/www/html/vendor /var/www/html/node_modules
-RUN composer install --no-dev --optimize-autoloader
-RUN composer dump-autoload --optimize --classmap-authoritative
+COPY --from=composer-deps /app/vendor /var/www/html/vendor
+RUN rm -rf /var/www/html/.git /var/www/html/node_modules
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Build frontend assets using bun
+FROM oven/bun:1.3.2-alpine AS assets
+WORKDIR /app
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
+COPY --from=composer-deps /app/vendor ./vendor
+COPY . .
+RUN bun run build
+
+# Final stage - copy built assets back
+FROM app AS final
+COPY --from=assets /app/public/build /var/www/html/public/build
 
 # webserver
 RUN rm /etc/nginx/sites-available/default

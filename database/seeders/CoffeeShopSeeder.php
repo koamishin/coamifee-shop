@@ -10,6 +10,7 @@ use App\Models\Ingredient;
 use App\Models\IngredientInventory;
 use App\Models\Product;
 use App\Models\ProductIngredient;
+use App\Models\ProductVariant;
 use Illuminate\Database\Seeder;
 
 final class CoffeeShopSeeder extends Seeder
@@ -18,6 +19,13 @@ final class CoffeeShopSeeder extends Seeder
     {
         // Create Categories with comprehensive structure
         $categories = [
+            [
+                'name' => 'Beverages',
+                'icon' => 'heroicon-o-beaker',
+                'description' => 'Hot and cold beverages',
+                'is_active' => true,
+                'sort_order' => 0,
+            ],
             [
                 'name' => 'Pancit',
                 'icon' => 'hugeicons-noodles',
@@ -192,6 +200,19 @@ final class CoffeeShopSeeder extends Seeder
             ['name' => 'Walnuts', 'unit_type' => UnitType::GRAMS->value],
             ['name' => 'Matcha Powder', 'unit_type' => UnitType::GRAMS->value],
 
+            // Beverage Ingredients
+            ['name' => 'Coffee Beans', 'unit_type' => UnitType::GRAMS->value],
+            ['name' => 'Espresso Shot', 'unit_type' => UnitType::MILLILITERS->value],
+            ['name' => 'Tea Leaves', 'unit_type' => UnitType::GRAMS->value],
+            ['name' => 'Chocolate Syrup', 'unit_type' => UnitType::MILLILITERS->value],
+            ['name' => 'Caramel Syrup', 'unit_type' => UnitType::MILLILITERS->value],
+            ['name' => 'Vanilla Syrup', 'unit_type' => UnitType::MILLILITERS->value],
+            ['name' => 'Whipped Cream', 'unit_type' => UnitType::GRAMS->value],
+            ['name' => 'Ice', 'unit_type' => UnitType::GRAMS->value],
+            ['name' => 'Water', 'unit_type' => UnitType::MILLILITERS->value],
+            ['name' => 'Lemon', 'unit_type' => UnitType::GRAMS->value],
+            ['name' => 'Mint Leaves', 'unit_type' => UnitType::GRAMS->value],
+
             // Dairy & Eggs
             ['name' => 'Eggs', 'unit_type' => UnitType::PIECES->value],
             ['name' => 'Cheese', 'unit_type' => UnitType::GRAMS->value],
@@ -271,6 +292,7 @@ final class CoffeeShopSeeder extends Seeder
         }
 
         // Create Products for each category
+        $this->createBeverageProducts($createdCategories['Beverages'], $createdIngredients);
         $this->createPancitProducts($createdCategories['Pancit'], $createdIngredients);
         $this->createPastaProducts($createdCategories['Pasta'], $createdIngredients);
         $this->createDessertProducts($createdCategories['Desserts'], $createdIngredients);
@@ -288,6 +310,160 @@ final class CoffeeShopSeeder extends Seeder
         $this->createAddOnProducts($createdCategories['Add-ons'], $createdIngredients);
 
         $this->command->info('Comprehensive menu data seeded successfully!');
+    }
+
+    private function createBeverageProducts(Category $category, array $ingredients): void
+    {
+        $beverages = [
+            [
+                'name' => 'Americano',
+                'description' => 'Classic espresso with hot water',
+                'hot_price' => 89,
+                'cold_price' => 99,
+                'recipe' => [
+                    'Espresso Shot' => 60,
+                    'Water' => 150,
+                ],
+            ],
+            [
+                'name' => 'Cappuccino',
+                'description' => 'Espresso with steamed milk and foam',
+                'hot_price' => 110,
+                'cold_price' => 120,
+                'recipe' => [
+                    'Espresso Shot' => 60,
+                    'Milk' => 120,
+                ],
+            ],
+            [
+                'name' => 'Latte',
+                'description' => 'Espresso with steamed milk',
+                'hot_price' => 120,
+                'cold_price' => 130,
+                'recipe' => [
+                    'Espresso Shot' => 60,
+                    'Milk' => 180,
+                ],
+            ],
+            [
+                'name' => 'Mocha',
+                'description' => 'Espresso with chocolate and steamed milk',
+                'hot_price' => 130,
+                'cold_price' => 140,
+                'recipe' => [
+                    'Espresso Shot' => 60,
+                    'Milk' => 150,
+                    'Chocolate Syrup' => 30,
+                    'Whipped Cream' => 20,
+                ],
+            ],
+            [
+                'name' => 'Caramel Macchiato',
+                'description' => 'Espresso with vanilla, milk, and caramel drizzle',
+                'hot_price' => 140,
+                'cold_price' => 150,
+                'recipe' => [
+                    'Espresso Shot' => 60,
+                    'Milk' => 150,
+                    'Vanilla Syrup' => 20,
+                    'Caramel Syrup' => 20,
+                ],
+            ],
+            [
+                'name' => 'Matcha Latte',
+                'description' => 'Premium matcha with steamed milk',
+                'hot_price' => 135,
+                'cold_price' => 145,
+                'recipe' => [
+                    'Matcha Powder' => 10,
+                    'Milk' => 200,
+                    'Sugar' => 20,
+                ],
+            ],
+            [
+                'name' => 'Hot Chocolate',
+                'description' => 'Rich chocolate drink with steamed milk',
+                'hot_price' => 100,
+                'cold_price' => 110,
+                'recipe' => [
+                    'Chocolate Syrup' => 50,
+                    'Milk' => 200,
+                    'Whipped Cream' => 20,
+                ],
+            ],
+            [
+                'name' => 'Lemon Iced Tea',
+                'description' => 'Refreshing iced tea with lemon',
+                'hot_price' => 79,
+                'cold_price' => 79,
+                'recipe' => [
+                    'Tea Leaves' => 5,
+                    'Water' => 250,
+                    'Lemon' => 20,
+                    'Sugar' => 30,
+                    'Ice' => 100,
+                ],
+            ],
+        ];
+
+        foreach ($beverages as $beverageData) {
+            // Create base product with hot variant price as default
+            $product = Product::query()->firstOrCreate([
+                'name' => $beverageData['name'],
+            ], [
+                'category_id' => $category->id,
+                'price' => $beverageData['hot_price'],
+                'description' => $beverageData['description'],
+                'preparation_time' => 5,
+                'is_active' => true,
+            ]);
+
+            // Create Hot variant
+            ProductVariant::query()->firstOrCreate([
+                'product_id' => $product->id,
+                'name' => 'Hot',
+            ], [
+                'price' => $beverageData['hot_price'],
+                'is_default' => true,
+                'is_active' => true,
+                'sort_order' => 0,
+            ]);
+
+            // Create Cold variant
+            ProductVariant::query()->firstOrCreate([
+                'product_id' => $product->id,
+                'name' => 'Cold',
+            ], [
+                'price' => $beverageData['cold_price'],
+                'is_default' => false,
+                'is_active' => true,
+                'sort_order' => 1,
+            ]);
+
+            // Add recipe
+            $this->addBeverageRecipe($product, $ingredients, $beverageData['recipe']);
+        }
+    }
+
+    private function addBeverageRecipe(Product $product, array $ingredients, array $recipe): void
+    {
+        $validRecipe = [];
+
+        foreach ($recipe as $ingredientName => $quantity) {
+            $ingredientId = $this->getIngredientId($ingredients, $ingredientName);
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
+            }
+        }
+
+        foreach ($validRecipe as $ingredientId => $quantity) {
+            ProductIngredient::query()->firstOrCreate([
+                'product_id' => $product->id,
+                'ingredient_id' => $ingredientId,
+            ], [
+                'quantity_required' => $quantity,
+            ]);
+        }
     }
 
     private function createPancitProducts(Category $category, array $ingredients): void

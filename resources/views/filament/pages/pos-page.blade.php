@@ -283,6 +283,108 @@
         </div>
     </div>
 
+    {{-- Variant Selection Modal --}}
+    @if($selectedProductForVariant)
+        @php
+            $selectedProduct = $products->firstWhere('id', $selectedProductForVariant);
+        @endphp
+
+        @if($selectedProduct && $selectedProduct->activeVariants->isNotEmpty())
+            <div
+                x-data="{ show: true }"
+                x-show="show"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                wire:key="variant-modal-{{ $selectedProductForVariant }}"
+            >
+                <div
+                    x-show="show"
+                    x-transition:enter="transition ease-out duration-300 transform"
+                    x-transition:enter-start="opacity-0 scale-95"
+                    x-transition:enter-end="opacity-100 scale-100"
+                    x-transition:leave="transition ease-in duration-200 transform"
+                    x-transition:leave-start="opacity-100 scale-100"
+                    x-transition:leave-end="opacity-0 scale-95"
+                    @click.away="$wire.closeVariantSelection()"
+                    class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+                >
+                    {{-- Modal Header --}}
+                    <div class="bg-gradient-to-r from-orange-500 to-orange-600 p-6 text-white">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex-1">
+                                <h3 class="text-xl font-bold">{{ $selectedProduct->name }}</h3>
+                                <p class="text-sm text-orange-100 mt-1">Choose your variant</p>
+                            </div>
+                            <button
+                                wire:click="closeVariantSelection"
+                                class="text-white/80 hover:text-white transition-colors p-1 hover:bg-white/20 rounded-lg"
+                            >
+                                <x-filament::icon icon="heroicon-o-x-mark" class="w-6 h-6" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Variants List --}}
+                    <div class="p-6 max-h-96 overflow-y-auto">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            @foreach($selectedProduct->activeVariants as $variant)
+                                <button
+                                    wire:click="selectVariant({{ $variant->id }})"
+                                    wire:key="variant-option-{{ $variant->id }}"
+                                    class="group relative bg-gradient-to-br from-white to-gray-50 border-2 border-gray-200 hover:border-orange-400 rounded-xl p-4 transition-all active:scale-95 touch-manipulation hover:shadow-lg"
+                                >
+                                    {{-- Variant Icon --}}
+                                    <div class="mb-3 flex justify-center">
+                                        @if(strtolower($variant->name) === 'hot')
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-red-100 to-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                <x-filament::icon icon="heroicon-o-fire" class="w-8 h-8 text-orange-600" />
+                                            </div>
+                                        @elseif(strtolower($variant->name) === 'cold' || strtolower($variant->name) === 'iced')
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                </svg>
+                                            </div>
+                                        @else
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                <x-filament::icon icon="heroicon-o-cube" class="w-8 h-8 text-gray-600" />
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    {{-- Variant Name --}}
+                                    <div class="text-center">
+                                        <h4 class="font-bold text-gray-900 mb-1">{{ $variant->name }}</h4>
+                                        <p class="text-lg font-bold text-orange-600">
+                                            {{ $this->formatCurrency($variant->price) }}
+                                        </p>
+                                    </div>
+
+                                    {{-- Default Badge --}}
+                                    @if($variant->is_default)
+                                        <div class="absolute top-2 right-2">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                Default
+                                            </span>
+                                        </div>
+                                    @endif
+
+                                    {{-- Hover Effect --}}
+                                    <div class="absolute inset-0 bg-gradient-to-br from-orange-500/0 to-orange-600/0 group-hover:from-orange-500/10 group-hover:to-orange-600/10 rounded-xl transition-all pointer-events-none"></div>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+    @endif
+
     <style>
         /* Hide scrollbar for Chrome, Safari and Opera */
         .scrollbar-hide::-webkit-scrollbar {

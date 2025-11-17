@@ -1,119 +1,84 @@
 #!/bin/bash
+set -e  # Exit on error
 
+# Configuration
 INIT_FLAG="/var/www/html/storage/.INIT_ENV"
 NAME=${NAME:-"test"}
 EMAIL=${EMAIL:-"test@example.com"}
 PASSWORD=${PASSWORD:-"password"}
 
-# Function to check if a string is 32 characters long
-check_length() {
-  local key=$1
-  if [ ${#key} -ne 32 ]; then
-    echo "Invalid APP_KEY"
-    exit 1
-  fi
-}
-
-# Check if APP_KEY is set
+# Validate APP_KEY (simplified - Laravel will validate the actual key format)
 if [ -z "$APP_KEY" ]; then
-  echo "APP_KEY is not set"
+  echo "ERROR: APP_KEY is not set"
   exit 1
 fi
 
-# Check if APP_KEY starts with 'base64:'
-if [[ $APP_KEY == base64:* ]]; then
-  # Remove 'base64:' prefix and decode the base64 string
-  decoded_key=$(echo "${APP_KEY:7}" | base64 --decode 2>/dev/null)
-
-  # Check if decoding was successful
-  if [ $? -ne 0 ]; then
-    echo "Invalid APP_KEY base64 encoding"
-    exit 1
-  fi
-
-  # Check the length of the decoded key
-  check_length "$decoded_key"
-else
-  # Check the length of the raw APP_KEY
-  check_length "$APP_KEY"
-fi
-
-# check if the flag file does not exist, indicating a first run
+# One-time initialization tasks
 if [ ! -f "$INIT_FLAG" ]; then
-  echo "Initializing..."
+  echo "First run detected - initializing..."
 
-  # generate SSH keys
-  openssl genpkey -algorithm RSA -out /var/www/html/storage/ssh-private.pem
-  chmod 600 /var/www/html/storage/ssh-private.pem
-  ssh-keygen -y -f /var/www/html/storage/ssh-private.pem >/var/www/html/storage/ssh-public.key
-
-  # create sqlite database
+  # Create SQLite database
   touch /var/www/html/storage/database.sqlite
-  chown www-data:www-data /var/www/html/storage/database.sqlite
-  chmod 664 /var/www/html/storage/database.sqlite
 
-  # create the flag file to indicate completion of initialization tasks
   touch "$INIT_FLAG"
+  echo "Initialization complete"
 fi
 
-# Create supervisor log directory
-mkdir -p /var/log/supervisor
-mkdir -p /var/www/html/storage/logs
+# Create necessary directories (fast operation)
+mkdir -p /var/log/supervisor /var/www/html/storage/logs
 
-chown -R www-data:www-data /var/www/html &&
-  chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
-
-# Ensure www-data can write to supervisor log directory
-chown -R www-data:www-data /var/log/supervisor
-
-# Fix Docker volume permissions - ensure database is writable
-if [ -f /var/www/html/storage/database.sqlite ]; then
-    chown www-data:www-data /var/www/html/storage/database.sqlite
-    chmod 664 /var/www/html/storage/database.sqlite
-fi
-
-# Fix storage directory permissions for Docker volume
-chown -R www-data:www-data /var/www/html/storage
+# Set all permissions in one pass (major performance improvement)
+chown -R www-data:www-data /var/www/html/storage /var/log/supervisor
 chmod -R 775 /var/www/html/storage
+chmod -R 755 /var/www/html/bootstrap/cache
+chmod 664 /var/www/html/storage/database.sqlite 2>/dev/null || true
 
-service php8.4-fpm start
+# Start services early (so they're ready while Laravel commands run)
+echo "Starting services..."
+service php8.4-fpm start >/dev/null 2>&1
+service nginx start >/dev/null 2>&1
+cron >/dev/null 2>&1
 
-service redis-server start
-service nginx start
+# Laravel setup commands (these are the slow parts)
+echo "Running Laravel setup..."
+php /var/www/html/artisan migrate --force --isolated
 
-php /var/www/html/artisan migrate --force
-php /var/www/html/artisan optimize:clear
-php /var/www/html/artisan optimize
-php /var/www/html/artisan shield:generate --all --panel=admin --no-interaction
+# Clear cache before optimize (avoids potential conflicts)
+php /var/www/html/artisan optimize:clear >/dev/null 2>&1
 
-# Ensure database file permissions are correct after migrations
-chown www-data:www-data /var/www/html/storage/database.sqlite
-chmod 664 /var/www/html/storage/database.sqlite
+# Run optimize and shield:generate in background for faster startup
+php /var/www/html/artisan optimize >/dev/null 2>&1 &
+OPTIMIZE_PID=$!
 
-# Run database seed if in demo mode
+php /var/www/html/artisan shield:generate --all --panel=admin --no-interaction >/dev/null 2>&1 &
+SHIELD_PID=$!
+
+# Demo mode setup
 if [ "$APP_ENV" = "demo" ]; then
-  echo "Running database seed for demo mode..."
+  echo "Demo mode enabled - seeding database..."
   php /var/www/html/artisan db:seed --class=DatabaseSeeder --force
+
+  # Setup cron for demo refresh (only if not already set)
+  if ! crontab -l 2>/dev/null | grep -q "refresh:demo-database"; then
+    (crontab -l 2>/dev/null; echo "0 2 * * * /usr/bin/php /var/www/html/artisan refresh:demo-database >> /var/log/cron.log 2>&1") | crontab -
+  fi
 fi
 
-php /var/www/html/artisan user:create "$NAME" "$EMAIL" "$PASSWORD"
-php /var/www/html/artisan shield:super-admin --no-interaction --panel=admin
+# Create user (suppress output if user exists)
+php /var/www/html/artisan user:create "$NAME" "$EMAIL" "$PASSWORD" 2>/dev/null || true
+php /var/www/html/artisan shield:super-admin --no-interaction --panel=admin >/dev/null 2>&1
 
-# Add daily cron job to refresh demo database if in demo mode
-if [ "$APP_ENV" = "demo" ]; then
-  echo "Setting up daily demo database refresh cron job..."
-  # Add to crontab to run daily at 2 AM
-  (crontab -l 2>/dev/null; echo "0 2 * * * /usr/bin/php /var/www/html/artisan refresh:demo-database >> /var/log/cron.log 2>&1") | crontab -
-  echo "Demo database will refresh daily at 2 AM"
-fi
+# Wait for background jobs to complete
+wait $OPTIMIZE_PID 2>/dev/null || true
+wait $SHIELD_PID 2>/dev/null || true
 
-cron
-
-echo "Coamifee is running! 🚀"
-echo "Your account has been created successfully."
+echo ""
+echo "✅ Coamifee is running!"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "User: $NAME"
 echo "Email: $EMAIL"
 echo "Password: $PASSWORD"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Run supervisord as root (worker process will run as www-data)
 exec /usr/bin/supervisord
