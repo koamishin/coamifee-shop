@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Orders\Pages;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Orders\Widgets\CashOrdersOverview;
+use App\Filament\Resources\Orders\Widgets\DeliveryOverview;
+use App\Filament\Resources\Orders\Widgets\PaymentMethodsOverview;
 use Filament\Resources\Pages\ListRecords;
 
 final class ListOrders extends ListRecords
@@ -15,6 +18,15 @@ final class ListOrders extends ListRecords
     {
         return [
             //
+        ];
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            PaymentMethodsOverview::class,
+            DeliveryOverview::class,
+            CashOrdersOverview::class,
         ];
     }
 }
