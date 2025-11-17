@@ -74,7 +74,18 @@ final class ProductForm
                                 ]),
                             )
                             ->columnSpanFull(),
-
+                            TextInput::make('price')
+                                ->label('Product Price')
+                                ->prefix(self::getCurrencyPrefix())
+                                ->suffix(self::getCurrencySuffix())
+                                ->numeric()
+                                ->required(fn (callable $get) => ! ((int) $get('category_id') === 1 && $get('has_variants') === true))
+                                ->step(0.01)
+                                ->helperText(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true
+                                    ? 'For beverages with variants, set prices for Hot and Cold variants below'
+                                    : 'Set the selling price for this product')
+                                ->live(onBlur: true)
+                                ->hidden(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true),
                         // Variant toggle - only visible for Beverages category
                         Toggle::make('has_variants')
                             ->label('This beverage has Hot & Cold variants')
@@ -89,27 +100,7 @@ final class ProductForm
                 ])
                 ->columns(1),
 
-            Section::make('Pricing')
-                ->description('Configure pricing for this product.')
-                ->icon('heroicon-o-currency-dollar')
-                ->schema([
-                    Grid::make(2)
-                        ->schema([
-                            TextInput::make('price')
-                                ->label('Product Price')
-                                ->prefix(self::getCurrencyPrefix())
-                                ->suffix(self::getCurrencySuffix())
-                                ->numeric()
-                                ->required(fn (callable $get) => ! ((int) $get('category_id') === 1 && $get('has_variants') === true))
-                                ->step(0.01)
-                                ->helperText(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true
-                                    ? 'For beverages with variants, set prices for Hot and Cold variants below'
-                                    : 'Set the selling price for this product')
-                                ->live(onBlur: true)
-                                ->hidden(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true),
-                        ]),
-                ])
-                ->columns(1),
+          
 
             Section::make('Product Details')
                 ->description(
@@ -350,6 +341,7 @@ final class ProductForm
                         ->collapsed(fn ($context): bool => $context === 'edit'),
                 ])
                 ->columns(1)
+                ->columnSpanFull()
                 ->collapsed(fn ($context): bool => $context === 'edit'),
         ]);
     }
