@@ -61,7 +61,7 @@ final class AdminPanelProvider extends PanelProvider
                 CoffeeShopOverviewWidget::class,
                 SalesTrendsWidget::class,
                 TopProductsWidget::class,
-                InventoryStatusWidget::class,
+                // idget::class,
                 FinancialSummaryWidget::class,
                 OrderStatusWidget::class,
                 LowStockAlertWidget::class,
