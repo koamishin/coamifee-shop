@@ -27,6 +27,7 @@ final class Order extends Model
         'add_ons_total',
         'total',
         'status',
+        'inventory_processed',
         'table_number',
         'notes',
     ];
@@ -39,6 +40,7 @@ final class Order extends Model
         'add_ons' => 'array',
         'add_ons_total' => 'decimal:2',
         'customer_id' => 'integer',
+        'inventory_processed' => 'boolean',
     ];
 
     protected $appends = [

@@ -21,6 +21,16 @@ final readonly class OrderProcessingService
 
     public function processOrder(Order $order): bool
     {
+        // Skip if inventory already processed
+        if ($order->inventory_processed) {
+            return true;
+        }
+
+        // Check if we have sufficient inventory before processing
+        if (! $this->canFulfillOrder($order)) {
+            return false;
+        }
+
         try {
             DB::beginTransaction();
 
@@ -29,7 +39,10 @@ final readonly class OrderProcessingService
                 $this->processOrderItem($orderItem);
             }
 
-            $order->update(['status' => 'completed']);
+            $order->update([
+                'status' => 'completed',
+                'inventory_processed' => true,
+            ]);
 
             DB::commit();
 
