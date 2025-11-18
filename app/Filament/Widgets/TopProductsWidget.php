@@ -19,13 +19,13 @@ final class TopProductsWidget extends ChartWidget
     {
         $topProducts = OrderItem::query()->selectRaw('
                 product_id,
-                SUM(quantity) as total_quantity,
-                SUM(quantity * price) as total_revenue,
+                SUM(quantity) as qty_sold,
+                SUM(quantity * price) as revenue,
                 COUNT(DISTINCT order_id) as orders_count
             ')
             ->whereHas('order', fn ($query) => $query->where('created_at', '>=', now()->subDays(30)))
             ->groupBy('product_id')
-            ->orderBy('total_quantity', 'desc')
+            ->orderBy('qty_sold', 'desc')
             ->limit(10)
             ->with('product')
             ->get();
@@ -36,8 +36,8 @@ final class TopProductsWidget extends ChartWidget
 
         foreach ($topProducts as $item) {
             $labels[] = $item->product->getAttribute('name');
-            $quantities[] = $item->total_quantity;
-            $revenues[] = (float) $item->total_revenue;
+            $quantities[] = (int) $item->qty_sold;
+            $revenues[] = (float) $item->revenue;
         }
 
         return [
