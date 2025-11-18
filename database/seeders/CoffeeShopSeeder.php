@@ -1689,10 +1689,8 @@ final class CoffeeShopSeeder extends Seeder
     private function getRandomStock(UnitType $unitType): int
     {
         return match ($unitType->value) {
-            'grams' => rand(5000, 50000),
-            'kilograms' => rand(5, 50),
-            'ml' => rand(1000, 20000),
-            'liters' => rand(1, 20),
+            'grams' => rand(5000, 50000), // 5kg to 50kg worth
+            'ml' => rand(1000, 20000), // 1L to 20L worth
             'pieces' => rand(100, 1000),
             default => rand(100, 1000),
         };
@@ -1701,10 +1699,8 @@ final class CoffeeShopSeeder extends Seeder
     private function getMinStockLevel(UnitType $unitType): int
     {
         return match ($unitType->value) {
-            'grams' => 1000,
-            'kilograms' => 1,
-            'ml' => 500,
-            'liters' => 1,
+            'grams' => 1000, // 1kg worth
+            'ml' => 500, // 0.5L worth
             'pieces' => 50,
             default => 100,
         };
@@ -1713,10 +1709,8 @@ final class CoffeeShopSeeder extends Seeder
     private function getMaxStockLevel(UnitType $unitType): int
     {
         return match ($unitType->value) {
-            'grams' => 50000,
-            'kilograms' => 100,
-            'ml' => 25000,
-            'liters' => 50,
+            'grams' => 50000, // 50kg worth
+            'ml' => 25000, // 25L worth
             'pieces' => 2000,
             default => 2000,
         };

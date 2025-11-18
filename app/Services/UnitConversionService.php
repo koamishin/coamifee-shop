@@ -41,29 +41,12 @@ final class UnitConversionService
 
     /**
      * Check if conversion between two unit types is possible.
+     * Since we only use base units now, only same-unit conversions are possible.
      */
     public function canConvert(UnitType $fromUnit, UnitType $toUnit): bool
     {
-        $weightUnits = [UnitType::GRAMS, UnitType::KILOGRAMS];
-        $volumeUnits = [UnitType::MILLILITERS, UnitType::LITERS];
-
-        // Same unit
-        if ($fromUnit === $toUnit) {
-            return true;
-        }
-
-        // Both are weight units
-        if (in_array($fromUnit, $weightUnits, true) && in_array($toUnit, $weightUnits, true)) {
-            return true;
-        }
-
-        // Both are volume units
-        if (in_array($fromUnit, $volumeUnits, true) && in_array($toUnit, $volumeUnits, true)) {
-            return true;
-        }
-
-        // Cannot convert between different measurement types or pieces
-        return false;
+        // Same unit - always possible
+        return $fromUnit === $toUnit;
     }
 
     /**
@@ -84,29 +67,27 @@ final class UnitConversionService
     }
 
     /**
-     * Convert quantity to base unit (grams for weight, milliliters for volume).
+     * Convert quantity to base unit.
+     * Since we only use base units now, this just returns the quantity.
      */
     private function toBaseUnit(float $quantity, UnitType $unit): float
     {
         return match ($unit) {
             UnitType::GRAMS => $quantity,
-            UnitType::KILOGRAMS => $quantity * 1000,
             UnitType::MILLILITERS => $quantity,
-            UnitType::LITERS => $quantity * 1000,
             UnitType::PIECES => $quantity,
         };
     }
 
     /**
      * Convert quantity from base unit to target unit.
+     * Since we only use base units now, this just returns the quantity.
      */
     private function fromBaseUnit(float $baseQuantity, UnitType $unit): float
     {
         return match ($unit) {
             UnitType::GRAMS => $baseQuantity,
-            UnitType::KILOGRAMS => $baseQuantity / 1000,
             UnitType::MILLILITERS => $baseQuantity,
-            UnitType::LITERS => $baseQuantity / 1000,
             UnitType::PIECES => $baseQuantity,
         };
     }

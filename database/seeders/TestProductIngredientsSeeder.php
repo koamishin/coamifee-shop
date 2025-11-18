@@ -31,16 +31,17 @@ final class TestProductIngredientsSeeder extends Seeder
 
     private function createTestIngredients(): array
     {
+        // All ingredients using base units only (grams, ml, pieces)
         $testIngredients = [
             ['name' => 'Test Wheat Flour', 'unit_type' => 'grams'],
             ['name' => 'Test Fresh Eggs', 'unit_type' => 'pieces'],
-            ['name' => 'Test Whole Milk', 'unit_type' => 'liters'],
+            ['name' => 'Test Whole Milk', 'unit_type' => 'ml'],
             ['name' => 'Test Butter', 'unit_type' => 'grams'],
-            ['name' => 'Test Sugar', 'unit_type' => 'kilograms'],
+            ['name' => 'Test Sugar', 'unit_type' => 'grams'],
             ['name' => 'Test Olive Oil', 'unit_type' => 'ml'],
             ['name' => 'Test Salt', 'unit_type' => 'grams'],
             ['name' => 'Test Black Pepper', 'unit_type' => 'grams'],
-            ['name' => 'Test Chicken Breast', 'unit_type' => 'kilograms'],
+            ['name' => 'Test Chicken Breast', 'unit_type' => 'grams'],
             ['name' => 'Test Coffee Beans', 'unit_type' => 'grams'],
         ];
 
@@ -114,31 +115,31 @@ final class TestProductIngredientsSeeder extends Seeder
 
     private function createTestProductIngredients(array $products, array $ingredients): void
     {
-        // Define test recipes
+        // Define test recipes - all quantities in base units (grams, ml, pieces)
         $testRecipes = [
             'Test Pancake Special' => [
-                'Test Wheat Flour' => 250.0,
-                'Test Fresh Eggs' => 2.0,
-                'Test Whole Milk' => 0.3,
-                'Test Butter' => 50.0,
-                'Test Sugar' => 0.05,
+                'Test Wheat Flour' => 250.0, // 250g
+                'Test Fresh Eggs' => 2.0, // 2 pieces
+                'Test Whole Milk' => 300.0, // 300ml (was 0.3L)
+                'Test Butter' => 50.0, // 50g
+                'Test Sugar' => 50.0, // 50g (was 0.05kg)
             ],
             'Test Chicken Supreme' => [
-                'Test Chicken Breast' => 0.25,
-                'Test Salt' => 2.0,
-                'Test Black Pepper' => 1.0,
-                'Test Olive Oil' => 15.0,
+                'Test Chicken Breast' => 250.0, // 250g (was 0.25kg)
+                'Test Salt' => 2.0, // 2g
+                'Test Black Pepper' => 1.0, // 1g
+                'Test Olive Oil' => 15.0, // 15ml
             ],
             'Test Coffee Deluxe' => [
-                'Test Coffee Beans' => 20.0,
-                'Test Whole Milk' => 0.2,
-                'Test Sugar' => 0.02,
+                'Test Coffee Beans' => 20.0, // 20g
+                'Test Whole Milk' => 200.0, // 200ml (was 0.2L)
+                'Test Sugar' => 20.0, // 20g (was 0.02kg)
             ],
             'Test Sweet Treat' => [
-                'Test Wheat Flour' => 150.0,
-                'Test Butter' => 75.0,
-                'Test Sugar' => 0.08,
-                'Test Fresh Eggs' => 1.0,
+                'Test Wheat Flour' => 150.0, // 150g
+                'Test Butter' => 75.0, // 75g
+                'Test Sugar' => 80.0, // 80g (was 0.08kg)
+                'Test Fresh Eggs' => 1.0, // 1 piece
             ],
         ];
 
@@ -171,10 +172,8 @@ final class TestProductIngredientsSeeder extends Seeder
     private function getRealisticStock(string $unitType): float
     {
         return match ($unitType) {
-            'grams' => rand(500, 5000),
-            'kilograms' => rand(5, 50),
-            'ml' => rand(500, 5000),
-            'liters' => rand(1, 20),
+            'grams' => rand(5000, 50000), // 5kg to 50kg worth in grams
+            'ml' => rand(1000, 20000), // 1L to 20L worth in ml
             'pieces' => rand(20, 200),
             default => rand(100, 1000),
         };
@@ -183,10 +182,8 @@ final class TestProductIngredientsSeeder extends Seeder
     private function getMinStock(string $unitType): int
     {
         return match ($unitType) {
-            'grams' => 200,
-            'kilograms' => 2,
-            'ml' => 200,
-            'liters' => 1,
+            'grams' => 1000, // 1kg worth in grams
+            'ml' => 500, // 0.5L worth in ml
             'pieces' => 10,
             default => 50,
         };
@@ -195,10 +192,8 @@ final class TestProductIngredientsSeeder extends Seeder
     private function getMaxStock(string $unitType): int
     {
         return match ($unitType) {
-            'grams' => 10000,
-            'kilograms' => 100,
-            'ml' => 10000,
-            'liters' => 50,
+            'grams' => 50000, // 50kg worth in grams
+            'ml' => 25000, // 25L worth in ml
             'pieces' => 500,
             default => 2000,
         };
@@ -225,8 +220,8 @@ final class TestProductIngredientsSeeder extends Seeder
     private function getStorageLocation(string $unitType): string
     {
         return match ($unitType) {
-            'grams', 'kilograms' => 'Dry Storage',
-            'ml', 'liters' => 'Fridge',
+            'grams' => 'Dry Storage',
+            'ml' => 'Fridge',
             'pieces' => 'Fridge',
             default => 'Main Storage',
         };

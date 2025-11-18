@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\UnitType;
 use App\Models\Ingredient;
 use App\Models\IngredientInventory;
 use App\Models\InventoryTransaction;
@@ -12,7 +11,6 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductIngredient;
 use Illuminate\Support\Collection;
-use InvalidArgumentException;
 
 final class InventoryService
 {
@@ -213,28 +211,9 @@ final class InventoryService
             // Calculate required quantity (recipe quantity * number of products ordered)
             $requiredQuantity = $productIngredient->quantity_required * $quantity;
 
-            // Get inventory unit type from the ingredient
-            $inventoryUnitType = $ingredient->unit_type;
-
-            // Smart detection: Determine input unit based on quantity magnitude
-            // If >= 10, user likely input in small units (ml/g)
-            // If < 10, user likely input in large units (L/kg)
-            $inputUnitType = $this->detectInputUnit($requiredQuantity, $inventoryUnitType);
-
-            // Normalize to inventory unit if different
-            try {
-                $normalizedQuantity = $this->unitConversionService->normalizeToInventoryUnit(
-                    $requiredQuantity,
-                    $inputUnitType,
-                    $inventoryUnitType
-                );
-            } catch (InvalidArgumentException $e) {
-                // Cannot convert units - fail the operation
-                return false;
-            }
-
             // Check if enough stock is available
-            if ($inventory->current_stock < $normalizedQuantity) {
+            // Since we only use base units now, no conversion needed
+            if ($inventory->current_stock < $requiredQuantity) {
                 return false;
             }
         }
@@ -247,43 +226,16 @@ final class InventoryService
             $inventory = $ingredient->inventory;
 
             $requiredQuantity = $productIngredient->quantity_required * $quantity;
-            $inventoryUnitType = $ingredient->unit_type;
 
-            // Smart detection: Determine input unit based on quantity magnitude
-            $inputUnitType = $this->detectInputUnit($requiredQuantity, $inventoryUnitType);
-
-            // Normalize quantity
-            $normalizedQuantity = $this->unitConversionService->normalizeToInventoryUnit(
-                $requiredQuantity,
-                $inputUnitType,
-                $inventoryUnitType
-            );
-
-            // Deduct from inventory
+            // Deduct from inventory (no conversion needed - all in base units)
             $this->decreaseIngredientStock(
                 $ingredient,
-                $normalizedQuantity,
+                $requiredQuantity,
                 $orderItem,
                 "Product order: {$product->name} (x{$quantity})"
             );
         }
 
         return true;
-    }
-
-    /**
-     * Intelligently detect which unit the user likely meant based on the value magnitude.
-     * For example: 250 likely means ml/g, while 0.25 likely means L/kg.
-     */
-    private function detectInputUnit(float $quantity, UnitType $inventoryUnitType): UnitType
-    {
-        return match ($inventoryUnitType) {
-            // For volume: if >= 10, likely ml; if < 10, likely L
-            UnitType::MILLILITERS, UnitType::LITERS => $quantity >= 10 ? UnitType::MILLILITERS : UnitType::LITERS,
-            // For weight: if >= 10, likely g; if < 10, likely kg
-            UnitType::GRAMS, UnitType::KILOGRAMS => $quantity >= 10 ? UnitType::GRAMS : UnitType::KILOGRAMS,
-            // For pieces, use as-is
-            default => $inventoryUnitType
-        };
     }
 }

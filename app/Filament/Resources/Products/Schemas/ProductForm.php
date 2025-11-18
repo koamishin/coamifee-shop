@@ -7,7 +7,6 @@ namespace App\Filament\Resources\Products\Schemas;
 use App\Enums\BeverageVariant;
 use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
-use App\Services\UnitConversionService;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -74,18 +73,18 @@ final class ProductForm
                                 ]),
                             )
                             ->columnSpanFull(),
-                            TextInput::make('price')
-                                ->label('Product Price')
-                                ->prefix(self::getCurrencyPrefix())
-                                ->suffix(self::getCurrencySuffix())
-                                ->numeric()
-                                ->required(fn (callable $get) => ! ((int) $get('category_id') === 1 && $get('has_variants') === true))
-                                ->step(0.01)
-                                ->helperText(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true
-                                    ? 'For beverages with variants, set prices for Hot and Cold variants below'
-                                    : 'Set the selling price for this product')
-                                ->live(onBlur: true)
-                                ->hidden(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true),
+                        TextInput::make('price')
+                            ->label('Product Price')
+                            ->prefix(self::getCurrencyPrefix())
+                            ->suffix(self::getCurrencySuffix())
+                            ->numeric()
+                            ->required(fn (callable $get) => ! ((int) $get('category_id') === 1 && $get('has_variants') === true))
+                            ->step(0.01)
+                            ->helperText(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true
+                                ? 'For beverages with variants, set prices for Hot and Cold variants below'
+                                : 'Set the selling price for this product')
+                            ->live(onBlur: true)
+                            ->hidden(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true),
                         // Variant toggle - only visible for Beverages category
                         Toggle::make('has_variants')
                             ->label('This beverage has Hot & Cold variants')
@@ -99,8 +98,6 @@ final class ProductForm
                     ]),
                 ])
                 ->columns(1),
-
-          
 
             Section::make('Product Details')
                 ->description(
@@ -225,18 +222,19 @@ final class ProductForm
                                         ->placeholder(function (callable $get) {
                                             $ingredientId = $get('ingredient_id');
                                             if (! $ingredientId) {
-                                                return 'e.g., 250 or 0.25';
+                                                return 'e.g., 250';
                                             }
 
                                             $ingredient = \App\Models\Ingredient::find($ingredientId);
                                             if (! $ingredient) {
-                                                return 'e.g., 250 or 0.25';
+                                                return 'e.g., 250';
                                             }
 
                                             return match ($ingredient->unit_type) {
-                                                UnitType::MILLILITERS, UnitType::LITERS => '250 (ml) or 0.25 (L)',
-                                                UnitType::GRAMS, UnitType::KILOGRAMS => '250 (g) or 0.25 (kg)',
-                                                default => 'e.g., 2.5'
+                                                UnitType::MILLILITERS => 'e.g., 250 (ml)',
+                                                UnitType::GRAMS => 'e.g., 250 (g)',
+                                                UnitType::PIECES => 'e.g., 2',
+                                                default => 'e.g., 250'
                                             };
                                         })
                                         ->suffix(function (callable $get) {
@@ -247,11 +245,7 @@ final class ProductForm
 
                                             $ingredient = \App\Models\Ingredient::find($ingredientId);
 
-                                            return match ($ingredient->unit_type) {
-                                                UnitType::MILLILITERS, UnitType::LITERS => 'ml or L',
-                                                UnitType::GRAMS, UnitType::KILOGRAMS => 'g or kg',
-                                                default => $ingredient->unit_type->getLabel()
-                                            };
+                                            return $ingredient->unit_type->getLabel();
                                         })
                                         ->helperText(function (callable $get) {
                                             $ingredientId = $get('ingredient_id');
@@ -265,8 +259,9 @@ final class ProductForm
                                             }
 
                                             return match ($ingredient->unit_type) {
-                                                UnitType::MILLILITERS, UnitType::LITERS => 'Use 250 for ml or 0.25 for L',
-                                                UnitType::GRAMS, UnitType::KILOGRAMS => 'Use 250 for grams or 0.25 for kg',
+                                                UnitType::MILLILITERS => 'Enter quantity in ml (e.g., 250 for 250ml)',
+                                                UnitType::GRAMS => 'Enter quantity in grams (e.g., 250 for 250g)',
+                                                UnitType::PIECES => 'Enter number of pieces (e.g., 2)',
                                                 default => 'Amount needed per product'
                                             };
                                         })
@@ -325,8 +320,8 @@ final class ProductForm
                                 if ($ingredient) {
                                     $quantity = (float) ($state['quantity_required'] ?? 0);
 
-                                    // Intelligently determine the unit based on value magnitude
-                                    $displayUnit = self::detectInputUnit($quantity, $ingredient->unit_type);
+                                    // Display with the ingredient's base unit
+                                    $displayUnit = $ingredient->unit_type->getLabel();
 
                                     return "{$ingredient->name} ({$quantity} {$displayUnit})";
                                 }
@@ -344,50 +339,5 @@ final class ProductForm
                 ->columnSpanFull()
                 ->collapsed(fn ($context): bool => $context === 'edit'),
         ]);
-    }
-
-    /**
-     * Convert user input quantity to inventory base unit.
-     * Intelligently detects if the input is in small (ml/g) or large (L/kg) units.
-     *
-     * @param  float  $quantity  The input quantity
-     * @param  UnitType  $inventoryUnitType  The ingredient's inventory unit type
-     * @return float The quantity normalized to inventory unit
-     */
-    public static function normalizeQuantityToInventoryUnit(float $quantity, UnitType $inventoryUnitType): float
-    {
-        $conversionService = app(UnitConversionService::class);
-
-        return match ($inventoryUnitType) {
-            UnitType::MILLILITERS => $quantity, // Already in ml
-            UnitType::LITERS => $quantity >= 10
-                ? $conversionService->convert($quantity, UnitType::MILLILITERS, UnitType::LITERS) // Convert ml to L
-                : $quantity, // Already in L
-            UnitType::GRAMS => $quantity, // Already in g
-            UnitType::KILOGRAMS => $quantity >= 10
-                ? $conversionService->convert($quantity, UnitType::GRAMS, UnitType::KILOGRAMS) // Convert g to kg
-                : $quantity, // Already in kg
-            default => $quantity
-        };
-    }
-
-    /**
-     * Intelligently detect which unit the user likely meant based on the value magnitude.
-     * For example: 250 likely means ml/g, while 0.25 likely means L/kg.
-     *
-     * @param  float  $quantity  The input quantity
-     * @param  UnitType  $inventoryUnitType  The ingredient's inventory unit type
-     * @return string The detected unit label for display
-     */
-    private static function detectInputUnit(float $quantity, UnitType $inventoryUnitType): string
-    {
-        return match ($inventoryUnitType) {
-            // For volume: if >= 10, likely ml; if < 10, likely L
-            UnitType::MILLILITERS, UnitType::LITERS => $quantity >= 10 ? 'ml' : 'L',
-            // For weight: if >= 10, likely g; if < 10, likely kg
-            UnitType::GRAMS, UnitType::KILOGRAMS => $quantity >= 10 ? 'g' : 'kg',
-            // For pieces, just use as-is
-            default => $inventoryUnitType->getLabel()
-        };
     }
 }
