@@ -70,42 +70,42 @@ final class GoodlandInventorySeeder extends Seeder
 
     private function createGoodlandIngredients(): array
     {
-        // Goodland Kitchen Inventory
+        // Goodland Kitchen Inventory - All quantities in base units (grams, ml, pieces)
         $kitchenIngredients = [
-            ['name' => 'Chicken', 'unit_type' => UnitType::KILOGRAMS->value],
-            ['name' => 'Pork', 'unit_type' => UnitType::KILOGRAMS->value],
-            ['name' => 'Ground Beef', 'unit_type' => UnitType::KILOGRAMS->value],
-            ['name' => 'Ground Pork', 'unit_type' => UnitType::KILOGRAMS->value],
+            ['name' => 'Chicken', 'unit_type' => UnitType::GRAMS->value],
+            ['name' => 'Pork', 'unit_type' => UnitType::GRAMS->value],
+            ['name' => 'Ground Beef', 'unit_type' => UnitType::GRAMS->value],
+            ['name' => 'Ground Pork', 'unit_type' => UnitType::GRAMS->value],
             ['name' => 'Peanut', 'unit_type' => UnitType::GRAMS->value],
             ['name' => 'Mushroom', 'unit_type' => UnitType::GRAMS->value],
-            ['name' => 'Onion', 'unit_type' => UnitType::KILOGRAMS->value],
-            ['name' => 'Red Onion', 'unit_type' => UnitType::KILOGRAMS->value],
-            ['name' => 'Potato', 'unit_type' => UnitType::KILOGRAMS->value],
-            ['name' => 'Carrots', 'unit_type' => UnitType::KILOGRAMS->value],
-            ['name' => 'Sayote', 'unit_type' => UnitType::KILOGRAMS->value],
+            ['name' => 'Onion', 'unit_type' => UnitType::GRAMS->value],
+            ['name' => 'Red Onion', 'unit_type' => UnitType::GRAMS->value],
+            ['name' => 'Potato', 'unit_type' => UnitType::GRAMS->value],
+            ['name' => 'Carrots', 'unit_type' => UnitType::GRAMS->value],
+            ['name' => 'Sayote', 'unit_type' => UnitType::GRAMS->value],
             ['name' => 'Snowpeas', 'unit_type' => UnitType::GRAMS->value],
             ['name' => 'Baguio Beans', 'unit_type' => UnitType::GRAMS->value],
             ['name' => 'Celery', 'unit_type' => UnitType::GRAMS->value],
-            ['name' => 'Cabbage', 'unit_type' => UnitType::KILOGRAMS->value],
+            ['name' => 'Cabbage', 'unit_type' => UnitType::GRAMS->value],
             ['name' => 'Zucchini', 'unit_type' => UnitType::PIECES->value],
             ['name' => 'Tofu', 'unit_type' => UnitType::PIECES->value],
             ['name' => 'Eggs', 'unit_type' => UnitType::PIECES->value],
-            ['name' => 'Butter', 'unit_type' => UnitType::LITERS->value],
-            ['name' => 'Cooking Oil', 'unit_type' => UnitType::LITERS->value],
+            ['name' => 'Butter', 'unit_type' => UnitType::MILLILITERS->value],
+            ['name' => 'Cooking Oil', 'unit_type' => UnitType::MILLILITERS->value],
             ['name' => 'Salt', 'unit_type' => UnitType::GRAMS->value],
-            ['name' => 'Soy Sauce', 'unit_type' => UnitType::LITERS->value],
-            ['name' => 'Vinegar', 'unit_type' => UnitType::LITERS->value],
-            ['name' => 'Oyster Sauce', 'unit_type' => UnitType::LITERS->value],
-            ['name' => 'BBQ Sauce', 'unit_type' => UnitType::LITERS->value],
-            ['name' => 'Fish Sauce', 'unit_type' => UnitType::LITERS->value],
-            ['name' => 'Sugar', 'unit_type' => UnitType::KILOGRAMS->value],
-            ['name' => 'Mayonnaise', 'unit_type' => UnitType::LITERS->value],
+            ['name' => 'Soy Sauce', 'unit_type' => UnitType::MILLILITERS->value],
+            ['name' => 'Vinegar', 'unit_type' => UnitType::MILLILITERS->value],
+            ['name' => 'Oyster Sauce', 'unit_type' => UnitType::MILLILITERS->value],
+            ['name' => 'BBQ Sauce', 'unit_type' => UnitType::MILLILITERS->value],
+            ['name' => 'Fish Sauce', 'unit_type' => UnitType::MILLILITERS->value],
+            ['name' => 'Sugar', 'unit_type' => UnitType::GRAMS->value],
+            ['name' => 'Mayonnaise', 'unit_type' => UnitType::MILLILITERS->value],
             ['name' => 'Mustard', 'unit_type' => UnitType::GRAMS->value],
             ['name' => 'All Purpose Cream', 'unit_type' => UnitType::MILLILITERS->value],
             ['name' => 'Parmesan Cheese', 'unit_type' => UnitType::GRAMS->value],
             ['name' => 'Cheese Bar', 'unit_type' => UnitType::GRAMS->value],
-            ['name' => 'Cheese Sauce', 'unit_type' => UnitType::LITERS->value],
-            ['name' => 'Tomato Sauce', 'unit_type' => UnitType::LITERS->value],
+            ['name' => 'Cheese Sauce', 'unit_type' => UnitType::MILLILITERS->value],
+            ['name' => 'Tomato Sauce', 'unit_type' => UnitType::MILLILITERS->value],
             ['name' => 'Donaldo Salt', 'unit_type' => UnitType::GRAMS->value],
             ['name' => 'Black Pepper', 'unit_type' => UnitType::GRAMS->value],
             ['name' => 'Garlic Powder', 'unit_type' => UnitType::GRAMS->value],
@@ -116,8 +116,8 @@ final class GoodlandInventorySeeder extends Seeder
             ['name' => 'Fettuccine Pasta', 'unit_type' => UnitType::GRAMS->value],
 
             // Goodland Bar Inventory - Beverages and Ingredients
-            ['name' => 'Milk', 'unit_type' => UnitType::LITERS->value],
-            ['name' => 'Milklab', 'unit_type' => UnitType::LITERS->value],
+            ['name' => 'Milk', 'unit_type' => UnitType::MILLILITERS->value],
+            ['name' => 'Milklab', 'unit_type' => UnitType::MILLILITERS->value],
             ['name' => 'Coffee Beans', 'unit_type' => UnitType::GRAMS->value],
             ['name' => 'Mixture', 'unit_type' => UnitType::MILLILITERS->value],
             ['name' => 'Condensed Milk', 'unit_type' => UnitType::MILLILITERS->value],
@@ -130,7 +130,7 @@ final class GoodlandInventorySeeder extends Seeder
             ['name' => 'Strawberry Syrup', 'unit_type' => UnitType::MILLILITERS->value],
             ['name' => 'Fructose', 'unit_type' => UnitType::MILLILITERS->value],
             ['name' => 'Brown Sugar', 'unit_type' => UnitType::GRAMS->value],
-            ['name' => 'Lemonade', 'unit_type' => UnitType::LITERS->value],
+            ['name' => 'Lemonade', 'unit_type' => UnitType::MILLILITERS->value],
             ['name' => 'Strawberry Mix', 'unit_type' => UnitType::MILLILITERS->value],
             ['name' => 'Blueberry Mix', 'unit_type' => UnitType::MILLILITERS->value],
             ['name' => 'Caramel Sauce', 'unit_type' => UnitType::MILLILITERS->value],
@@ -245,70 +245,70 @@ final class GoodlandInventorySeeder extends Seeder
         $recipes = [
             // Pancit Recipes
             'Pancit Bihon (SOLO)' => [
-                $this->getIngredientId($ingredients, 'Onion') => 0.030,
-                $this->getIngredientId($ingredients, 'Carrots') => 0.050,
-                $this->getIngredientId($ingredients, 'Cabbage') => 0.100,
-                $this->getIngredientId($ingredients, 'Soy Sauce') => 0.030,
-                $this->getIngredientId($ingredients, 'Cooking Oil') => 0.020,
+                $this->getIngredientId($ingredients, 'Onion') => 30, // 30g
+                $this->getIngredientId($ingredients, 'Carrots') => 50, // 50g
+                $this->getIngredientId($ingredients, 'Cabbage') => 100, // 100g
+                $this->getIngredientId($ingredients, 'Soy Sauce') => 30, // 30ml
+                $this->getIngredientId($ingredients, 'Cooking Oil') => 20, // 20ml
             ],
             'Pancit Canton (SOLO)' => [
-                $this->getIngredientId($ingredients, 'Onion') => 0.030,
-                $this->getIngredientId($ingredients, 'Carrots') => 0.050,
-                $this->getIngredientId($ingredients, 'Cabbage') => 0.100,
-                $this->getIngredientId($ingredients, 'Soy Sauce') => 0.030,
-                $this->getIngredientId($ingredients, 'Cooking Oil') => 0.020,
+                $this->getIngredientId($ingredients, 'Onion') => 30, // 30g
+                $this->getIngredientId($ingredients, 'Carrots') => 50, // 50g
+                $this->getIngredientId($ingredients, 'Cabbage') => 100, // 100g
+                $this->getIngredientId($ingredients, 'Soy Sauce') => 30, // 30ml
+                $this->getIngredientId($ingredients, 'Cooking Oil') => 20, // 20ml
             ],
             'Beef Spaghetti' => [
-                $this->getIngredientId($ingredients, 'Ground Beef') => 0.150,
-                $this->getIngredientId($ingredients, 'Tomato Sauce') => 0.150,
-                $this->getIngredientId($ingredients, 'Onion') => 0.030,
-                $this->getIngredientId($ingredients, 'Garlic Powder') => 0.005,
-                $this->getIngredientId($ingredients, 'Cheese Bar') => 0.050,
+                $this->getIngredientId($ingredients, 'Ground Beef') => 150, // 150g
+                $this->getIngredientId($ingredients, 'Tomato Sauce') => 150, // 150ml
+                $this->getIngredientId($ingredients, 'Onion') => 30, // 30g
+                $this->getIngredientId($ingredients, 'Garlic Powder') => 5, // 5g
+                $this->getIngredientId($ingredients, 'Cheese Bar') => 50, // 50g
             ],
             'Beef Stroganoff' => [
-                $this->getIngredientId($ingredients, 'Ground Beef') => 0.200,
-                $this->getIngredientId($ingredients, 'Mushroom') => 0.100,
-                $this->getIngredientId($ingredients, 'All Purpose Cream') => 100,
-                $this->getIngredientId($ingredients, 'Onion') => 0.030,
+                $this->getIngredientId($ingredients, 'Ground Beef') => 200, // 200g
+                $this->getIngredientId($ingredients, 'Mushroom') => 100, // 100g
+                $this->getIngredientId($ingredients, 'All Purpose Cream') => 100, // 100ml
+                $this->getIngredientId($ingredients, 'Onion') => 30, // 30g
             ],
             'Carbonara' => [
-                $this->getIngredientId($ingredients, 'Fettuccine Pasta') => 200,
-                $this->getIngredientId($ingredients, 'All Purpose Cream') => 150,
-                $this->getIngredientId($ingredients, 'Eggs') => 2,
-                $this->getIngredientId($ingredients, 'Parmesan Cheese') => 30,
-                $this->getIngredientId($ingredients, 'Black Pepper') => 2,
+                $this->getIngredientId($ingredients, 'Fettuccine Pasta') => 200, // 200g
+                $this->getIngredientId($ingredients, 'All Purpose Cream') => 150, // 150ml
+                $this->getIngredientId($ingredients, 'Eggs') => 2, // 2 pieces
+                $this->getIngredientId($ingredients, 'Parmesan Cheese') => 30, // 30g
+                $this->getIngredientId($ingredients, 'Black Pepper') => 2, // 2g
             ],
             'Chicken Tenders' => [
-                $this->getIngredientId($ingredients, 'Chicken') => 0.300,
-                $this->getIngredientId($ingredients, 'Cooking Oil') => 0.100,
-                $this->getIngredientId($ingredients, 'Salt') => 2,
-                $this->getIngredientId($ingredients, 'Black Pepper') => 1,
+                $this->getIngredientId($ingredients, 'Chicken') => 300, // 300g
+                $this->getIngredientId($ingredients, 'Cooking Oil') => 100, // 100ml
+                $this->getIngredientId($ingredients, 'Salt') => 2, // 2g
+                $this->getIngredientId($ingredients, 'Black Pepper') => 1, // 1g
             ],
             'Cheesy Spam Omelette' => [
-                $this->getIngredientId($ingredients, 'Eggs') => 3,
-                $this->getIngredientId($ingredients, 'Cheese Bar') => 0.040,
-                $this->getIngredientId($ingredients, 'Cooking Oil') => 0.020,
-                $this->getIngredientId($ingredients, 'Salt') => 2,
-                $this->getIngredientId($ingredients, 'Black Pepper') => 1,
+                $this->getIngredientId($ingredients, 'Eggs') => 3, // 3 pieces
+                $this->getIngredientId($ingredients, 'Cheese Bar') => 40, // 40g
+                $this->getIngredientId($ingredients, 'Cooking Oil') => 20, // 20ml
+                $this->getIngredientId($ingredients, 'Salt') => 2, // 2g
+                $this->getIngredientId($ingredients, 'Black Pepper') => 1, // 1g
             ],
             'Chicken Omelette' => [
-                $this->getIngredientId($ingredients, 'Eggs') => 3,
-                $this->getIngredientId($ingredients, 'Chicken') => 0.100,
-                $this->getIngredientId($ingredients, 'Onion') => 0.020,
-                $this->getIngredientId($ingredients, 'Cooking Oil') => 0.020,
+                $this->getIngredientId($ingredients, 'Eggs') => 3, // 3 pieces
+                $this->getIngredientId($ingredients, 'Chicken') => 100, // 100g
+                $this->getIngredientId($ingredients, 'Onion') => 20, // 20g
+                $this->getIngredientId($ingredients, 'Cooking Oil') => 20, // 20ml
             ],
             'Beefy Cheese Burger' => [
-                $this->getIngredientId($ingredients, 'Ground Beef') => 0.200,
-                $this->getIngredientId($ingredients, 'Cheese Bar') => 0.050,
-                $this->getIngredientId($ingredients, 'Onion') => 0.020,
-                $this->getIngredientId($ingredients, 'Tomato Sauce') => 0.020,
-                $this->getIngredientId($ingredients, 'Mayonnaise') => 0.020,
+                $this->getIngredientId($ingredients, 'Ground Beef') => 200, // 200g
+                $this->getIngredientId($ingredients, 'Cheese Bar') => 50, // 50g
+                $this->getIngredientId($ingredients, 'Onion') => 20, // 20g
+                $this->getIngredientId($ingredients, 'Tomato Sauce') => 20, // 20ml
+                $this->getIngredientId($ingredients, 'Mayonnaise') => 20, // 20ml
             ],
             'Zucchini Beef Burger' => [
-                $this->getIngredientId($ingredients, 'Ground Beef') => 0.150,
-                $this->getIngredientId($ingredients, 'Zucchini') => 1,
-                $this->getIngredientId($ingredients, 'Cheese Bar') => 0.040,
-                $this->getIngredientId($ingredients, 'Onion') => 0.020,
+                $this->getIngredientId($ingredients, 'Ground Beef') => 150, // 150g
+                $this->getIngredientId($ingredients, 'Zucchini') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Cheese Bar') => 40, // 40g
+                $this->getIngredientId($ingredients, 'Onion') => 20, // 20g
             ],
         ];
 
@@ -355,87 +355,87 @@ final class GoodlandInventorySeeder extends Seeder
     {
         $recipes = [
             'Classic Coffee' => [
-                $this->getIngredientId($ingredients, 'Coffee Beans') => 20,
-                $this->getIngredientId($ingredients, 'Hot Cups') => 1,
-                $this->getIngredientId($ingredients, 'Hot Lid') => 1,
+                $this->getIngredientId($ingredients, 'Coffee Beans') => 20, // 20g
+                $this->getIngredientId($ingredients, 'Hot Cups') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Hot Lid') => 1, // 1 piece
             ],
             'Hazelnut Latte' => [
-                $this->getIngredientId($ingredients, 'Coffee Beans') => 20,
-                $this->getIngredientId($ingredients, 'Hazelnut Syrup') => 30,
-                $this->getIngredientId($ingredients, 'Milk') => 150,
-                $this->getIngredientId($ingredients, 'Hot Cups') => 1,
-                $this->getIngredientId($ingredients, 'Hot Lid') => 1,
+                $this->getIngredientId($ingredients, 'Coffee Beans') => 20, // 20g
+                $this->getIngredientId($ingredients, 'Hazelnut Syrup') => 30, // 30ml
+                $this->getIngredientId($ingredients, 'Milk') => 150, // 150ml
+                $this->getIngredientId($ingredients, 'Hot Cups') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Hot Lid') => 1, // 1 piece
             ],
             'Caramel Macchiato' => [
-                $this->getIngredientId($ingredients, 'Coffee Beans') => 20,
-                $this->getIngredientId($ingredients, 'Caramel Syrup') => 30,
-                $this->getIngredientId($ingredients, 'Milk') => 150,
-                $this->getIngredientId($ingredients, 'Caramel Sauce') => 10,
-                $this->getIngredientId($ingredients, 'Hot Cups') => 1,
+                $this->getIngredientId($ingredients, 'Coffee Beans') => 20, // 20g
+                $this->getIngredientId($ingredients, 'Caramel Syrup') => 30, // 30ml
+                $this->getIngredientId($ingredients, 'Milk') => 150, // 150ml
+                $this->getIngredientId($ingredients, 'Caramel Sauce') => 10, // 10ml
+                $this->getIngredientId($ingredients, 'Hot Cups') => 1, // 1 piece
             ],
             'Vanilla Latte' => [
-                $this->getIngredientId($ingredients, 'Coffee Beans') => 20,
-                $this->getIngredientId($ingredients, 'Vanilla Syrup') => 30,
-                $this->getIngredientId($ingredients, 'Milk') => 150,
-                $this->getIngredientId($ingredients, 'Hot Cups') => 1,
-                $this->getIngredientId($ingredients, 'Hot Lid') => 1,
+                $this->getIngredientId($ingredients, 'Coffee Beans') => 20, // 20g
+                $this->getIngredientId($ingredients, 'Vanilla Syrup') => 30, // 30ml
+                $this->getIngredientId($ingredients, 'Milk') => 150, // 150ml
+                $this->getIngredientId($ingredients, 'Hot Cups') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Hot Lid') => 1, // 1 piece
             ],
             'Matcha Latte' => [
-                $this->getIngredientId($ingredients, 'Xuejidong Matcha Powder') => 5,
-                $this->getIngredientId($ingredients, 'Milk') => 200,
-                $this->getIngredientId($ingredients, 'Hot Cups') => 1,
-                $this->getIngredientId($ingredients, 'Hot Lid') => 1,
+                $this->getIngredientId($ingredients, 'Xuejidong Matcha Powder') => 5, // 5g
+                $this->getIngredientId($ingredients, 'Milk') => 200, // 200ml
+                $this->getIngredientId($ingredients, 'Hot Cups') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Hot Lid') => 1, // 1 piece
             ],
             'Strawberry Frappe' => [
-                $this->getIngredientId($ingredients, 'Strawberry Mix') => 50,
-                $this->getIngredientId($ingredients, 'Frappe Base') => 15,
-                $this->getIngredientId($ingredients, 'Milk') => 100,
-                $this->getIngredientId($ingredients, 'Crushed Oreo') => 10,
-                $this->getIngredientId($ingredients, '16oz Cups') => 1,
-                $this->getIngredientId($ingredients, 'Strawless Lid') => 1,
-                $this->getIngredientId($ingredients, 'Thick Straw') => 1,
+                $this->getIngredientId($ingredients, 'Strawberry Mix') => 50, // 50ml
+                $this->getIngredientId($ingredients, 'Frappe Base') => 15, // 15g
+                $this->getIngredientId($ingredients, 'Milk') => 100, // 100ml
+                $this->getIngredientId($ingredients, 'Crushed Oreo') => 10, // 10g
+                $this->getIngredientId($ingredients, '16oz Cups') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Strawless Lid') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Thick Straw') => 1, // 1 piece
             ],
             'Blueberry Frappe' => [
-                $this->getIngredientId($ingredients, 'Blueberry Mix') => 50,
-                $this->getIngredientId($ingredients, 'Frappe Base') => 15,
-                $this->getIngredientId($ingredients, 'Milk') => 100,
-                $this->getIngredientId($ingredients, '16oz Cups') => 1,
-                $this->getIngredientId($ingredients, 'Strawless Lid') => 1,
-                $this->getIngredientId($ingredients, 'Thick Straw') => 1,
+                $this->getIngredientId($ingredients, 'Blueberry Mix') => 50, // 50ml
+                $this->getIngredientId($ingredients, 'Frappe Base') => 15, // 15g
+                $this->getIngredientId($ingredients, 'Milk') => 100, // 100ml
+                $this->getIngredientId($ingredients, '16oz Cups') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Strawless Lid') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Thick Straw') => 1, // 1 piece
             ],
             'Chocolate Frappe' => [
-                $this->getIngredientId($ingredients, 'Chocolate Sauce') => 30,
-                $this->getIngredientId($ingredients, 'Frappe Base') => 15,
-                $this->getIngredientId($ingredients, 'Milk') => 100,
-                $this->getIngredientId($ingredients, 'Crushed Oreo') => 15,
-                $this->getIngredientId($ingredients, '16oz Cups') => 1,
-                $this->getIngredientId($ingredients, 'Strawless Lid') => 1,
-                $this->getIngredientId($ingredients, 'Thick Straw') => 1,
+                $this->getIngredientId($ingredients, 'Chocolate Sauce') => 30, // 30ml
+                $this->getIngredientId($ingredients, 'Frappe Base') => 15, // 15g
+                $this->getIngredientId($ingredients, 'Milk') => 100, // 100ml
+                $this->getIngredientId($ingredients, 'Crushed Oreo') => 15, // 15g
+                $this->getIngredientId($ingredients, '16oz Cups') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Strawless Lid') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Thick Straw') => 1, // 1 piece
             ],
             'Iced Tea' => [
-                $this->getIngredientId($ingredients, 'Tea') => 10,
-                $this->getIngredientId($ingredients, 'Brown Sugar') => 20,
-                $this->getIngredientId($ingredients, 'Lemon') => 0.5,
-                $this->getIngredientId($ingredients, '16oz Cups') => 1,
-                $this->getIngredientId($ingredients, 'Strawless Lid') => 1,
-                $this->getIngredientId($ingredients, 'Thin Straw') => 1,
+                $this->getIngredientId($ingredients, 'Tea') => 10, // 10g
+                $this->getIngredientId($ingredients, 'Brown Sugar') => 20, // 20g
+                $this->getIngredientId($ingredients, 'Lemon') => 0.5, // 0.5 piece
+                $this->getIngredientId($ingredients, '16oz Cups') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Strawless Lid') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Thin Straw') => 1, // 1 piece
             ],
             'Lemonade' => [
-                $this->getIngredientId($ingredients, 'Lemonade') => 300,
-                $this->getIngredientId($ingredients, 'Lemon') => 1,
-                $this->getIngredientId($ingredients, 'Honey') => 20,
-                $this->getIngredientId($ingredients, '16oz Cups') => 1,
-                $this->getIngredientId($ingredients, 'Strawless Lid') => 1,
-                $this->getIngredientId($ingredients, 'Thin Straw') => 1,
+                $this->getIngredientId($ingredients, 'Lemonade') => 300, // 300ml
+                $this->getIngredientId($ingredients, 'Lemon') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Honey') => 20, // 20ml
+                $this->getIngredientId($ingredients, '16oz Cups') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Strawless Lid') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Thin Straw') => 1, // 1 piece
             ],
             'Fruit Tea' => [
-                $this->getIngredientId($ingredients, 'Assam Black Tea') => 10,
-                $this->getIngredientId($ingredients, 'Strawberry Mix') => 20,
-                $this->getIngredientId($ingredients, 'Blueberry Mix') => 20,
-                $this->getIngredientId($ingredients, 'Butterfly Pea') => 5,
-                $this->getIngredientId($ingredients, '16oz Cups') => 1,
-                $this->getIngredientId($ingredients, 'Strawless Lid') => 1,
-                $this->getIngredientId($ingredients, 'Thin Straw') => 1,
+                $this->getIngredientId($ingredients, 'Assam Black Tea') => 10, // 10g
+                $this->getIngredientId($ingredients, 'Strawberry Mix') => 20, // 20ml
+                $this->getIngredientId($ingredients, 'Blueberry Mix') => 20, // 20ml
+                $this->getIngredientId($ingredients, 'Butterfly Pea') => 5, // 5g
+                $this->getIngredientId($ingredients, '16oz Cups') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Strawless Lid') => 1, // 1 piece
+                $this->getIngredientId($ingredients, 'Thin Straw') => 1, // 1 piece
             ],
         ];
 
@@ -456,10 +456,8 @@ final class GoodlandInventorySeeder extends Seeder
     private function getRandomStock(UnitType $unitType): int
     {
         return match ($unitType->value) {
-            'grams' => rand(500, 10000),
-            'kilograms' => rand(2, 50),
-            'ml' => rand(500, 5000),
-            'liters' => rand(1, 20),
+            'grams' => rand(5000, 50000), // 5kg to 50kg worth in grams
+            'ml' => rand(1000, 20000), // 1L to 20L worth in ml
             'pieces' => rand(50, 500),
             default => rand(100, 1000),
         };
@@ -468,10 +466,8 @@ final class GoodlandInventorySeeder extends Seeder
     private function getMinStockLevel(UnitType $unitType): int
     {
         return match ($unitType->value) {
-            'grams' => 500,
-            'kilograms' => 1,
-            'ml' => 200,
-            'liters' => 1,
+            'grams' => 1000, // 1kg worth in grams
+            'ml' => 500, // 0.5L worth in ml
             'pieces' => 20,
             default => 50,
         };
@@ -480,10 +476,8 @@ final class GoodlandInventorySeeder extends Seeder
     private function getMaxStockLevel(UnitType $unitType): int
     {
         return match ($unitType->value) {
-            'grams' => 10000,
-            'kilograms' => 100,
-            'ml' => 10000,
-            'liters' => 50,
+            'grams' => 50000, // 50kg worth in grams
+            'ml' => 25000, // 25L worth in ml
             'pieces' => 1000,
             default => 1000,
         };

@@ -9,6 +9,7 @@ use App\Enums\DiscountType;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\GeneralSettingsService;
+use App\Services\OrderProcessingService;
 use BackedEnum;
 use Exception;
 use Filament\Actions;
@@ -41,9 +42,12 @@ final class OrdersProcessing extends Page
 
     private GeneralSettingsService $settingsService;
 
-    public function boot(GeneralSettingsService $settingsService): void
+    private OrderProcessingService $orderProcessingService;
+
+    public function boot(GeneralSettingsService $settingsService, OrderProcessingService $orderProcessingService): void
     {
         $this->settingsService = $settingsService;
+        $this->orderProcessingService = $orderProcessingService;
 
         // Initialize currency from settings
         $currencyCode = $this->settingsService->getCurrency();
@@ -78,39 +82,94 @@ final class OrdersProcessing extends Page
         try {
             DB::beginTransaction();
 
-            $item = OrderItem::findOrFail($itemId);
+            $item = OrderItem::with('order.items')->findOrFail($itemId);
+            $wasServed = $item->is_served;
             $item->update(['is_served' => ! $item->is_served]);
 
             // Check if all items in the order are served
-            $order = $item->order;
+            // Reload the order with fresh items to get the updated is_served status
+            $order = Order::with('items')->findOrFail($item->order_id);
             $allItemsServed = $order->items()->where('is_served', false)->count() === 0;
 
             // Update order status based on item completion
             if ($allItemsServed && $order->items()->count() > 0) {
+                // Process inventory deduction when all items are marked as served
+                \Illuminate\Support\Facades\Log::info('All items served, attempting to process inventory', [
+                    'order_id' => $order->id,
+                    'item_id' => $itemId,
+                    'already_processed' => $order->inventory_processed,
+                ]);
+
+                $inventoryProcessed = $this->orderProcessingService->processOrder($order);
+
+                if (! $inventoryProcessed) {
+                    DB::rollBack();
+
+                    \Illuminate\Support\Facades\Log::error('Inventory processing failed - insufficient stock', [
+                        'order_id' => $order->id,
+                        'item_id' => $itemId,
+                    ]);
+
+                    Notification::make()
+                        ->danger()
+                        ->title('Insufficient Inventory')
+                        ->body("Cannot complete order #{$order->id} due to insufficient stock. Please restock ingredients.")
+                        ->persistent()
+                        ->send();
+
+                    return;
+                }
+
+                // Update order status to completed only after successful inventory processing
                 $order->update(['status' => 'completed']);
+
+                \Illuminate\Support\Facades\Log::info('Order completed successfully', [
+                    'order_id' => $order->id,
+                    'inventory_was_processed' => $order->inventory_processed,
+                ]);
+
+                DB::commit();
+
+                Notification::make()
+                    ->success()
+                    ->title('Order Completed')
+                    ->body("Order #{$order->id} has been completed and inventory has been updated.")
+                    ->send();
             } else {
                 // If any item is not served, set order back to pending
                 if ($order->status === 'completed') {
                     $order->update(['status' => 'pending']);
+
+                    \Illuminate\Support\Facades\Log::info('Order status reverted to pending', [
+                        'order_id' => $order->id,
+                        'reason' => 'Item marked as not served',
+                    ]);
                 }
+
+                DB::commit();
+
+                Notification::make()
+                    ->success()
+                    ->title('Item Status Updated')
+                    ->body($item->is_served ? 'Item marked as served' : 'Item marked as not served')
+                    ->send();
             }
-
-            DB::commit();
-
-            Notification::make()
-                ->success()
-                ->title('Item Status Updated')
-                ->body($item->is_served ? 'Item marked as served' : 'Item marked as not served')
-                ->send();
 
             $this->dispatch('$refresh');
         } catch (Exception $e) {
             DB::rollBack();
 
+            \Illuminate\Support\Facades\Log::error('Error in toggleServed', [
+                'item_id' => $itemId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             Notification::make()
                 ->danger()
                 ->title('Error')
-                ->body($e->getMessage())
+                ->body('An error occurred: '.$e->getMessage())
+                ->persistent()
                 ->send();
         }
     }
@@ -341,6 +400,11 @@ final class OrdersProcessing extends Page
 
                     $order = Order::findOrFail($data['orderId']);
 
+                    \Illuminate\Support\Facades\Log::info('Processing payment collection', [
+                        'order_id' => $order->id,
+                        'payment_method' => $data['paymentMethod'],
+                    ]);
+
                     // Calculate discount
                     $subtotal = (float) ($order->subtotal ?? $order->total);
                     $existingAddOns = (float) ($order->add_ons_total ?? 0);
@@ -357,6 +421,12 @@ final class OrdersProcessing extends Page
                     if ($data['paymentMethod'] === 'cash') {
                         $paidAmount = (float) ($data['paidAmount'] ?? 0);
                         if ($paidAmount < $finalTotal) {
+                            \Illuminate\Support\Facades\Log::warning('Insufficient cash payment', [
+                                'order_id' => $order->id,
+                                'paid_amount' => $paidAmount,
+                                'final_total' => $finalTotal,
+                            ]);
+
                             Notification::make()
                                 ->danger()
                                 ->title('Insufficient Payment')
@@ -367,6 +437,26 @@ final class OrdersProcessing extends Page
 
                             return;
                         }
+                    }
+
+                    // Process inventory deduction when payment is collected
+                    $inventoryProcessed = $this->orderProcessingService->processOrder($order);
+
+                    if (! $inventoryProcessed) {
+                        DB::rollBack();
+
+                        \Illuminate\Support\Facades\Log::error('Inventory processing failed during payment', [
+                            'order_id' => $order->id,
+                        ]);
+
+                        Notification::make()
+                            ->danger()
+                            ->title('Insufficient Inventory')
+                            ->body('Cannot complete payment due to insufficient stock. Please check the logs or restock ingredients.')
+                            ->persistent()
+                            ->send();
+
+                        return;
                     }
 
                     $order->update([
@@ -382,6 +472,11 @@ final class OrdersProcessing extends Page
 
                     DB::commit();
 
+                    \Illuminate\Support\Facades\Log::info('Payment collected successfully', [
+                        'order_id' => $order->id,
+                        'total' => $finalTotal,
+                    ]);
+
                     Notification::make()
                         ->success()
                         ->title('Payment Collected')
@@ -392,10 +487,17 @@ final class OrdersProcessing extends Page
                 } catch (Exception $e) {
                     DB::rollBack();
 
+                    \Illuminate\Support\Facades\Log::error('Error during payment collection', [
+                        'order_id' => $data['orderId'] ?? null,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+
                     Notification::make()
                         ->danger()
                         ->title('Error')
-                        ->body($e->getMessage())
+                        ->body('An error occurred: '.$e->getMessage())
+                        ->persistent()
                         ->send();
                 }
             })

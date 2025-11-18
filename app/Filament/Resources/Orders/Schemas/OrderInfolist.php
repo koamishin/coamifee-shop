@@ -101,7 +101,8 @@ final class OrderInfolist
                                     ->since()
                                     ->icon('heroicon-o-clock'),
                             ])
-                            ->columns(2),
+                            ->columns(2)
+                            ->columnSpanFull(),
 
                         Section::make('Customer Information')
                             ->icon('heroicon-o-user-circle')
@@ -137,7 +138,10 @@ final class OrderInfolist
                             ->columns(2),
                     ]),
 
-                Section::make('Order Summary')
+                
+            ])->from('lg'),
+
+            Section::make('Order Summary')
                     ->icon('heroicon-o-calculator')
                     ->schema([
                         TextEntry::make('subtotal')
@@ -178,16 +182,7 @@ final class OrderInfolist
                             ->size(TextSize::Large)
                             ->color('success')
                             ->icon('heroicon-o-currency-dollar'),
-                    ])
-                    ->grow(false),
-            ])->from('md'),
-
-            Section::make('Payment Information')
-                ->icon('heroicon-o-credit-card')
-                ->schema([
-                    Grid::make(3)
-                        ->schema([
-                            TextEntry::make('payment_method')
+                        TextEntry::make('payment_method')
                                 ->label('Payment Method')
                                 ->badge()
                                 ->icon(fn ($state): string => match ($state) {
@@ -211,32 +206,7 @@ final class OrderInfolist
                                     'bank_transfer' => 'Bank Transfer',
                                     default => ucfirst(str_replace('_', ' ', (string) $state)),
                                 }),
-
-                            TextEntry::make('payment_status')
-                                ->label('Payment Status')
-                                ->badge()
-                                ->icon(fn ($state): string => match ($state) {
-                                    'paid' => 'heroicon-o-check-circle',
-                                    'pending' => 'heroicon-o-clock',
-                                    'failed' => 'heroicon-o-x-circle',
-                                    default => 'heroicon-o-question-mark-circle',
-                                })
-                                ->color(fn ($state): string => match ($state) {
-                                    'paid' => 'success',
-                                    'pending' => 'warning',
-                                    'failed' => 'danger',
-                                    default => 'gray',
-                                })
-                                ->formatStateUsing(fn ($state): string => ucfirst((string) $state)),
-
-                            TextEntry::make('total')
-                                ->label('Amount Paid')
-                                ->money(self::getMoneyConfig())
-                                ->weight(FontWeight::Bold)
-                                ->color('success'),
-                        ]),
-                ])
-                ->collapsible(),
+                    ]),
 
             Section::make('Order Items')
                 ->icon('heroicon-o-shopping-bag')
@@ -291,7 +261,8 @@ final class OrderInfolist
                                 ->columnSpanFull(),
                         ])
                         ->contained(false),
-                ]),
+                ])
+                ->columnSpanFull(),
 
             Section::make('Additional Information')
                 ->icon('heroicon-o-information-circle')

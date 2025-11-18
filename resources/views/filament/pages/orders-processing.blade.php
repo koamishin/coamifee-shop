@@ -139,9 +139,33 @@
                                 </div>
 
                                 {{-- Item Subtotal --}}
-                                <span class="text-gray-600">${{ number_format($item->subtotal, 2) }}</span>
+                                <span class="text-gray-600">{{ $this->formatCurrency($item->subtotal) }}</span>
                             </div>
                         @endforeach
+
+                        {{-- Add-ons Section --}}
+                        @if($order->add_ons && count($order->add_ons) > 0)
+                            <div class="mt-3 p-2 bg-purple-50 border border-purple-200 rounded">
+                                <div class="flex items-center gap-1 mb-1">
+                                    <x-filament::icon icon="heroicon-o-plus-circle" class="w-4 h-4 text-purple-600" />
+                                    <strong class="text-purple-700 text-xs">Add-ons:</strong>
+                                </div>
+                                <div class="space-y-1">
+                                    @foreach($order->add_ons as $addOn)
+                                        <div class="flex items-center justify-between text-xs">
+                                            <span class="text-purple-600">• {{ $addOn['name'] }}</span>
+                                            <span class="text-purple-700 font-medium">{{ $this->formatCurrency($addOn['price']) }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                @if($order->add_ons_total > 0)
+                                    <div class="mt-2 pt-2 border-t border-purple-200 flex items-center justify-between text-xs">
+                                        <span class="text-purple-700 font-semibold">Add-ons Total:</span>
+                                        <span class="text-purple-700 font-bold">{{ $this->formatCurrency($order->add_ons_total) }}</span>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
 
                         @if($order->notes)
                             <div class="mt-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs">

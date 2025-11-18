@@ -362,7 +362,8 @@ final class PosPage extends Page
             $paymentStatus = $this->paymentTiming === 'pay_now' ? 'paid' : 'unpaid';
             $paymentMethod = $this->paymentTiming === 'pay_now' ? $this->paymentMethod : null;
 
-            $order = Order::create([
+            // Prepare order data
+            $orderData = [
                 'customer_id' => $this->customerId,
                 'customer_name' => $this->customerName ?: 'Walk-in Customer',
                 'order_type' => $this->orderType,
@@ -378,7 +379,15 @@ final class PosPage extends Page
                 'status' => 'pending',
                 'payment_status' => $paymentStatus,
                 'payment_method' => $paymentMethod,
-            ]);
+            ];
+
+            // Add paid amount and change if paying now
+            if ($this->paymentTiming === 'pay_now' && $this->paidAmount > 0) {
+                $orderData['paid_amount'] = $this->paidAmount;
+                $orderData['change_amount'] = $this->changeAmount;
+            }
+
+            $order = Order::create($orderData);
 
             foreach ($this->cartItems as $item) {
                 OrderItem::create([
@@ -569,7 +578,128 @@ final class PosPage extends Page
                                 ])
                                 ->default('cash')
                                 ->required()
-                                ->native(false),
+                                ->native(false)
+                                ->reactive()
+                                ->live(),
+
+                            Forms\Components\Placeholder::make('payment_calculation')
+                                ->label('Payment Calculation')
+                                ->content(function ($get) {
+                                    $subtotal = $this->totalAmount;
+                                    $discountAmount = 0.0;
+
+                                    if ($get('discountType') && $get('discountValue')) {
+                                        $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
+                                    }
+
+                                    $addOnsTotal = 0.0;
+                                    $addOns = $get('addOns') ?? [];
+                                    foreach ($addOns as $addOn) {
+                                        if (! empty($addOn['price'])) {
+                                            $addOnsTotal += (float) $addOn['price'];
+                                        }
+                                    }
+
+                                    $total = $subtotal - $discountAmount + $addOnsTotal;
+
+                                    $subtotalFormatted = $this->formatCurrency($subtotal);
+                                    $totalFormatted = $this->formatCurrency($total);
+                                    $discountFormatted = $this->formatCurrency($discountAmount);
+                                    $addOnsTotalFormatted = $this->formatCurrency($addOnsTotal);
+
+                                    $discountHtml = $discountAmount > 0 ? "
+                                        <div class='flex justify-between text-sm text-green-600'>
+                                            <span>Discount:</span>
+                                            <span class='font-medium'>- {$discountFormatted}</span>
+                                        </div>
+                                    " : '';
+
+                                    $addOnsHtml = $addOnsTotal > 0 ? "
+                                        <div class='flex justify-between text-sm text-blue-600'>
+                                            <span>Add-ons:</span>
+                                            <span class='font-medium'>+ {$addOnsTotalFormatted}</span>
+                                        </div>
+                                    " : '';
+
+                                    return new HtmlString("
+                                        <div class='space-y-2 p-4 bg-gray-50 rounded-lg border border-gray-200'>
+                                            <div class='flex justify-between text-sm'>
+                                                <span class='text-gray-600'>Subtotal:</span>
+                                                <span class='font-medium'>{$subtotalFormatted}</span>
+                                            </div>
+                                            {$discountHtml}
+                                            {$addOnsHtml}
+                                            <div class='flex justify-between text-lg font-bold border-t border-gray-300 pt-2 mt-2'>
+                                                <span>Total:</span>
+                                                <span class='text-orange-600'>{$totalFormatted}</span>
+                                            </div>
+                                        </div>
+                                    ");
+                                }),
+
+                            Forms\Components\TextInput::make('paidAmount')
+                                ->label('Amount Paid')
+                                ->numeric()
+                                ->prefix($this->getCurrencySymbol())
+                                ->step(0.01)
+                                ->required()
+                                ->reactive()
+                                ->live()
+                                ->afterStateUpdated(function ($state, $set, $get) {
+                                    // Calculate change
+                                    $subtotal = $this->totalAmount;
+                                    $discountAmount = 0.0;
+
+                                    if ($get('discountType') && $get('discountValue')) {
+                                        $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
+                                    }
+
+                                    $addOnsTotal = 0.0;
+                                    $addOns = $get('addOns') ?? [];
+                                    foreach ($addOns as $addOn) {
+                                        if (! empty($addOn['price'])) {
+                                            $addOnsTotal += (float) $addOn['price'];
+                                        }
+                                    }
+
+                                    $total = $subtotal - $discountAmount + $addOnsTotal;
+                                    $paid = (float) $state;
+                                    $change = $paid - $total;
+
+                                    $set('changeAmount', $change);
+                                })
+                                ->helperText(fn ($get) => $get('paymentMethod') === 'cash' ? 'Enter the amount received from customer' : 'Enter the payment amount'),
+
+                            Forms\Components\Placeholder::make('changeDisplay')
+                                ->label('Change')
+                                ->content(function ($get) {
+                                    $changeAmount = (float) ($get('changeAmount') ?? 0);
+                                    $changeFormatted = $this->formatCurrency(abs($changeAmount));
+
+                                    if ($changeAmount > 0) {
+                                        return new HtmlString("
+                                            <div class='p-3 bg-green-50 border border-green-200 rounded-lg'>
+                                                <span class='text-lg font-bold text-green-700'>Change: {$changeFormatted}</span>
+                                            </div>
+                                        ");
+                                    }
+                                    if ($changeAmount < 0) {
+                                        return new HtmlString("
+                                            <div class='p-3 bg-red-50 border border-red-200 rounded-lg'>
+                                                <span class='text-lg font-bold text-red-700'>Insufficient: {$changeFormatted}</span>
+                                            </div>
+                                        ");
+                                    }
+
+                                    return new HtmlString("
+                                        <div class='p-3 bg-gray-50 border border-gray-200 rounded-lg'>
+                                            <span class='text-lg font-bold text-gray-700'>Exact Amount</span>
+                                        </div>
+                                    ");
+                                })
+                                ->visible(fn ($get) => $get('paymentMethod') === 'cash' && ! empty($get('paidAmount'))),
+
+                            Forms\Components\Hidden::make('changeAmount'),
                         ])
                         ->visible(fn ($get) => $get('paymentTiming') === 'pay_now')
                         ->columns(1),
@@ -718,6 +848,8 @@ final class PosPage extends Page
                     $this->discountType = $data['discountType'] ?? null;
                     $this->discountValue = ! empty($data['discountValue']) ? (float) $data['discountValue'] : null;
                     $this->addOns = $data['addOns'] ?? [];
+                    $this->paidAmount = ! empty($data['paidAmount']) ? (float) $data['paidAmount'] : 0.0;
+                    $this->changeAmount = ! empty($data['changeAmount']) ? (float) $data['changeAmount'] : 0.0;
 
                     // Create the order
                     $this->createOrder();
