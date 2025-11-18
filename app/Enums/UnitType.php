@@ -7,9 +7,7 @@ namespace App\Enums;
 enum UnitType: string
 {
     case GRAMS = 'grams';
-    case KILOGRAMS = 'kilograms';
     case MILLILITERS = 'ml';
-    case LITERS = 'liters';
     case PIECES = 'pieces';
 
     /**
@@ -44,10 +42,8 @@ enum UnitType: string
     public function getLabel(): string
     {
         return match ($this) {
-            self::GRAMS => 'Grams',
-            self::KILOGRAMS => 'Kilograms',
-            self::MILLILITERS => 'Milliliters',
-            self::LITERS => 'Liters',
+            self::GRAMS => 'Grams (g)',
+            self::MILLILITERS => 'Milliliters (ml)',
             self::PIECES => 'Pieces',
         };
     }
@@ -59,9 +55,7 @@ enum UnitType: string
     {
         return match ($this) {
             self::GRAMS => 'heroicon-o-scale',
-            self::KILOGRAMS => 'heroicon-o-scale',
             self::MILLILITERS => 'heroicon-o-beaker',
-            self::LITERS => 'heroicon-o-beaker',
             self::PIECES => 'heroicon-o-cube',
         };
     }
@@ -73,9 +67,7 @@ enum UnitType: string
     {
         return match ($this) {
             self::GRAMS => 'warning',
-            self::KILOGRAMS => 'danger',
             self::MILLILITERS => 'info',
-            self::LITERS => 'primary',
             self::PIECES => 'success',
         };
     }
@@ -86,10 +78,8 @@ enum UnitType: string
     public function getDescription(): string
     {
         return match ($this) {
-            self::GRAMS => 'Weight measurement in grams',
-            self::KILOGRAMS => 'Weight measurement in kilograms',
-            self::MILLILITERS => 'Volume measurement in milliliters',
-            self::LITERS => 'Volume measurement in liters',
+            self::GRAMS => 'Weight measurement in grams (enter kg as grams: 1kg = 1000g)',
+            self::MILLILITERS => 'Volume measurement in milliliters (enter L as ml: 1L = 1000ml)',
             self::PIECES => 'Count measurement for individual items',
         };
     }

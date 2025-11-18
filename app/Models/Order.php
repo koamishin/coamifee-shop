@@ -26,6 +26,8 @@ final class Order extends Model
         'add_ons',
         'add_ons_total',
         'total',
+        'paid_amount',
+        'change_amount',
         'status',
         'inventory_processed',
         'table_number',
@@ -39,6 +41,8 @@ final class Order extends Model
         'discount_amount' => 'decimal:2',
         'add_ons' => 'array',
         'add_ons_total' => 'decimal:2',
+        'paid_amount' => 'decimal:2',
+        'change_amount' => 'decimal:2',
         'customer_id' => 'integer',
         'inventory_processed' => 'boolean',
     ];
