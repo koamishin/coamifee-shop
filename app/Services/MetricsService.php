@@ -116,8 +116,8 @@ final class MetricsService
 
     private function updateWeeklyMetrics(int $productId, Carbon $date): void
     {
-        $weekStart = $date->startOfWeek()->toDateString();
-        $weekEnd = $date->endOfWeek()->toDateString();
+        $weekStart = $date->copy()->startOfWeek()->toDateString();
+        $weekEnd = $date->copy()->endOfWeek()->toDateString();
 
         $weeklyMetrics = ProductMetric::query()->where('product_id', $productId)
             ->where('period_type', 'daily')
@@ -139,8 +139,8 @@ final class MetricsService
 
     private function updateMonthlyMetrics(int $productId, Carbon $date): void
     {
-        $monthStart = $date->startOfMonth()->toDateString();
-        $monthEnd = $date->endOfMonth()->toDateString();
+        $monthStart = $date->copy()->startOfMonth()->toDateString();
+        $monthEnd = $date->copy()->endOfMonth()->toDateString();
 
         $monthlyMetrics = ProductMetric::query()->where('product_id', $productId)
             ->where('period_type', 'daily')
