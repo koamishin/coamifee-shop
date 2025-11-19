@@ -575,9 +575,10 @@ final class PosPage extends Page
                         ->schema([
                             Forms\Components\Select::make('paymentMethod')
                                 ->label('Payment Method')
+                                ->searchable(false)
                                 ->options([
                                     'cash' => 'Cash',
-                                    'gcash' => 'GCash',
+                                    'gcash' => 'Gcash',
                                     'maya' => 'Maya',
                                     'bank_transfer' => 'Bank Transfer',
                                 ])

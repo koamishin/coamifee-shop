@@ -232,15 +232,21 @@ final class OrdersProcessing extends Page
                     ->label('Payment Method')
                     ->options([
                         'cash' => 'Cash',
-                        'card' => 'Credit/Debit Card',
+                        'gcash' => 'Gcash',
+                        'maya' => 'Maya',
+                        'bank_transfer' => 'Bank Transfer',
                     ])
                     ->descriptions([
                         'cash' => 'Accept cash payment from customer',
-                        'card' => 'Accept credit or debit card payment',
+                        'gcash' => 'Accept Gcash mobile payment',
+                        'maya' => 'Accept Maya mobile payment',
+                        'bank_transfer' => 'Accept bank transfer payment',
                     ])
                     ->icons([
                         'cash' => 'heroicon-o-banknotes',
-                        'card' => 'heroicon-o-credit-card',
+                        'gcash' => 'heroicon-o-device-phone-mobile',
+                        'maya' => 'heroicon-o-device-phone-mobile',
+                        'bank_transfer' => 'heroicon-o-building-office',
                     ])
                     ->default('cash')
                     ->required()
