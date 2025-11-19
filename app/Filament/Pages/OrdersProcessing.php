@@ -341,7 +341,14 @@ final class OrdersProcessing extends Page
                             ->helperText('Enter percentage (0-100)'),
                     ])
                     ->columns(2)
-                    ->collapsible(),
+                    ->collapsible()
+                    ->visible(function ($get) {
+                        // Hide discount section for Dine In orders in collect payment
+                        $order = Order::find($get('orderId'));
+
+                        // Show discount section unless it's a dine_in order
+                        return $order ? $order->order_type !== 'dine_in' : true;
+                    }),
 
                 Section::make('Payment Details')
                     ->schema([

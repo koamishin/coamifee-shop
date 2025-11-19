@@ -551,24 +551,91 @@ final class PosPage extends Page
                         ->placeholder('e.g., Extra hot, no sugar, allergies...')
                         ->rows(2),
 
-                    RadioDeck::make('paymentTiming')
-                        ->label('Payment Timing')
+                    RadioDeck::make('orderType')
+                        ->label('Order Type')
                         ->options([
-                            'pay_later' => 'Pay Later (After meal is ready)',
-                            'pay_now' => 'Pay Now (Immediate payment)',
+                            'dine_in' => 'Dine In',
+                            'takeaway' => 'Takeaway',
+                            'delivery' => 'Delivery',
                         ])
                         ->descriptions([
-                            'pay_later' => 'Payment will be collected when order is ready',
-                            'pay_now' => 'Customer will pay immediately before order is sent to kitchen',
+                            'dine_in' => 'Customer will dine at the restaurant',
+                            'takeaway' => 'Customer will take the order to go',
+                            'delivery' => 'Order will be delivered to customer',
                         ])
                         ->icons([
-                            'pay_later' => 'heroicon-o-clock',
-                            'pay_now' => 'heroicon-o-banknotes',
+                            'dine_in' => 'heroicon-o-building-storefront',
+                            'takeaway' => 'heroicon-o-shopping-bag',
+                            'delivery' => 'heroicon-o-truck',
                         ])
-                        ->default('pay_later')
+                        ->default($this->orderType)
                         ->required()
                         ->reactive()
-                        ->columns(2)
+                        ->columns(3)
+                        ->color('primary')
+                        ->afterStateUpdated(function ($state) {
+                            $this->orderType = $state;
+                        }),
+
+                    RadioDeck::make('paymentTiming')
+                        ->label('Payment Timing')
+                        ->options(function ($get) {
+                            $orderType = $get('orderType') ?? $this->orderType;
+
+                            if ($orderType === 'dine_in') {
+                                return [
+                                    'pay_later' => 'Pay Later (After meal is ready)',
+                                    'pay_now' => 'Pay Now (Immediate payment)',
+                                ];
+                            } else {
+                                // Takeaway/Delivery only shows Pay Now
+                                return [
+                                    'pay_now' => 'Pay Now (Immediate payment)',
+                                ];
+                            }
+                        })
+                        ->descriptions(function ($get) {
+                            $orderType = $get('orderType') ?? $this->orderType;
+
+                            if ($orderType === 'dine_in') {
+                                return [
+                                    'pay_later' => 'Payment will be collected when order is ready',
+                                    'pay_now' => 'Customer will pay immediately before order is sent to kitchen',
+                                ];
+                            } else {
+                                // Takeaway/Delivery description for Pay Now
+                                return [
+                                    'pay_now' => 'Payment is required before order preparation',
+                                ];
+                            }
+                        })
+                        ->icons(function ($get) {
+                            $orderType = $get('orderType') ?? $this->orderType;
+
+                            if ($orderType === 'dine_in') {
+                                return [
+                                    'pay_later' => 'heroicon-o-clock',
+                                    'pay_now' => 'heroicon-o-banknotes',
+                                ];
+                            } else {
+                                // Takeaway/Delivery only shows Pay Now icon
+                                return [
+                                    'pay_now' => 'heroicon-o-banknotes',
+                                ];
+                            }
+                        })
+                        ->default(function ($get) {
+                            $orderType = $get('orderType') ?? $this->orderType;
+                            return $orderType === 'dine_in' ? 'pay_later' : 'pay_now';
+                        })
+                        ->required()
+                        ->reactive()
+                        ->live()
+                        ->afterStateUpdated(fn ($state, $set) => $this->paymentTiming = $state)
+                        ->columns(function ($get) {
+                            $orderType = $get('orderType') ?? $this->orderType;
+                            return $orderType === 'dine_in' ? 2 : 1;
+                        })
                         ->color('primary'),
 
                     Section::make('Payment Details')
@@ -744,7 +811,15 @@ final class PosPage extends Page
                                 ->helperText('Enter percentage (0-100)'),
                         ])
                         ->columns(2)
-                        ->collapsible(),
+                        ->collapsible()
+                        ->visible(function ($get) {
+                            // Hide discount section for Dine In + Pay Later
+                            $orderType = $get('orderType') ?? $this->orderType;
+                            $paymentTiming = $get('paymentTiming') ?? 'pay_later';
+
+                            // Show discount section unless it's dine_in AND pay_later
+                            return !($orderType === 'dine_in' && $paymentTiming === 'pay_later');
+                        }),
 
                     Section::make('Add-Ons (Optional)')
                         ->schema([
@@ -846,6 +921,7 @@ final class PosPage extends Page
                 ])
                 ->action(function (array $data) {
                     // Update properties from form
+                    $this->orderType = $data['orderType'] ?? $this->orderType;
                     $this->customerId = $data['customerId'] ?? null;
                     $this->customerName = $data['customerName'] ?? '';
                     $this->tableNumber = $data['tableNumber'] ?? null;
