@@ -13,10 +13,18 @@
                             <x-filament::icon icon="heroicon-o-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                             <input
                                 type="text"
-                                wire:model.live.debounce.300ms="search"
+                                wire:model.live.debounce.150ms="search"
                                 placeholder="Search coffee, pastries, snacks..."
-                                class="w-full pl-10 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all bg-white"
+                                class="w-full pl-10 pr-10 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all bg-white"
                             >
+                            <div wire:loading wire:target="search" class="absolute right-3 top-1/2 -translate-y-1/2">
+                                <x-filament::icon icon="heroicon-o-arrow-path" class="w-4 h-4 text-orange-500 animate-spin" />
+                            </div>
+                            @if(!empty($search))
+                                <button wire:click="search = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" title="Clear search">
+                                    <x-filament::icon icon="heroicon-o-x-mark" class="w-4 h-4" />
+                                </button>
+                            @endif
                         </div>
                         <button
                             wire:click="toggleMode"

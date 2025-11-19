@@ -29,12 +29,22 @@ final readonly class PosService
                 $query->where('category_id', $selectedCategory);
             })
             ->when($search, function ($query) use ($search): void {
-                $query->where(function ($q) use ($search): void {
-                    $q->where('name', 'like', '%'.$search.'%')
-                        ->orWhere('description', 'like', '%'.$search.'%')
-                        ->orWhereHas('category', function ($categoryQuery) use ($search): void {
-                            $categoryQuery->where('name', 'like', '%'.$search.'%');
+                // Split search into individual words and search for each
+                $searchWords = explode(' ', trim($search));
+                $searchWords = array_filter($searchWords, function($word) {
+                    return strlen($word) > 0;
+                });
+
+                $query->where(function ($q) use ($searchWords): void {
+                    foreach ($searchWords as $word) {
+                        $q->orWhere(function ($subQuery) use ($word): void {
+                            $subQuery->where('name', 'like', '%'.$word.'%')
+                                ->orWhere('description', 'like', '%'.$word.'%')
+                                ->orWhereHas('category', function ($categoryQuery) use ($word): void {
+                                    $categoryQuery->where('name', 'like', '%'.$word.'%');
+                                });
                         });
+                    }
                 });
             })
             ->orderBy('name')

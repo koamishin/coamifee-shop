@@ -286,6 +286,11 @@ final class PosPage extends Page
         $this->calculateTotals();
     }
 
+    public function updatedSearch(): void
+    {
+        $this->refreshProducts();
+    }
+
     public function clearCart(): void
     {
         $this->cartItems = [];
