@@ -388,11 +388,8 @@ final class OrdersProcessing extends Page
                     ->columns(2)
                     ->collapsible()
                     ->visible(function ($get) {
-                        // Hide discount section for Dine In orders in collect payment
-                        $order = Order::find($get('orderId'));
-
-                        // Show discount section unless it's a dine_in order
-                        return $order ? $order->order_type !== 'dine_in' : true;
+                        // Show discount section for all order types
+                        return true;
                     }),
 
                 Section::make('Payment Details')
