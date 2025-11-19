@@ -577,9 +577,9 @@ final class PosPage extends Page
                                 ->label('Payment Method')
                                 ->options([
                                     'cash' => 'Cash',
-                                    'card' => 'Card',
                                     'gcash' => 'GCash',
                                     'maya' => 'Maya',
+                                    'bank_transfer' => 'Bank Transfer',
                                 ])
                                 ->default('cash')
                                 ->required()
@@ -647,9 +647,10 @@ final class PosPage extends Page
                                 ->numeric()
                                 ->prefix($this->getCurrencySymbol())
                                 ->step(0.01)
-                                ->required()
+                                ->required(fn ($get) => $get('paymentMethod') === 'cash')
                                 ->reactive()
                                 ->live()
+                                ->visible(fn ($get) => $get('paymentMethod') === 'cash')
                                 ->afterStateUpdated(function ($state, $set, $get) {
                                     // Calculate change
                                     $subtotal = $this->totalAmount;
@@ -673,7 +674,7 @@ final class PosPage extends Page
 
                                     $set('changeAmount', $change);
                                 })
-                                ->helperText(fn ($get) => $get('paymentMethod') === 'cash' ? 'Enter the amount received from customer' : 'Enter the payment amount'),
+                                ->helperText('Enter the amount received from customer'),
 
                             Forms\Components\Placeholder::make('changeDisplay')
                                 ->label('Change')
