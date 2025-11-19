@@ -535,7 +535,7 @@ final class PosPage extends Page
                     Forms\Components\TextInput::make('customerName')
                         ->label('Customer Name')
                         ->placeholder('Optional for walk-in customers')
-                        ->visible(fn ($get) => ! filled($get('customerId'))),
+                        ->visible(function ($get) { return ! filled($get('customerId')); }),
 
                     Forms\Components\Select::make('tableNumber')
                         ->label('Table Number')
@@ -631,7 +631,7 @@ final class PosPage extends Page
                         ->required()
                         ->reactive()
                         ->live()
-                        ->afterStateUpdated(fn ($state, $set) => $this->paymentTiming = $state)
+                        ->afterStateUpdated(function ($state, $set) { $this->paymentTiming = $state; })
                         ->columns(function ($get) {
                             $orderType = $get('orderType') ?? $this->orderType;
                             return $orderType === 'dine_in' ? 2 : 1;
@@ -643,13 +643,29 @@ final class PosPage extends Page
                             Forms\Components\Select::make('paymentMethod')
                                 ->label('Payment Method')
                                 ->searchable(false)
-                                ->options([
-                                    'cash' => 'Cash',
-                                    'gcash' => 'Gcash',
-                                    'maya' => 'Maya',
-                                    'bank_transfer' => 'Bank Transfer',
-                                ])
-                                ->default('cash')
+                                ->options(function ($get) {
+                                    $orderType = $get('orderType') ?? $this->orderType;
+
+                                    if ($orderType === 'delivery') {
+                                        // Delivery only shows delivery partners
+                                        return [
+                                            'grab' => 'Grab',
+                                            'food_panda' => 'Food Panda',
+                                        ];
+                                    } else {
+                                        // Dine In / Takeaway show standard payment methods
+                                        return [
+                                            'cash' => 'Cash',
+                                            'gcash' => 'Gcash',
+                                            'maya' => 'Maya',
+                                            'bank_transfer' => 'Bank Transfer',
+                                        ];
+                                    }
+                                })
+                                ->default(function ($get) {
+                                    $orderType = $get('orderType') ?? $this->orderType;
+                                    return $orderType === 'delivery' ? 'grab' : 'cash';
+                                })
                                 ->required()
                                 ->native(false)
                                 ->reactive()
@@ -715,12 +731,41 @@ final class PosPage extends Page
                                 ->numeric()
                                 ->prefix($this->getCurrencySymbol())
                                 ->step(0.01)
-                                ->required(fn ($get) => $get('paymentMethod') === 'cash')
+                                ->required(function ($get) {
+                                    return $get('paymentMethod') === 'cash' && ($get('orderType') ?? $this->orderType) !== 'delivery';
+                                })
                                 ->reactive()
                                 ->live()
-                                ->visible(fn ($get) => $get('paymentMethod') === 'cash')
+                                ->visible(function ($get) {
+                                    $orderType = $get('orderType') ?? $this->orderType;
+                                    return $get('paymentMethod') === 'cash' && $orderType !== 'delivery';
+                                })
                                 ->afterStateUpdated(function ($state, $set, $get) {
-                                    // Calculate change
+                                    // Auto-set exact amount for delivery orders
+                                    $orderType = $get('orderType') ?? $this->orderType;
+                                    if ($orderType === 'delivery') {
+                                        $subtotal = $this->totalAmount;
+                                        $discountAmount = 0.0;
+
+                                        if ($get('discountType') && $get('discountValue')) {
+                                            $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
+                                        }
+
+                                        $addOnsTotal = 0.0;
+                                        $addOns = $get('addOns') ?? [];
+                                        foreach ($addOns as $addOn) {
+                                            if (! empty($addOn['price'])) {
+                                                $addOnsTotal += (float) $addOn['price'];
+                                            }
+                                        }
+
+                                        $total = $subtotal - $discountAmount + $addOnsTotal;
+                                        $set('paidAmount', $total);
+                                        $set('changeAmount', 0);
+                                        return;
+                                    }
+
+                                    // Calculate change for cash payments (Dine In / Takeaway)
                                     $subtotal = $this->totalAmount;
                                     $discountAmount = 0.0;
 
@@ -742,7 +787,10 @@ final class PosPage extends Page
 
                                     $set('changeAmount', $change);
                                 })
-                                ->helperText('Enter the amount received from customer'),
+                                ->helperText(function ($get) {
+                                    $orderType = $get('orderType') ?? $this->orderType;
+                                    return $orderType === 'delivery' ? 'Exact amount required' : 'Enter the amount received from customer';
+                                }),
 
                             Forms\Components\Placeholder::make('changeDisplay')
                                 ->label('Change')
@@ -771,11 +819,14 @@ final class PosPage extends Page
                                         </div>
                                     ");
                                 })
-                                ->visible(fn ($get) => $get('paymentMethod') === 'cash' && ! empty($get('paidAmount'))),
+                                ->visible(function ($get) {
+                                    $orderType = $get('orderType') ?? $this->orderType;
+                                    return $get('paymentMethod') === 'cash' && ! empty($get('paidAmount')) && $orderType !== 'delivery';
+                                }),
 
                             Forms\Components\Hidden::make('changeAmount'),
                         ])
-                        ->visible(fn ($get) => $get('paymentTiming') === 'pay_now')
+                        ->visible(function ($get) { return $get('paymentTiming') === 'pay_now'; })
                         ->columns(1),
 
                     Section::make('Apply Discount (Optional)')
@@ -798,13 +849,13 @@ final class PosPage extends Page
                                         }
                                     }
                                 })
-                                ->helperText(fn ($state) => ! empty($state) ? DiscountType::from($state)->getDescription() : null),
+                                ->helperText(function ($state) { return ! empty($state) ? DiscountType::from($state)->getDescription() : null; }),
 
                             Forms\Components\TextInput::make('discountValue')
                                 ->label('Discount Value')
                                 ->numeric()
                                 ->suffix('%')
-                                ->visible(fn ($get) => ! empty($get('discountType')) && DiscountType::from($get('discountType'))->requiresCustomValue())
+                                ->visible(function ($get) { return ! empty($get('discountType')) && DiscountType::from($get('discountType'))->requiresCustomValue(); })
                                 ->reactive()
                                 ->minValue(0)
                                 ->maxValue(100)

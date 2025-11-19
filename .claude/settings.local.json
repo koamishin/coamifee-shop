@@ -15,7 +15,8 @@
       "Bash(gh pr view:*)",
       "Bash(gh pr edit:*)",
       "Bash(test:*)",
-      "Bash(composer test:*)"
+      "Bash(composer test:*)",
+      "Bash(\"vendor/bin/php-parse\" app/Filament/Pages/PosPage.php --dry-run)"
     ]
   },
   "enableAllProjectMcpServers": true,
