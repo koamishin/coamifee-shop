@@ -213,7 +213,7 @@ final class PosApiController extends Controller
     public function getStats(): JsonResponse
     {
         $todayOrders = Order::query()->whereDate('created_at', today())->count();
-        $todaySales = Order::query()->whereDate('created_at', today())->sum('total');
+        $todaySales = Order::query()->whereDate('created_at', today())->where('payment_status', 'paid')->sum('total');
         $lowStockAlerts = $this->posService->getLowStockAlerts();
 
         return response()->json([
