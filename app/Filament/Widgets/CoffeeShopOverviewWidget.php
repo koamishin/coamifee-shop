@@ -25,7 +25,7 @@ final class CoffeeShopOverviewWidget extends BaseWidget
         Date::now()->startOfMonth();
 
         $currency = app(\App\Services\GeneralSettingsService::class)->getCurrency();
-        $todaysSales = Order::query()->whereDate('created_at', $today)->sum('total');
+        $todaysSales = Order::query()->whereDate('created_at', $today)->where('payment_status', 'paid')->sum('total');
 
         return [
             Stat::make('Today\'s Orders', Order::query()->whereDate('created_at', $today)->count())

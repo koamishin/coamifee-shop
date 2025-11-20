@@ -45,7 +45,7 @@ final class FinancialSummaryWidget extends BaseWidget
                 ->color('info'),
 
             Stat::make('Average Order Value', $this->getAverageOrderValue())
-                ->description('$'.number_format($this->getAverageOrderValue(), 2))
+                ->description('$'.number_format($this->getAverageOrderValue(), 1))
                 ->description('This month average')
                 ->descriptionIcon('heroicon-m-calculator')
                 ->color('primary'),

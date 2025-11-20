@@ -6,11 +6,8 @@ namespace App\Enums;
 
 enum DiscountType: string
 {
-    case STUDENT = 'student';
     case PWD = 'pwd';
     case SENIOR = 'senior';
-    case EMPLOYEE = 'employee';
-    case CUSTOM = 'custom';
 
     /**
      * Get all discount type options for forms
@@ -28,11 +25,8 @@ enum DiscountType: string
     public function getLabel(): string
     {
         return match ($this) {
-            self::STUDENT => 'Student',
             self::PWD => 'PWD (Person with Disability)',
             self::SENIOR => 'Senior Citizen',
-            self::EMPLOYEE => 'Employee',
-            self::CUSTOM => 'Custom Discount',
         };
     }
 
@@ -42,11 +36,8 @@ enum DiscountType: string
     public function getPercentage(): ?float
     {
         return match ($this) {
-            self::STUDENT => 10.0,
-            self::PWD => 15.0,
+            self::PWD => 20.0,
             self::SENIOR => 20.0,
-            self::EMPLOYEE => 25.0,
-            self::CUSTOM => null, // Custom requires user input
         };
     }
 
@@ -55,7 +46,7 @@ enum DiscountType: string
      */
     public function requiresCustomValue(): bool
     {
-        return $this === self::CUSTOM;
+        return false; // No custom discounts available
     }
 
     /**
@@ -64,10 +55,6 @@ enum DiscountType: string
     public function getDescription(): string
     {
         $percentage = $this->getPercentage();
-
-        if ($percentage === null) {
-            return 'Enter custom amount or percentage';
-        }
 
         return "{$percentage}% discount";
     }

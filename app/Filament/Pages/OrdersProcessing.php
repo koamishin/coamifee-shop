@@ -230,22 +230,73 @@ final class OrdersProcessing extends Page
 
                 RadioDeck::make('paymentMethod')
                     ->label('Payment Method')
-                    ->options([
-                        'cash' => 'Cash',
-                        'card' => 'Credit/Debit Card',
-                    ])
-                    ->descriptions([
-                        'cash' => 'Accept cash payment from customer',
-                        'card' => 'Accept credit or debit card payment',
-                    ])
-                    ->icons([
-                        'cash' => 'heroicon-o-banknotes',
-                        'card' => 'heroicon-o-credit-card',
-                    ])
-                    ->default('cash')
+                    ->options(function ($get) {
+                        $order = Order::find($get('orderId'));
+
+                        if ($order && $order->order_type === 'delivery') {
+                            // Delivery orders show delivery partners
+                            return [
+                                'grab' => 'Grab',
+                                'food_panda' => 'Food Panda',
+                            ];
+                        } else {
+                            // Dine In / Takeaway show standard payment methods
+                            return [
+                                'cash' => 'Cash',
+                                'gcash' => 'Gcash',
+                                'maya' => 'Maya',
+                                'bank_transfer' => 'Bank Transfer',
+                            ];
+                        }
+                    })
+                    ->descriptions(function ($get) {
+                        $order = Order::find($get('orderId'));
+
+                        if ($order && $order->order_type === 'delivery') {
+                            return [
+                                'grab' => 'Payment via Grab',
+                                'food_panda' => 'Payment via Food Panda',
+                            ];
+                        } else {
+                            return [
+                                'cash' => 'Cash payment',
+                                'gcash' => 'Gcash mobile payment',
+                                'maya' => 'Maya mobile payment',
+                                'bank_transfer' => 'Bank transfer',
+                            ];
+                        }
+                    })
+                    ->icons(function ($get) {
+                        $order = Order::find($get('orderId'));
+
+                        if ($order && $order->order_type === 'delivery') {
+                            return [
+                                'grab' => 'heroicon-o-device-phone-mobile',
+                                'food_panda' => 'heroicon-o-device-phone-mobile',
+                            ];
+                        } else {
+                            return [
+                                'cash' => 'heroicon-o-banknotes',
+                                'gcash' => 'heroicon-o-device-phone-mobile',
+                                'maya' => 'heroicon-o-device-phone-mobile',
+                                'bank_transfer' => 'heroicon-o-building-office',
+                            ];
+                        }
+                    })
+                    ->default(function ($get) {
+                        $order = Order::find($get('orderId'));
+                        return ($order && $order->order_type === 'delivery') ? 'grab' : 'cash';
+                    })
                     ->required()
                     ->reactive()
-                    ->columns(2)
+                    ->columns(function ($get) {
+                        $order = Order::find($get('orderId'));
+                        if ($order && $order->order_type === 'delivery') {
+                            return 2; // Show delivery partners in 2 columns
+                        } else {
+                            return 2; // Show standard payment methods in 2x2 grid
+                        }
+                    })
                     ->color('primary'),
 
                 Section::make('Order Summary')
@@ -335,7 +386,11 @@ final class OrdersProcessing extends Page
                             ->helperText('Enter percentage (0-100)'),
                     ])
                     ->columns(2)
-                    ->collapsible(),
+                    ->collapsible()
+                    ->visible(function ($get) {
+                        // Show discount section for all order types
+                        return true;
+                    }),
 
                 Section::make('Payment Details')
                     ->schema([
