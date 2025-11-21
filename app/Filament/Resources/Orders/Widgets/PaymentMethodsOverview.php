@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Orders\Widgets;
 
 use App\Filament\Concerns\CurrencyAware;
 use App\Models\Order;
+use App\Services\GeneralSettingsService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -17,41 +18,26 @@ final class PaymentMethodsOverview extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $cashOrders = Order::where('payment_method', 'cash')->get();
-        $cardOrders = Order::where('payment_method', 'card')->get();
-        $digitalOrders = Order::where('payment_method', 'digital')->get();
-        $bankTransferOrders = Order::where('payment_method', 'bank_transfer')->get();
+        $settingsService = app(GeneralSettingsService::class);
+        $enabledPaymentMethods = $settingsService->getEnabledPaymentMethods();
+        $stats = [];
 
-        return [
-            Stat::make('Cash Payments', $this->formatMoney($cashOrders->sum('total')))
-                ->description($cashOrders->count().' orders paid with cash')
-                ->descriptionIcon('heroicon-o-banknotes')
-                ->color('warning')
-                ->chart($this->getChartData('cash')),
+        foreach ($enabledPaymentMethods as $method => $config) {
+            $orders = Order::where('payment_method', $method)->get();
 
-            Stat::make('Card Payments', $this->formatMoney($cardOrders->sum('total')))
-                ->description($cardOrders->count().' orders paid with card')
-                ->descriptionIcon('heroicon-o-credit-card')
-                ->color('success')
-                ->chart($this->getChartData('card')),
+            $stats[] = Stat::make($config['name'], $this->formatMoney($orders->sum('total')))
+                ->description($orders->count().' orders paid with '.$config['name'])
+                ->descriptionIcon($config['icon'])
+                ->color($config['color'])
+                ->chart($this->getChartData($method));
+        }
 
-            Stat::make('Digital Wallet', $this->formatMoney($digitalOrders->sum('total')))
-                ->description($digitalOrders->count().' orders paid digitally')
-                ->descriptionIcon('heroicon-o-device-phone-mobile')
-                ->color('primary')
-                ->chart($this->getChartData('digital')),
-
-            Stat::make('Bank Transfer', $this->formatMoney($bankTransferOrders->sum('total')))
-                ->description($bankTransferOrders->count().' orders via bank transfer')
-                ->descriptionIcon('heroicon-o-building-library')
-                ->color('info')
-                ->chart($this->getChartData('bank_transfer')),
-        ];
+        return $stats;
     }
 
     private function formatMoney(float $amount): string
     {
-        $currency = app(\App\Services\GeneralSettingsService::class)->getCurrency();
+        $currency = app(GeneralSettingsService::class)->getCurrency();
 
         return $currency.' '.number_format($amount, 2);
     }

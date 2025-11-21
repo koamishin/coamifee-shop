@@ -200,6 +200,8 @@ return [
         'prefix' => 'view',
         'exclude' => [
             Dashboard::class,
+            App\Filament\Pages\PosPage::class,
+            App\Filament\Pages\OrdersProcessing::class,
         ],
     ],
 

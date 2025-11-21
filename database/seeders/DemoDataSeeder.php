@@ -39,7 +39,7 @@ final class DemoDataSeeder extends Seeder
                 'customer_name' => $customers->random()->name,
                 'customer_id' => $customers->random()->id,
                 'order_type' => ['dine-in', 'takeout', 'delivery'][random_int(0, 2)],
-                'payment_method' => ['cash', 'card', 'gcash'][random_int(0, 2)],
+                'payment_method' => ['cash', 'gcash', 'maya'][random_int(0, 2)],
                 'total' => 0,
                 'status' => 'completed',
                 'notes' => random_int(0, 1) === 1 ? 'Extra napkins requested' : null,

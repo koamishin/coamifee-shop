@@ -275,6 +275,14 @@ final class Pos extends Component
         $this->loadQuickAddItems();
     }
 
+    /**
+     * Get enabled payment methods
+     */
+    public function getEnabledPaymentMethods(): array
+    {
+        return app(\App\Services\GeneralSettingsService::class)->getEnabledPaymentMethods();
+    }
+
     public function render(): View
     {
         // Load products with availability info
@@ -294,7 +302,7 @@ final class Pos extends Component
 
         // Calculate today's orders and sales
         $this->todayOrders = Order::query()->whereDate('created_at', today())->count();
-        $this->todaySales = Order::query()->whereDate('created_at', today())->sum('total');
+        $this->todaySales = Order::query()->whereDate('created_at', today())->where('payment_status', 'paid')->sum('total');
 
         // For POS functionality (when used as POS component)
         if ($this->customerSearch !== '' && $this->customerSearch !== '0') {
@@ -563,13 +571,13 @@ final class Pos extends Component
         if (isset($this->cart[$productId])) {
             // Try to increment and check if we can still produce all items in cart
             $this->cart[$productId]['quantity']++;
-            
+
             // Check if we can produce this quantity with current inventory
             $currentQuantity = $this->cart[$productId]['quantity'];
             if (! $this->canProduceCartQuantity($productId, $currentQuantity)) {
                 // Revert the increment
                 $this->cart[$productId]['quantity']--;
-                
+
                 $this->dispatch('insufficient-inventory', [
                     'message' => 'Cannot increase quantity: Insufficient ingredients',
                     'product_id' => $productId,
@@ -577,7 +585,7 @@ final class Pos extends Component
 
                 return;
             }
-            
+
             $this->calculateTotals();
             $this->updateProductAvailability();
         }
@@ -793,7 +801,7 @@ final class Pos extends Component
         }
 
         $ingredients = $product->ingredients()->with('ingredient.inventory')->get();
-        
+
         foreach ($ingredients as $productIngredient) {
             /** @var ProductIngredient $productIngredient */
             $ingredient = $productIngredient->ingredient;
