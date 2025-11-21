@@ -1,31 +1,12 @@
 {
     "permissions": {
         "allow": [
-            "Bash(php artisan:*)",
-            "Bash(vendor/bin/pint:*)",
-            "Bash(php:*)",
-            "Bash(git add:*)",
-            "Bash(git commit:*)",
-            "Bash(git push:*)",
-            "Bash(find:*)",
-            "Bash(docker build:*)",
-            "Bash(composer show:*)",
-            "Bash(composer require:*)",
-            "Bash(gh pr create:*)",
-            "Bash(gh pr view:*)",
-            "Bash(gh pr edit:*)",
-            "Bash(test:*)",
-            "Bash(composer test:*)",
-            "Bash(\"vendor/bin/php-parse\" app/Filament/Pages/PosPage.php --dry-run)",
-            "Bash(where:*)",
-            "Bash(C:Usersuser.configherdbinphp.bat vendor/bin/pint --dirty)",
-            "Bash(C:\\Users\\user\\Desktop\\Goodland Cafe\\coamifee-shop\\vendor\\bin\\php artisan migrate:*)",
-            "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\":*)",
-            "Bash(\"C:\\Users\\user\\Desktop\\Goodland Cafe\\coamifee-shop\\vendor\\bin\\pint.bat\":*)",
-            "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan migrate:status)",
-            "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan make:migration make_payment_method_nullable_again_in_orders_table --table=orders)",
-            "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan migrate)"
-        ]
+            "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan tinker)",
+            "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan --version)",
+            "Bash(\"C:\\Users\\user\\Desktop\\Goodland Cafe\\coamifee-shop\\vendor\\bin\\pint.bat\" --dirty)"
+        ],
+        "deny": [],
+        "ask": []
     },
     "enableAllProjectMcpServers": true,
     "enabledMcpjsonServers": ["laravel-boost"]
