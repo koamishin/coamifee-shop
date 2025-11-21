@@ -114,6 +114,7 @@ final class Pos extends Component
         'productSelected' => 'addToCart',
         'categorySelected' => 'selectCategory',
         'searchChanged' => 'updateSearch',
+        'payment-collected' => 'refreshSalesData',
     ];
 
     // Service properties
@@ -767,6 +768,28 @@ final class Pos extends Component
     {
         $this->showPaymentConfirmationModal = false;
         $this->paymentConfirmationData = [];
+    }
+
+    /**
+     * Refresh sales data when payment is collected from Orders Processing page
+     */
+    public function refreshSalesData(array $data = []): void
+    {
+        // Recalculate today's orders and sales
+        $this->todayOrders = Order::query()->whereDate('created_at', today())->count();
+        $this->todaySales = Order::query()->whereDate('created_at', today())->where('payment_status', 'paid')->sum('total');
+
+        // Refresh recent orders
+        $this->loadRecentOrders();
+
+        // Optionally log the refresh for debugging
+        if (! empty($data)) {
+            \Illuminate\Support\Facades\Log::info('Sales data refreshed after payment collection', [
+                'order_id' => $data['order_id'] ?? null,
+                'total' => $data['total'] ?? null,
+                'new_today_sales' => $this->todaySales,
+            ]);
+        }
     }
 
     private function checkLowStock(): void

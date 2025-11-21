@@ -239,15 +239,16 @@ final class OrdersProcessing extends Page
                                 'grab' => 'Grab',
                                 'food_panda' => 'Food Panda',
                             ];
-                        } else {
-                            // Dine In / Takeaway show standard payment methods
-                            return [
-                                'cash' => 'Cash',
-                                'gcash' => 'Gcash',
-                                'maya' => 'Maya',
-                                'bank_transfer' => 'Bank Transfer',
-                            ];
                         }
+
+                        // Dine In / Takeaway show standard payment methods
+                        return [
+                            'cash' => 'Cash',
+                            'gcash' => 'Gcash',
+                            'maya' => 'Maya',
+                            'bank_transfer' => 'Bank Transfer',
+                        ];
+
                     })
                     ->descriptions(function ($get) {
                         $order = Order::find($get('orderId'));
@@ -257,14 +258,15 @@ final class OrdersProcessing extends Page
                                 'grab' => 'Payment via Grab',
                                 'food_panda' => 'Payment via Food Panda',
                             ];
-                        } else {
-                            return [
-                                'cash' => 'Cash payment',
-                                'gcash' => 'Gcash mobile payment',
-                                'maya' => 'Maya mobile payment',
-                                'bank_transfer' => 'Bank transfer',
-                            ];
                         }
+
+                        return [
+                            'cash' => 'Cash payment',
+                            'gcash' => 'Gcash mobile payment',
+                            'maya' => 'Maya mobile payment',
+                            'bank_transfer' => 'Bank transfer',
+                        ];
+
                     })
                     ->icons(function ($get) {
                         $order = Order::find($get('orderId'));
@@ -274,17 +276,19 @@ final class OrdersProcessing extends Page
                                 'grab' => 'heroicon-o-device-phone-mobile',
                                 'food_panda' => 'heroicon-o-device-phone-mobile',
                             ];
-                        } else {
-                            return [
-                                'cash' => 'heroicon-o-banknotes',
-                                'gcash' => 'heroicon-o-device-phone-mobile',
-                                'maya' => 'heroicon-o-device-phone-mobile',
-                                'bank_transfer' => 'heroicon-o-building-office',
-                            ];
                         }
+
+                        return [
+                            'cash' => 'heroicon-o-banknotes',
+                            'gcash' => 'heroicon-o-device-phone-mobile',
+                            'maya' => 'heroicon-o-device-phone-mobile',
+                            'bank_transfer' => 'heroicon-o-building-office',
+                        ];
+
                     })
                     ->default(function ($get) {
                         $order = Order::find($get('orderId'));
+
                         return ($order && $order->order_type === 'delivery') ? 'grab' : 'cash';
                     })
                     ->required()
@@ -293,9 +297,10 @@ final class OrdersProcessing extends Page
                         $order = Order::find($get('orderId'));
                         if ($order && $order->order_type === 'delivery') {
                             return 2; // Show delivery partners in 2 columns
-                        } else {
-                            return 2; // Show standard payment methods in 2x2 grid
                         }
+
+                        return 2; // Show standard payment methods in 2x2 grid
+
                     })
                     ->color('primary'),
 
@@ -539,6 +544,12 @@ final class OrdersProcessing extends Page
                         ->send();
 
                     $this->dispatch('$refresh');
+
+                    // Dispatch event to refresh sales data across all components
+                    $this->dispatch('payment-collected', [
+                        'order_id' => $order->id,
+                        'total' => $finalTotal,
+                    ]);
                 } catch (Exception $e) {
                     DB::rollBack();
 
