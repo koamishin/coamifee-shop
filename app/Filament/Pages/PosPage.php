@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use JaOcero\RadioDeck\Forms\Components\RadioDeck;
 use Livewire\Attributes\Locked;
+use Storage;
 
 final class PosPage extends Page
 {
@@ -502,6 +503,18 @@ final class PosPage extends Page
         return $this->posService->getMaxProducibleQuantity($productId);
     }
 
+    /**
+     * Get product image URL from R2
+     */
+    public function getProductImageUrl(?string $imagePath): ?string
+    {
+        if (! $imagePath) {
+            return null;
+        }
+
+        return Storage::disk('r2')->url($imagePath);
+    }
+
     protected function getActions(): array
     {
         return [
@@ -535,7 +548,9 @@ final class PosPage extends Page
                     Forms\Components\TextInput::make('customerName')
                         ->label('Customer Name')
                         ->placeholder('Optional for walk-in customers')
-                        ->visible(function ($get) { return ! filled($get('customerId')); }),
+                        ->visible(function ($get) {
+                            return ! filled($get('customerId'));
+                        }),
 
                     Forms\Components\Select::make('tableNumber')
                         ->label('Table Number')
@@ -587,12 +602,13 @@ final class PosPage extends Page
                                     'pay_later' => 'Pay Later (After meal is ready)',
                                     'pay_now' => 'Pay Now (Immediate payment)',
                                 ];
-                            } else {
-                                // Takeaway/Delivery only shows Pay Now
-                                return [
-                                    'pay_now' => 'Pay Now (Immediate payment)',
-                                ];
                             }
+
+                            // Takeaway/Delivery only shows Pay Now
+                            return [
+                                'pay_now' => 'Pay Now (Immediate payment)',
+                            ];
+
                         })
                         ->descriptions(function ($get) {
                             $orderType = $get('orderType') ?? $this->orderType;
@@ -602,12 +618,13 @@ final class PosPage extends Page
                                     'pay_later' => 'Payment will be collected when order is ready',
                                     'pay_now' => 'Customer will pay immediately before order is sent to kitchen',
                                 ];
-                            } else {
-                                // Takeaway/Delivery description for Pay Now
-                                return [
-                                    'pay_now' => 'Payment is required before order preparation',
-                                ];
                             }
+
+                            // Takeaway/Delivery description for Pay Now
+                            return [
+                                'pay_now' => 'Payment is required before order preparation',
+                            ];
+
                         })
                         ->icons(function ($get) {
                             $orderType = $get('orderType') ?? $this->orderType;
@@ -617,23 +634,28 @@ final class PosPage extends Page
                                     'pay_later' => 'heroicon-o-clock',
                                     'pay_now' => 'heroicon-o-banknotes',
                                 ];
-                            } else {
-                                // Takeaway/Delivery only shows Pay Now icon
-                                return [
-                                    'pay_now' => 'heroicon-o-banknotes',
-                                ];
                             }
+
+                            // Takeaway/Delivery only shows Pay Now icon
+                            return [
+                                'pay_now' => 'heroicon-o-banknotes',
+                            ];
+
                         })
                         ->default(function ($get) {
                             $orderType = $get('orderType') ?? $this->orderType;
+
                             return $orderType === 'dine_in' ? 'pay_later' : 'pay_now';
                         })
                         ->required()
                         ->reactive()
                         ->live()
-                        ->afterStateUpdated(function ($state, $set) { $this->paymentTiming = $state; })
+                        ->afterStateUpdated(function ($state, $set) {
+                            $this->paymentTiming = $state;
+                        })
                         ->columns(function ($get) {
                             $orderType = $get('orderType') ?? $this->orderType;
+
                             return $orderType === 'dine_in' ? 2 : 1;
                         })
                         ->color('primary'),
@@ -652,18 +674,20 @@ final class PosPage extends Page
                                             'grab' => 'Grab',
                                             'food_panda' => 'Food Panda',
                                         ];
-                                    } else {
-                                        // Dine In / Takeaway show standard payment methods
-                                        return [
-                                            'cash' => 'Cash',
-                                            'gcash' => 'Gcash',
-                                            'maya' => 'Maya',
-                                            'bank_transfer' => 'Bank Transfer',
-                                        ];
                                     }
+
+                                    // Dine In / Takeaway show standard payment methods
+                                    return [
+                                        'cash' => 'Cash',
+                                        'gcash' => 'Gcash',
+                                        'maya' => 'Maya',
+                                        'bank_transfer' => 'Bank Transfer',
+                                    ];
+
                                 })
                                 ->default(function ($get) {
                                     $orderType = $get('orderType') ?? $this->orderType;
+
                                     return $orderType === 'delivery' ? 'grab' : 'cash';
                                 })
                                 ->required()
@@ -738,6 +762,7 @@ final class PosPage extends Page
                                 ->live()
                                 ->visible(function ($get) {
                                     $orderType = $get('orderType') ?? $this->orderType;
+
                                     return $get('paymentMethod') === 'cash' && $orderType !== 'delivery';
                                 })
                                 ->afterStateUpdated(function ($state, $set, $get) {
@@ -762,6 +787,7 @@ final class PosPage extends Page
                                         $total = $subtotal - $discountAmount + $addOnsTotal;
                                         $set('paidAmount', $total);
                                         $set('changeAmount', 0);
+
                                         return;
                                     }
 
@@ -789,6 +815,7 @@ final class PosPage extends Page
                                 })
                                 ->helperText(function ($get) {
                                     $orderType = $get('orderType') ?? $this->orderType;
+
                                     return $orderType === 'delivery' ? 'Exact amount required' : 'Enter the amount received from customer';
                                 }),
 
@@ -821,12 +848,15 @@ final class PosPage extends Page
                                 })
                                 ->visible(function ($get) {
                                     $orderType = $get('orderType') ?? $this->orderType;
+
                                     return $get('paymentMethod') === 'cash' && ! empty($get('paidAmount')) && $orderType !== 'delivery';
                                 }),
 
                             Forms\Components\Hidden::make('changeAmount'),
                         ])
-                        ->visible(function ($get) { return $get('paymentTiming') === 'pay_now'; })
+                        ->visible(function ($get) {
+                            return $get('paymentTiming') === 'pay_now';
+                        })
                         ->columns(1),
 
                     Section::make('Apply Discount (Optional)')
@@ -849,13 +879,17 @@ final class PosPage extends Page
                                         }
                                     }
                                 })
-                                ->helperText(function ($state) { return ! empty($state) ? DiscountType::from($state)->getDescription() : null; }),
+                                ->helperText(function ($state) {
+                                    return ! empty($state) ? DiscountType::from($state)->getDescription() : null;
+                                }),
 
                             Forms\Components\TextInput::make('discountValue')
                                 ->label('Discount Value')
                                 ->numeric()
                                 ->suffix('%')
-                                ->visible(function ($get) { return ! empty($get('discountType')) && DiscountType::from($get('discountType'))->requiresCustomValue(); })
+                                ->visible(function ($get) {
+                                    return ! empty($get('discountType')) && DiscountType::from($get('discountType'))->requiresCustomValue();
+                                })
                                 ->reactive()
                                 ->minValue(0)
                                 ->maxValue(100)
@@ -869,7 +903,7 @@ final class PosPage extends Page
                             $paymentTiming = $get('paymentTiming') ?? 'pay_later';
 
                             // Show discount section unless it's dine_in AND pay_later
-                            return !($orderType === 'dine_in' && $paymentTiming === 'pay_later');
+                            return ! ($orderType === 'dine_in' && $paymentTiming === 'pay_later');
                         }),
 
                     Section::make('Add-Ons (Optional)')

@@ -44,9 +44,13 @@ final class TestR2StorageCommand extends Command
                 return 1;
             }
 
-            if (empty(env('R2_DEFAULT_REGION'))) {
-                $this->warn('R2_DEFAULT_REGION is not set. For Cloudflare R2, this should typically be "auto" or left empty.');
-                $this->line('Setting region to "auto" for the test...');
+            // Check actual config value after environment is loaded
+            $region = config('filesystems.disks.r2.region');
+            $this->info("  R2 region from config: '{$region}'");
+            $this->info("  R2_DEFAULT_REGION from env: '".env('R2_DEFAULT_REGION')."'");
+
+            if (empty($region)) {
+                $this->warn('R2 region is empty. Setting region to "auto" for the test...');
                 config(['filesystems.disks.r2.region' => 'auto']);
             }
 
