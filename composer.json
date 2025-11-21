@@ -9,7 +9,7 @@
   ],
   "license": "MIT",
   "require": {
-    "php": "^8.2",
+    "php": "^8.4",
     "afatmustafa/blade-hugeicons": "^1.0",
     "andreiio/blade-remix-icon": "^3.7",
     "bezhansalleh/filament-shield": "^4.0",
@@ -25,6 +25,7 @@
     "laravel/fortify": "^1.30",
     "laravel/framework": "^12.0",
     "laravel/tinker": "^2.10.1",
+    "league/flysystem-aws-s3-v3": "^3.0",
     "livewire/flux": "^2.1.1",
     "livewire/volt": "^1.7.0",
     "mallardduck/blade-lucide-icons": "^1.23",
