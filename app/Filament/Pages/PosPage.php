@@ -567,7 +567,7 @@ final class PosPage extends Page
                         ->rows(2),
 
                     RadioDeck::make('orderType')
-                        ->label('Order Type')
+                        ->label(fn () => ! empty($this->cartItems) ? 'Order Type (Locked)' : 'Order Type')
                         ->options([
                             'dine_in' => 'Dine In',
                             'takeaway' => 'Takeaway',
@@ -586,6 +586,8 @@ final class PosPage extends Page
                         ->default($this->orderType)
                         ->required()
                         ->reactive()
+                        ->disabled(fn () => ! empty($this->cartItems))
+                        ->helperText(fn () => ! empty($this->cartItems) ? 'Order type cannot be changed while items are in cart. Clear the cart to change order type.' : '')
                         ->columns(3)
                         ->color('primary')
                         ->afterStateUpdated(function ($state) {
