@@ -1,9 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan tinker)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan --version)",
-      "Bash(\"C:\\Users\\user\\Desktop\\Goodland Cafe\\coamifee-shop\\vendor\\bin\\pint.bat\" --dirty)"
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan about --only=environment)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan config:cache)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan make:migration add_bank_transfer_to_payment_methods_in_orders_table)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan migrate)",
+      "Bash(vendor/bin/pint:*)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" vendor/bin/pint --dirty)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan migrate:rollback --step=1)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan make:migration add_delivery_payment_methods_to_orders_table)"
     ],
     "deny": [],
     "ask": []
