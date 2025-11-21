@@ -196,6 +196,105 @@ final class GeneralSettingsService
     }
 
     /**
+     * Get payment methods configuration
+     */
+    public function getPaymentMethods(): array
+    {
+        return $this->getMoreConfig('payment_methods') ?? [
+            'cash' => [
+                'name' => 'Cash',
+                'description' => 'Pay with cash',
+                'icon' => 'heroicon-o-banknotes',
+                'color' => 'warning',
+                'enabled' => true,
+            ],
+            'gcash' => [
+                'name' => 'GCash',
+                'description' => 'Pay with GCash e-wallet',
+                'icon' => 'heroicon-o-credit-card',
+                'color' => 'success',
+                'enabled' => true,
+            ],
+            'maya' => [
+                'name' => 'Maya',
+                'description' => 'Pay with Maya e-wallet',
+                'icon' => 'heroicon-o-device-phone-mobile',
+                'color' => 'primary',
+                'enabled' => true,
+            ],
+            'bank_transfer' => [
+                'name' => 'Bank Transfer',
+                'description' => 'Pay with bank transfer',
+                'icon' => 'heroicon-o-building-office',
+                'color' => 'info',
+                'enabled' => true,
+            ],
+            'grab' => [
+                'name' => 'Grab',
+                'description' => 'Pay with Grab e-wallet',
+                'icon' => 'heroicon-o-credit-card',
+                'color' => 'success',
+                'enabled' => true,
+            ],
+            'foodpanda' => [
+                'name' => 'Food Panda',
+                'description' => 'Pay with Food Panda delivery',
+                'icon' => 'heroicon-o-truck',
+                'color' => 'warning',
+                'enabled' => true,
+            ],
+        ];
+    }
+
+    /**
+     * Get specific payment method configuration
+     */
+    public function getPaymentMethod(string $method): ?array
+    {
+        $methods = $this->getPaymentMethods();
+
+        return $methods[$method] ?? null;
+    }
+
+    /**
+     * Get enabled payment methods
+     */
+    public function getEnabledPaymentMethods(): array
+    {
+        return array_filter($this->getPaymentMethods(), fn ($method) => $method['enabled'] ?? true);
+    }
+
+    /**
+     * Get payment method display name
+     */
+    public function getPaymentMethodDisplayName(string $method): string
+    {
+        $paymentMethod = $this->getPaymentMethod($method);
+
+        return $paymentMethod['name'] ?? ucfirst(str_replace('_', ' ', $method));
+    }
+
+    /**
+     * Get payment method icon
+     */
+    public function getPaymentMethodIcon(string $method): string
+    {
+        $paymentMethod = $this->getPaymentMethod($method);
+
+        return $paymentMethod['icon'] ?? 'heroicon-o-question-mark-circle';
+    }
+
+    /**
+     * Get payment method color
+     */
+    public function getPaymentMethodColor(string $method): string
+    {
+        $paymentMethod = $this->getPaymentMethod($method);
+
+        return $paymentMethod['color'] ?? 'gray';
+    }
+
+    /**
      * Get all settings as array
      */
     public function getAllSettings(): array

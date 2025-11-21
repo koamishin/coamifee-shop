@@ -24,9 +24,9 @@ final class FinancialSummaryWidget extends BaseWidget
 
         return [
             Stat::make('This Month Sales',
-                Order::query()->whereDate('created_at', '>=', $thisMonth)->sum('total'))
+                Order::query()->whereDate('created_at', '>=', $thisMonth)->where('payment_status', 'paid')->sum('total'))
                 ->description('$'.number_format(
-                    Order::query()->whereDate('created_at', '>=', $thisMonth)->sum('total'), 2))
+                    Order::query()->whereDate('created_at', '>=', $thisMonth)->where('payment_status', 'paid')->sum('total'), 2))
                 ->description('Sales from '.$thisMonth->format('F j'))
                 ->descriptionIcon('heroicon-m-arrow-trending-up')
                 ->color('success')
@@ -35,10 +35,12 @@ final class FinancialSummaryWidget extends BaseWidget
             Stat::make('Last Month Sales',
                 Order::query()->whereDate('created_at', '>=', $lastMonth)
                     ->whereDate('created_at', '<', $thisMonth)
+                    ->where('payment_status', 'paid')
                     ->sum('total'))
                 ->description('$'.number_format(
                     Order::query()->whereDate('created_at', '>=', $lastMonth)
                         ->whereDate('created_at', '<', $thisMonth)
+                        ->where('payment_status', 'paid')
                         ->sum('total'), 2))
                 ->description($lastMonth->format('F'))
                 ->descriptionIcon('heroicon-m-calendar')
@@ -62,6 +64,7 @@ final class FinancialSummaryWidget extends BaseWidget
     {
         $thisMonth = Date::now()->startOfMonth();
         $orders = Order::query()->whereDate('created_at', '>=', $thisMonth)
+            ->where('payment_status', 'paid')
             ->where('total', '>', 0)
             ->get();
 
@@ -74,9 +77,10 @@ final class FinancialSummaryWidget extends BaseWidget
 
     private function getMonthlyChart(): array
     {
-        // Get last 30 days of sales
+        // Get last 30 days of sales from paid orders only
         $data = Order::query()->selectRaw('DATE(created_at) as date, SUM(total) as sales')
             ->where('created_at', '>=', now()->subDays(29))
+            ->where('payment_status', 'paid')
             ->groupBy('date')
             ->orderBy('date', 'asc')
             ->get();

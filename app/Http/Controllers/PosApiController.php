@@ -117,7 +117,7 @@ final class PosApiController extends Controller
             'customer_name' => 'nullable|string|max:255',
             'order_type' => 'required|in:dine-in,take-out,delivery',
             'table_number' => 'nullable|string|max:50',
-            'payment_method' => 'required|in:cash,card,digital',
+            'payment_method' => 'required|in:cash,gcash,maya',
             'add_ons' => 'array',
             'notes' => 'nullable|string|max:500',
             'discount_amount' => 'numeric|min:0',

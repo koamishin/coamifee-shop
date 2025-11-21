@@ -67,9 +67,8 @@ final class OrderForm
                                 ->required()
                                 ->options([
                                     'cash' => 'Cash',
-                                    'card' => 'Card',
-                                    'digital' => 'Digital Wallet',
-                                    'bank_transfer' => 'Bank Transfer',
+                                    'gcash' => 'GCash',
+                                    'maya' => 'Maya',
                                 ])
                                 ->default('cash')
                                 ->placeholder('Select payment method')
@@ -196,9 +195,8 @@ final class OrderForm
 
                                     $methods = [
                                         'cash' => '💵 Cash',
-                                        'card' => '💳 Card',
-                                        'digital' => '📱 Digital',
-                                        'bank_transfer' => '🏦 Bank Transfer',
+                                        'gcash' => '📱 GCash',
+                                        'maya' => '📱 Maya',
                                     ];
 
                                     return $methods[$record->payment_method] ??

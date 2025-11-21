@@ -138,75 +138,56 @@ final class OrderInfolist
                             ->columns(2),
                     ]),
 
-                
             ])->from('lg'),
 
             Section::make('Order Summary')
-                    ->icon('heroicon-o-calculator')
-                    ->schema([
-                        TextEntry::make('subtotal')
-                            ->label('Subtotal')
-                            ->money(self::getMoneyConfig())
-                            ->size(TextSize::Medium),
+                ->icon('heroicon-o-calculator')
+                ->schema([
+                    TextEntry::make('subtotal')
+                        ->label('Subtotal')
+                        ->money(self::getMoneyConfig())
+                        ->size(TextSize::Medium),
 
-                        TextEntry::make('discount_type')
-                            ->label('Discount Type')
-                            ->badge()
-                            ->color('info')
-                            ->formatStateUsing(fn ($state): string => $state ? ucfirst((string) $state) : 'None')
-                            ->visible(fn ($record) => $record->discount_amount > 0),
+                    TextEntry::make('discount_type')
+                        ->label('Discount Type')
+                        ->badge()
+                        ->color('info')
+                        ->formatStateUsing(fn ($state): string => $state ? ucfirst((string) $state) : 'None')
+                        ->visible(fn ($record) => $record->discount_amount > 0),
 
-                        TextEntry::make('discount_value')
-                            ->label('Discount Value')
-                            ->formatStateUsing(fn ($state, $record): string => $record->discount_type === 'percentage' ? "{$state}%" : self::getMoneyConfig()['currency'].' '.$state)
-                            ->visible(fn ($record) => $record->discount_amount > 0),
+                    TextEntry::make('discount_value')
+                        ->label('Discount Value')
+                        ->formatStateUsing(fn ($state, $record): string => $record->discount_type === 'percentage' ? "{$state}%" : self::getMoneyConfig()['currency'].' '.$state)
+                        ->visible(fn ($record) => $record->discount_amount > 0),
 
-                        TextEntry::make('discount_amount')
-                            ->label('Discount Amount')
-                            ->money(self::getMoneyConfig())
-                            ->color('danger')
-                            ->icon('heroicon-o-tag')
-                            ->visible(fn ($record) => $record->discount_amount > 0),
+                    TextEntry::make('discount_amount')
+                        ->label('Discount Amount')
+                        ->money(self::getMoneyConfig())
+                        ->color('danger')
+                        ->icon('heroicon-o-tag')
+                        ->visible(fn ($record) => $record->discount_amount > 0),
 
-                        TextEntry::make('add_ons_total')
-                            ->label('Add-ons Total')
-                            ->money(self::getMoneyConfig())
-                            ->color('success')
-                            ->icon('heroicon-o-plus-circle')
-                            ->visible(fn ($record) => $record->add_ons_total > 0),
+                    TextEntry::make('add_ons_total')
+                        ->label('Add-ons Total')
+                        ->money(self::getMoneyConfig())
+                        ->color('success')
+                        ->icon('heroicon-o-plus-circle')
+                        ->visible(fn ($record) => $record->add_ons_total > 0),
 
-                        TextEntry::make('total')
-                            ->label('Total Amount')
-                            ->money(self::getMoneyConfig())
-                            ->weight(FontWeight::Bold)
-                            ->size(TextSize::Large)
-                            ->color('success')
-                            ->icon('heroicon-o-currency-dollar'),
-                        TextEntry::make('payment_method')
-                                ->label('Payment Method')
-                                ->badge()
-                                ->icon(fn ($state): string => match ($state) {
-                                    'cash' => 'heroicon-o-banknotes',
-                                    'card' => 'heroicon-o-credit-card',
-                                    'digital' => 'heroicon-o-device-phone-mobile',
-                                    'bank_transfer' => 'heroicon-o-building-library',
-                                    default => 'heroicon-o-question-mark-circle',
-                                })
-                                ->color(fn ($state): string => match ($state) {
-                                    'cash' => 'warning',
-                                    'card' => 'success',
-                                    'digital' => 'primary',
-                                    'bank_transfer' => 'info',
-                                    default => 'gray',
-                                })
-                                ->formatStateUsing(fn ($state): string => match ($state) {
-                                    'cash' => 'Cash',
-                                    'card' => 'Card',
-                                    'digital' => 'Digital Wallet',
-                                    'bank_transfer' => 'Bank Transfer',
-                                    default => ucfirst(str_replace('_', ' ', (string) $state)),
-                                }),
-                    ]),
+                    TextEntry::make('total')
+                        ->label('Total Amount')
+                        ->money(self::getMoneyConfig())
+                        ->weight(FontWeight::Bold)
+                        ->size(TextSize::Large)
+                        ->color('success')
+                        ->icon('heroicon-o-currency-dollar'),
+                    TextEntry::make('payment_method')
+                        ->label('Payment Method')
+                        ->badge()
+                        ->icon(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodIcon((string) $state))
+                        ->color(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodColor((string) $state))
+                        ->formatStateUsing(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodDisplayName((string) $state)),
+                ]),
 
             Section::make('Order Items')
                 ->icon('heroicon-o-shopping-bag')

@@ -129,27 +129,9 @@ final class OrdersTable
                 TextColumn::make('payment_method')
                     ->label('Payment')
                     ->badge()
-                    ->icon(fn ($state): string => match ($state) {
-                        'cash' => 'heroicon-o-banknotes',
-                        'card' => 'heroicon-o-credit-card',
-                        'digital' => 'heroicon-o-device-phone-mobile',
-                        'bank_transfer' => 'heroicon-o-building-library',
-                        default => 'heroicon-o-question-mark-circle',
-                    })
-                    ->color(fn ($state): string => match ($state) {
-                        'cash' => 'warning',
-                        'card' => 'success',
-                        'digital' => 'primary',
-                        'bank_transfer' => 'info',
-                        default => 'gray',
-                    })
-                    ->formatStateUsing(fn ($state): string => match ($state) {
-                        'cash' => 'Cash',
-                        'card' => 'Card',
-                        'digital' => 'Digital',
-                        'bank_transfer' => 'Bank',
-                        default => ucfirst(str_replace('_', ' ', $state)),
-                    })
+                    ->icon(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodIcon((string) $state))
+                    ->color(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodColor((string) $state))
+                    ->formatStateUsing(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodDisplayName((string) $state))
                     ->searchable()
                     ->sortable(),
 
@@ -237,12 +219,17 @@ final class OrdersTable
                     ->multiple(),
                 SelectFilter::make('payment_method')
                     ->label('Payment Method')
-                    ->options([
-                        'cash' => 'Cash',
-                        'card' => 'Card',
-                        'digital' => 'Digital Wallet',
-                        'bank_transfer' => 'Bank Transfer',
-                    ])
+                    ->options(function () {
+                        $settingsService = app(\App\Services\GeneralSettingsService::class);
+                        $enabledMethods = $settingsService->getEnabledPaymentMethods();
+                        $options = [];
+
+                        foreach ($enabledMethods as $method => $config) {
+                            $options[$method] = $config['name'];
+                        }
+
+                        return $options;
+                    })
                     ->multiple(),
                 SelectFilter::make('payment_status')
                     ->label('Payment Status')

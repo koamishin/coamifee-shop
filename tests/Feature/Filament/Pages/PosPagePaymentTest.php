@@ -68,7 +68,7 @@ it('can place order with pay now and cash payment', function () {
         ->change_amount->toBe('50.00');
 });
 
-it('can place order with pay now and card payment', function () {
+it('can place order with pay now and GCash payment', function () {
     Livewire::test(PosPage::class)
         ->set('orderType', 'dine_in')
         ->set('cartItems', [
@@ -85,10 +85,10 @@ it('can place order with pay now and card payment', function () {
         ->set('totalAmount', 100.00)
         ->mountAction('placeOrder')
         ->fillForm([
-            'customerName' => 'Card Customer',
+            'customerName' => 'GCash Customer',
             'tableNumber' => 'table_2',
             'paymentTiming' => 'pay_now',
-            'paymentMethod' => 'card',
+            'paymentMethod' => 'gcash',
             'paidAmount' => 100.00,
             'changeAmount' => 0.00,
         ])
@@ -99,9 +99,47 @@ it('can place order with pay now and card payment', function () {
 
     $order = Order::first();
     expect($order)
-        ->customer_name->toBe('Card Customer')
+        ->customer_name->toBe('GCash Customer')
         ->payment_status->toBe('paid')
-        ->payment_method->toBe('card')
+        ->payment_method->toBe('gcash')
+        ->paid_amount->toBe('100.00')
+        ->change_amount->toBe('0.00');
+});
+
+it('can place order with pay now and Maya payment', function () {
+    Livewire::test(PosPage::class)
+        ->set('orderType', 'dine_in')
+        ->set('cartItems', [
+            [
+                'product_id' => $this->product->id,
+                'variant_id' => null,
+                'variant_name' => null,
+                'name' => $this->product->name,
+                'price' => 100.00,
+                'quantity' => 1,
+                'subtotal' => 100.00,
+            ],
+        ])
+        ->set('totalAmount', 100.00)
+        ->mountAction('placeOrder')
+        ->fillForm([
+            'customerName' => 'Maya Customer',
+            'tableNumber' => 'table_4',
+            'paymentTiming' => 'pay_now',
+            'paymentMethod' => 'maya',
+            'paidAmount' => 100.00,
+            'changeAmount' => 0.00,
+        ])
+        ->callMountedAction()
+        ->assertHasNoActionErrors();
+
+    expect(Order::count())->toBe(1);
+
+    $order = Order::first();
+    expect($order)
+        ->customer_name->toBe('Maya Customer')
+        ->payment_status->toBe('paid')
+        ->payment_method->toBe('maya')
         ->paid_amount->toBe('100.00')
         ->change_amount->toBe('0.00');
 });

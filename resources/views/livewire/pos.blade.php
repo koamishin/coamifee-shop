@@ -405,49 +405,18 @@
                                         Payment Method
                                     </label>
                                     <div class="grid grid-cols-2 gap-2">
-                                        <button wire:click="$set('paymentMethod', 'cash')"
-                                                class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 transition-all duration-300
-                                                       {{ $paymentMethod === 'cash'
-                                                          ? 'border-[#c17a4a] bg-[#c17a4a]/10 text-[#c17a4a] shadow-md'
-                                                          : 'border-[#e8dcc8] dark:border-[#3d3530] text-[#8b7355] dark:text-[#b8a892] hover:border-[#c17a4a]/50' }}">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                            </svg>
-                                            <span class="text-xs font-semibold">Cash</span>
-                                        </button>
-
-                                        <button wire:click="$set('paymentMethod', 'card')"
-                                                class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 transition-all duration-300
-                                                       {{ $paymentMethod === 'card'
-                                                          ? 'border-[#c17a4a] bg-[#c17a4a]/10 text-[#c17a4a] shadow-md'
-                                                          : 'border-[#e8dcc8] dark:border-[#3d3530] text-[#8b7355] dark:text-[#b8a892] hover:border-[#c17a4a]/50' }}">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                                            </svg>
-                                            <span class="text-xs font-semibold">Card</span>
-                                        </button>
-
-                                        <button wire:click="$set('paymentMethod', 'gcash')"
-                                                class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 transition-all duration-300
-                                                       {{ $paymentMethod === 'gcash'
-                                                          ? 'border-[#c17a4a] bg-[#c17a4a]/10 text-[#c17a4a] shadow-md'
-                                                          : 'border-[#e8dcc8] dark:border-[#3d3530] text-[#8b7355] dark:text-[#b8a892] hover:border-[#c17a4a]/50' }}">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                            </svg>
-                                            <span class="text-xs font-semibold">GCash</span>
-                                        </button>
-
-                                        <button wire:click="$set('paymentMethod', 'paypal')"
-                                                class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 transition-all duration-300
-                                                       {{ $paymentMethod === 'paypal'
-                                                          ? 'border-[#c17a4a] bg-[#c17a4a]/10 text-[#c17a4a] shadow-md'
-                                                          : 'border-[#e8dcc8] dark:border-[#3d3530] text-[#8b7355] dark:text-[#b8a892] hover:border-[#c17a4a]/50' }}">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                                            </svg>
-                                            <span class="text-xs font-semibold">PayPal</span>
-                                        </button>
+                                        @foreach($this->getEnabledPaymentMethods() as $method => $config)
+                                            <button wire:click="$set('paymentMethod', '{{ $method }}')"
+                                                    class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 transition-all duration-300
+                                                           {{ $paymentMethod === $method
+                                                              ? 'border-[#c17a4a] bg-[#c17a4a]/10 text-[#c17a4a] shadow-md'
+                                                              : 'border-[#e8dcc8] dark:border-[#3d3530] text-[#8b7355] dark:text-[#b8a892] hover:border-[#c17a4a]/50' }}">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                                </svg>
+                                                <span class="text-xs font-semibold">{{ $config['name'] }}</span>
+                                            </button>
+                                        @endforeach
                                     </div>
 
                                     <!-- Cash Amount Input (shown only for cash payment) -->
@@ -811,7 +780,7 @@
 
                 <div class="flex justify-between items-center py-2 border-b border-[#e8dcc8] dark:border-[#3d3530]">
                     <span class="text-sm text-[#8b7355] dark:text-[#b8a892]">Payment Method:</span>
-                    <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8] capitalize">{{ $paymentConfirmationData['payment_method'] ?? 'N/A' }}</span>
+                    <span class="font-semibold text-[#2c2416] dark:text-[#f5f1e8] capitalize">{{ App\Services\GeneralSettingsService::class && method_exists(app(\App\Services\GeneralSettingsService::class), 'getPaymentMethodDisplayName') ? app(\App\Services\GeneralSettingsService::class)->getPaymentMethodDisplayName($paymentConfirmationData['payment_method'] ?? 'cash') : ucfirst($paymentConfirmationData['payment_method'] ?? 'cash') }}</span>
                 </div>
 
                 <div class="flex justify-between items-center py-2 border-b border-[#e8dcc8] dark:border-[#3d3530]">
@@ -865,29 +834,15 @@
             <h2 class="text-2xl font-serif font-bold text-[#2c2416] dark:text-[#f5f1e8] mb-6">Select Payment Method</h2>
 
             <div class="space-y-3 mb-6">
-                <button
-                    wire:click="processPayment('cash')"
-                    class="w-full p-4 border-2 border-[#e8dcc8] dark:border-[#3d3530] rounded-lg hover:border-[#c17a4a] hover:bg-[#f0e6d2] dark:hover:bg-[#3d3530] transition text-left"
-                >
-                    <p class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">Cash</p>
-                    <p class="text-sm text-[#8b7355] dark:text-[#b8a892]">Pay with cash</p>
-                </button>
-
-                <button
-                    wire:click="processPayment('card')"
-                    class="w-full p-4 border-2 border-[#e8dcc8] dark:border-[#3d3530] rounded-lg hover:border-[#c17a4a] hover:bg-[#f0e6d2] dark:hover:bg-[#3d3530] transition text-left"
-                >
-                    <p class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">Card</p>
-                    <p class="text-sm text-[#8b7355] dark:text-[#b8a892]">Credit or debit card</p>
-                </button>
-
-                <button
-                    wire:click="processPayment('mobile')"
-                    class="w-full p-4 border-2 border-[#e8dcc8] dark:border-[#3d3530] rounded-lg hover:border-[#c17a4a] hover:bg-[#f0e6d2] dark:hover:bg-[#3d3530] transition text-left"
-                >
-                    <p class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">Mobile Pay</p>
-                    <p class="text-sm text-[#8b7355] dark:text-[#b8a892]">Apple Pay, Google Pay, etc.</p>
-                </button>
+                @foreach($this->getEnabledPaymentMethods() as $method => $config)
+                    <button
+                        wire:click="processPayment('{{ $method }}')"
+                        class="w-full p-4 border-2 border-[#e8dcc8] dark:border-[#3d3530] rounded-lg hover:border-[#c17a4a] hover:bg-[#f0e6d2] dark:hover:bg-[#3d3530] transition text-left"
+                    >
+                        <p class="font-semibold text-[#2c2416] dark:text-[#f5f1e8]">{{ $config['name'] }}</p>
+                        <p class="text-sm text-[#8b7355] dark:text-[#b8a892]">{{ $config['description'] }}</p>
+                    </button>
+                @endforeach
             </div>
 
             <button
@@ -1005,7 +960,7 @@
 
             <div class="mt-4 pt-4 border-t border-[#e8dcc8] dark:border-[#3d3530]">
             <div class="text-center text-xs text-[#8b7355] dark:text-[#b8a892]">
-            <p>Payment Method: {{ ucfirst($receiptData['payment_method'] ?? 'cash') }}</p>
+            <p>Payment Method: {{ App\Services\GeneralSettingsService::class && method_exists(app(\App\Services\GeneralSettingsService::class), 'getPaymentMethodDisplayName') ? app(\App\Services\GeneralSettingsService::class)->getPaymentMethodDisplayName($receiptData['payment_method'] ?? 'cash') : ucfirst($receiptData['payment_method'] ?? 'cash') }}</p>
             <p class="mt-1">Thank you for visiting Goodland Café!</p>
             </div>
             </div>
