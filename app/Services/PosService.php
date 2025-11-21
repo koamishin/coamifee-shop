@@ -32,20 +32,24 @@ final readonly class PosService
                 // Split search into individual words and search for each
                 $searchWords = explode(' ', trim($search));
                 $searchWords = array_filter($searchWords, function($word) {
-                    return strlen($word) > 0;
+                    return strlen(trim($word)) > 0;
                 });
 
-                $query->where(function ($q) use ($searchWords): void {
-                    foreach ($searchWords as $word) {
-                        $q->orWhere(function ($subQuery) use ($word): void {
-                            $subQuery->where('name', 'like', '%'.$word.'%')
-                                ->orWhere('description', 'like', '%'.$word.'%')
-                                ->orWhereHas('category', function ($categoryQuery) use ($word): void {
-                                    $categoryQuery->where('name', 'like', '%'.$word.'%');
-                                });
-                        });
-                    }
-                });
+                if (empty($searchWords)) {
+                    return;
+                }
+
+                // Use AND logic - all words must be present in the product
+                foreach ($searchWords as $word) {
+                    $word = trim($word);
+                    $query->where(function ($subQuery) use ($word): void {
+                        $subQuery->where('name', 'like', '%'.$word.'%')
+                            ->orWhere('description', 'like', '%'.$word.'%')
+                            ->orWhereHas('category', function ($categoryQuery) use ($word): void {
+                                $categoryQuery->where('name', 'like', '%'.$word.'%');
+                            });
+                    });
+                }
             })
             ->orderBy('name')
             ->get();
