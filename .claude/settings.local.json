@@ -1,17 +1,32 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" test_null_payment.php)",
-      "Bash(del:*)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan:*)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan tinker --execute=\"echo ''Showing form action validation rules...'';\")",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan test tests/Feature/Filament/Pages/PosPagePaymentTest.php::it_can_place_order_with_pay_later --debug)"
-    ],
-    "deny": [],
-    "ask": []
-  },
-  "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "laravel-boost"
-  ]
+    "permissions": {
+        "allow": [
+            "Bash(php artisan:*)",
+            "Bash(vendor/bin/pint:*)",
+            "Bash(php:*)",
+            "Bash(git add:*)",
+            "Bash(git commit:*)",
+            "Bash(git push:*)",
+            "Bash(find:*)",
+            "Bash(docker build:*)",
+            "Bash(composer show:*)",
+            "Bash(composer require:*)",
+            "Bash(gh pr create:*)",
+            "Bash(gh pr view:*)",
+            "Bash(gh pr edit:*)",
+            "Bash(test:*)",
+            "Bash(composer test:*)",
+            "Bash(\"vendor/bin/php-parse\" app/Filament/Pages/PosPage.php --dry-run)",
+            "Bash(where:*)",
+            "Bash(C:Usersuser.configherdbinphp.bat vendor/bin/pint --dirty)",
+            "Bash(C:\\Users\\user\\Desktop\\Goodland Cafe\\coamifee-shop\\vendor\\bin\\php artisan migrate:*)",
+            "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\":*)",
+            "Bash(\"C:\\Users\\user\\Desktop\\Goodland Cafe\\coamifee-shop\\vendor\\bin\\pint.bat\":*)",
+            "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan migrate:status)",
+            "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan make:migration make_payment_method_nullable_again_in_orders_table --table=orders)",
+            "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan migrate)"
+        ]
+    },
+    "enableAllProjectMcpServers": true,
+    "enabledMcpjsonServers": ["laravel-boost"]
 }
