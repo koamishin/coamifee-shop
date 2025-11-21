@@ -386,9 +386,11 @@ final class OrdersProcessing extends Page
                             ->suffix('%')
                             ->visible(fn ($get) => ! empty($get('discountType')) && DiscountType::from($get('discountType'))->requiresCustomValue())
                             ->reactive()
+                            ->live()
                             ->minValue(0)
                             ->maxValue(100)
-                            ->helperText('Enter percentage (0-100)'),
+                            ->helperText('Enter percentage (0-100)')
+                            ->dehydrated(true),
                     ])
                     ->columns(2)
                     ->collapsible()
@@ -468,11 +470,21 @@ final class OrdersProcessing extends Page
                     // Calculate discount
                     $subtotal = (float) ($order->subtotal ?? $order->total);
                     $existingAddOns = (float) ($order->add_ons_total ?? 0);
-                    $discountAmount = (float) ($order->discount_amount ?? 0);
+                    $discountAmount = 0;
 
-                    if (! empty($data['discountType']) && ! empty($data['discountValue'])) {
-                        // All discounts are percentage-based
-                        $discountAmount = $subtotal * ((float) $data['discountValue'] / 100);
+                    if (! empty($data['discountType'])) {
+                        $discountType = DiscountType::from($data['discountType']);
+                        $discountPercentage = $discountType->getPercentage();
+
+                        // If discount type requires custom value, use the provided value
+                        if ($discountType->requiresCustomValue() && ! empty($data['discountValue'])) {
+                            $discountPercentage = (float) $data['discountValue'];
+                        }
+
+                        // Apply discount if we have a percentage
+                        if ($discountPercentage !== null) {
+                            $discountAmount = $subtotal * ($discountPercentage / 100);
+                        }
                     }
 
                     $finalTotal = $subtotal - $discountAmount + $existingAddOns;
