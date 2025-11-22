@@ -236,7 +236,7 @@ final class GeneralSettingsService
                 'color' => 'success',
                 'enabled' => true,
             ],
-            'foodpanda' => [
+            'food_panda' => [
                 'name' => 'Food Panda',
                 'description' => 'Pay with Food Panda delivery',
                 'icon' => 'heroicon-o-truck',

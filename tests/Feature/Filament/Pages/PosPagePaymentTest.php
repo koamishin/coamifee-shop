@@ -217,3 +217,79 @@ it('can place order with discount and pay now', function () {
         ->paid_amount->toBe('200.00')
         ->change_amount->toBe('40.00');
 });
+
+it('can place order with delivery and Grab payment', function () {
+    Livewire::test(PosPage::class)
+        ->set('orderType', 'delivery')
+        ->set('cartItems', [
+            [
+                'product_id' => $this->product->id,
+                'variant_id' => null,
+                'variant_name' => null,
+                'name' => $this->product->name,
+                'price' => 100.00,
+                'quantity' => 1,
+                'subtotal' => 100.00,
+            ],
+        ])
+        ->set('totalAmount', 100.00)
+        ->mountAction('placeOrder')
+        ->fillForm([
+            'customerName' => 'Grab Customer',
+            'orderType' => 'delivery',
+            'paymentTiming' => 'pay_now',
+            'paymentMethod' => 'grab',
+            'notes' => 'Deliver to Main Street',
+        ])
+        ->callMountedAction()
+        ->assertHasNoActionErrors();
+
+    expect(Order::count())->toBe(1);
+
+    $order = Order::first();
+    expect($order)
+        ->order_type->toBe('delivery')
+        ->payment_status->toBe('paid')
+        ->payment_method->toBe('grab')
+        ->total->toBe('100.00')
+        ->paid_amount->toBe('100.00')
+        ->change_amount->toBe('0.00');
+});
+
+it('can place order with delivery and Food Panda payment', function () {
+    Livewire::test(PosPage::class)
+        ->set('orderType', 'delivery')
+        ->set('cartItems', [
+            [
+                'product_id' => $this->product->id,
+                'variant_id' => null,
+                'variant_name' => null,
+                'name' => $this->product->name,
+                'price' => 100.00,
+                'quantity' => 1,
+                'subtotal' => 100.00,
+            ],
+        ])
+        ->set('totalAmount', 100.00)
+        ->mountAction('placeOrder')
+        ->fillForm([
+            'customerName' => 'Food Panda Customer',
+            'orderType' => 'delivery',
+            'paymentTiming' => 'pay_now',
+            'paymentMethod' => 'food_panda',
+            'notes' => 'Deliver to Oak Avenue',
+        ])
+        ->callMountedAction()
+        ->assertHasNoActionErrors();
+
+    expect(Order::count())->toBe(1);
+
+    $order = Order::first();
+    expect($order)
+        ->order_type->toBe('delivery')
+        ->payment_status->toBe('paid')
+        ->payment_method->toBe('food_panda')
+        ->total->toBe('100.00')
+        ->paid_amount->toBe('100.00')
+        ->change_amount->toBe('0.00');
+});

@@ -1,14 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan about --only=environment)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan config:cache)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan make:migration add_bank_transfer_to_payment_methods_in_orders_table)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan migrate)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan pint --dirty)",
       "Bash(vendor/bin/pint:*)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" vendor/bin/pint --dirty)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan migrate:rollback --step=1)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan make:migration add_delivery_payment_methods_to_orders_table)"
+      "Bash(php artisan test:*)",
+      "Bash(php artisan migrate:*)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan migrate)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\":*)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan route:list:*)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan test --filter=Order --stop-on-failure)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan test:*)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan:*)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan test --filter=\"delivery\" --stop-on-failure)"
     ],
     "deny": [],
     "ask": []
