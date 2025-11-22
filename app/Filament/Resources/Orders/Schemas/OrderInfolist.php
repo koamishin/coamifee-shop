@@ -140,110 +140,182 @@ final class OrderInfolist
 
             ])->from('lg'),
 
-            Section::make('Order Summary')
-                ->icon('heroicon-o-calculator')
+            Section::make('Order Receipt')
+                ->icon('heroicon-o-receipt-percent')
+                ->description('Complete order summary')
                 ->schema([
-                    TextEntry::make('subtotal')
-                        ->label('Subtotal')
-                        ->money(self::getMoneyConfig())
-                        ->size(TextSize::Medium),
+                    Grid::make(2)
+                        ->schema([
+                            TextEntry::make('id')
+                                ->label('Order Number')
+                                ->prefix('#')
+                                ->weight(FontWeight::Bold)
+                                ->size(TextSize::Large)
+                                ->color('primary'),
 
-                    TextEntry::make('discount_type')
-                        ->label('Discount Type')
-                        ->badge()
-                        ->color('info')
-                        ->formatStateUsing(fn ($state): string => $state ? ucfirst((string) $state) : 'None')
-                        ->visible(fn ($record) => $record->discount_amount > 0),
+                            TextEntry::make('created_at')
+                                ->label('Order Date')
+                                ->dateTime('M d, Y - h:i A')
+                                ->weight(FontWeight::Bold),
+                        ]),
 
-                    TextEntry::make('discount_value')
-                        ->label('Discount Value')
-                        ->formatStateUsing(fn ($state, $record): string => $record->discount_type === 'percentage' ? "{$state}%" : self::getMoneyConfig()['currency'].' '.$state)
-                        ->visible(fn ($record) => $record->discount_amount > 0),
+                    Grid::make(3)
+                        ->schema([
+                            TextEntry::make('customer_name')
+                                ->label('Customer')
+                                ->weight(FontWeight::Bold)
+                                ->icon('heroicon-o-user'),
 
-                    TextEntry::make('discount_amount')
-                        ->label('Discount Amount')
-                        ->money(self::getMoneyConfig())
-                        ->color('danger')
-                        ->icon('heroicon-o-tag')
-                        ->visible(fn ($record) => $record->discount_amount > 0),
+                            TextEntry::make('order_type')
+                                ->label('Order Type')
+                                ->badge()
+                                ->formatStateUsing(fn ($state): string => ucfirst(str_replace('_', ' ', $state))),
 
-                    TextEntry::make('add_ons_total')
-                        ->label('Add-ons Total')
-                        ->money(self::getMoneyConfig())
-                        ->color('success')
-                        ->icon('heroicon-o-plus-circle')
-                        ->visible(fn ($record) => $record->add_ons_total > 0),
+                            TextEntry::make('table_number')
+                                ->label('Table')
+                                ->badge()
+                                ->color('primary')
+                                ->formatStateUsing(fn ($state): string => $state ? str_replace('_', ' ', ucfirst($state)) : 'N/A')
+                                ->visible(fn ($record) => $record->order_type === 'dine_in'),
+                        ]),
+
+                    Section::make('Order Items')
+                        ->schema([
+                            RepeatableEntry::make('items')
+                                ->label('')
+                                ->schema([
+                                    Grid::make(4)
+                                        ->schema([
+                                            TextEntry::make('product.name')
+                                                ->label('Item')
+                                                ->weight(FontWeight::Bold)
+                                                ->formatStateUsing(function ($record) {
+                                                    $name = $record->product->name ?? 'Unknown Product';
+                                                    if ($record->variant_name) {
+                                                        $name .= ' ('.$record->variant_name.')';
+                                                    }
+
+                                                    return $name;
+                                                }),
+
+                                            TextEntry::make('quantity')
+                                                ->label('Qty')
+                                                ->suffix('x')
+                                                ->weight(FontWeight::Bold),
+
+                                            TextEntry::make('price')
+                                                ->label('Unit Price')
+                                                ->money(self::getMoneyConfig()),
+
+                                            TextEntry::make('line_total')
+                                                ->label('Total')
+                                                ->money(self::getMoneyConfig())
+                                                ->weight(FontWeight::Bold)
+                                                ->color('success')
+                                                ->state(fn ($record) => $record->quantity * $record->price),
+                                        ]),
+                                ])
+                                ->contained(false),
+                        ])
+                        ->columnSpanFull(),
+
+                    Grid::make(2)
+                        ->schema([
+                            TextEntry::make('subtotal')
+                                ->label('Subtotal')
+                                ->money(self::getMoneyConfig())
+                                ->size(TextSize::Large)
+                                ->weight(FontWeight::Bold),
+
+                            TextEntry::make('discount_summary')
+                                ->label('Discount Applied')
+                                ->badge()
+                                ->color('success')
+                                ->icon('heroicon-o-tag')
+                                ->formatStateUsing(function ($record) {
+                                    if ($record->discount_amount > 0 && $record->discount_type && $record->discount_value) {
+                                        return ucfirst($record->discount_type).' ('.$record->discount_value.'%) - '.self::getMoneyConfig()['currency'].' '.number_format($record->discount_amount, 2);
+                                    }
+
+                                    return 'No discount';
+                                })
+                                ->visible(fn ($record) => $record->discount_amount > 0),
+                        ]),
+
+                    Grid::make(2)
+                        ->schema([
+                            TextEntry::make('discount_amount')
+                                ->label('Discount Amount')
+                                ->money(self::getMoneyConfig())
+                                ->color('danger')
+                                ->prefix('- ')
+                                ->size(TextSize::Large)
+                                ->weight(FontWeight::Bold)
+                                ->visible(fn ($record) => $record->discount_amount > 0),
+
+                            TextEntry::make('add_ons_total')
+                                ->label('Add-ons Total')
+                                ->money(self::getMoneyConfig())
+                                ->color('info')
+                                ->prefix('+ ')
+                                ->size(TextSize::Large)
+                                ->weight(FontWeight::Bold)
+                                ->visible(fn ($record) => $record->add_ons_total > 0),
+                        ]),
 
                     TextEntry::make('total')
-                        ->label('Total Amount')
+                        ->label('GRAND TOTAL')
                         ->money(self::getMoneyConfig())
-                        ->weight(FontWeight::Bold)
                         ->size(TextSize::Large)
+                        ->weight(FontWeight::Bold)
                         ->color('success')
-                        ->icon('heroicon-o-currency-dollar'),
-                    TextEntry::make('payment_method')
-                        ->label('Payment Method')
-                        ->badge()
-                        ->icon(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodIcon((string) $state))
-                        ->color(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodColor((string) $state))
-                        ->formatStateUsing(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodDisplayName((string) $state)),
-                ]),
+                        ->icon('heroicon-o-currency-dollar')
+                        ->columnSpanFull(),
 
-            Section::make('Order Items')
-                ->icon('heroicon-o-shopping-bag')
-                ->description('Detailed list of items in this order')
-                ->schema([
-                    RepeatableEntry::make('items')
-                        ->label('')
+                    Grid::make(3)
                         ->schema([
-                            Grid::make(6)
-                                ->schema([
-                                    TextEntry::make('product.name')
-                                        ->label('Product')
-                                        ->weight(FontWeight::Bold)
-                                        ->size(TextSize::Medium)
-                                        ->icon('heroicon-o-cube'),
+                            TextEntry::make('payment_method')
+                                ->label('Payment Method')
+                                ->badge()
+                                ->icon(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodIcon((string) $state))
+                                ->color(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodColor((string) $state))
+                                ->formatStateUsing(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodDisplayName((string) $state)),
 
-                                    TextEntry::make('variant_name')
-                                        ->label('Variant')
-                                        ->badge()
-                                        ->color('info')
-                                        ->placeholder('-'),
+                            TextEntry::make('payment_status')
+                                ->label('Payment Status')
+                                ->badge()
+                                ->color(fn ($state): string => match ($state) {
+                                    'paid' => 'success',
+                                    'unpaid' => 'warning',
+                                    'failed' => 'danger',
+                                    default => 'gray',
+                                })
+                                ->formatStateUsing(fn ($state): string => ucfirst((string) $state)),
 
-                                    TextEntry::make('quantity')
-                                        ->label('Qty')
-                                        ->badge()
-                                        ->color('primary')
-                                        ->suffix('x'),
+                            TextEntry::make('paid_amount')
+                                ->label('Amount Paid')
+                                ->money(self::getMoneyConfig())
+                                ->weight(FontWeight::Bold)
+                                ->visible(fn ($record) => $record->paid_amount > 0),
+                        ]),
 
-                                    TextEntry::make('price')
-                                        ->label('Unit Price')
-                                        ->money(self::getMoneyConfig()),
+                    TextEntry::make('change_amount')
+                        ->label('Change Given')
+                        ->money(self::getMoneyConfig())
+                        ->color('success')
+                        ->weight(FontWeight::Bold)
+                        ->icon('heroicon-o-banknotes')
+                        ->visible(fn ($record) => $record->change_amount > 0),
 
-                                    TextEntry::make('subtotal')
-                                        ->label('Subtotal')
-                                        ->money(self::getMoneyConfig())
-                                        ->weight(FontWeight::Bold)
-                                        ->color('success'),
-
-                                    TextEntry::make('is_served')
-                                        ->label('Served')
-                                        ->badge()
-                                        ->icon(fn ($state): string => $state ? 'heroicon-o-check-circle' : 'heroicon-o-clock')
-                                        ->color(fn ($state): string => $state ? 'success' : 'warning')
-                                        ->formatStateUsing(fn ($state): string => $state ? 'Served' : 'Pending'),
-                                ]),
-
-                            TextEntry::make('notes')
-                                ->label('Special Instructions')
-                                ->placeholder('No special instructions')
-                                ->icon('heroicon-o-chat-bubble-bottom-center-text')
-                                ->color('gray')
-                                ->columnSpanFull(),
-                        ])
-                        ->contained(false),
+                    TextEntry::make('notes')
+                        ->label('Special Instructions')
+                        ->placeholder('No special instructions')
+                        ->columnSpanFull()
+                        ->icon('heroicon-o-chat-bubble-left-right')
+                        ->visible(fn ($record) => ! empty($record->notes)),
                 ])
-                ->columnSpanFull(),
+                ->columnSpanFull()
+                ->collapsible(),
 
             Section::make('Additional Information')
                 ->icon('heroicon-o-information-circle')
