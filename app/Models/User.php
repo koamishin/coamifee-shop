@@ -27,7 +27,7 @@ final class User extends Authenticatable implements FilamentUser
      *
      * @var list<string>
      */
-    protected $fillable = ['name', 'email', 'password', 'email_verified_at'];
+    protected $fillable = ['name', 'email', 'password', 'email_verified_at', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -72,6 +72,7 @@ final class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 }
