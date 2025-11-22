@@ -163,7 +163,6 @@ it('can place order with pay later', function () {
         ->fillForm([
             'customerName' => 'Pay Later Customer',
             'tableNumber' => 'table_3',
-            'orderType' => 'dine_in',
             'paymentTiming' => 'pay_later',
         ])
         ->callMountedAction()
@@ -201,7 +200,7 @@ it('can place order with discount and pay now', function () {
             'tableNumber' => 'table_4',
             'paymentTiming' => 'pay_now',
             'paymentMethod' => 'cash',
-            'discountType' => 'senior',
+            'discountType' => 'senior_citizen',
             'discountValue' => 20,
             'paidAmount' => 200.00,
             'changeAmount' => 40.00, // 200 - (200 * 0.20) = 160, change = 200 - 160 = 40
