@@ -66,6 +66,7 @@ final readonly class OrderProcessingService
 
             $order->update([
                 'inventory_processed' => true,
+                'status' => 'completed',
             ]);
 
             DB::commit();
