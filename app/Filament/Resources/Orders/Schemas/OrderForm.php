@@ -65,16 +65,33 @@ final class OrderForm
                             Select::make('payment_method')
                                 ->label('Payment Method')
                                 ->required()
-                                ->options([
-                                    'cash' => 'Cash',
-                                    'gcash' => 'GCash',
-                                    'maya' => 'Maya',
-                                ])
-                                ->default('cash')
+                                ->options(function ($get) {
+                                    $orderType = $get('order_type');
+
+                                    if ($orderType === 'delivery') {
+                                        return [
+                                            'grab' => 'Grab',
+                                            'food_panda' => 'Food Panda',
+                                        ];
+                                    }
+
+                                    return [
+                                        'cash' => 'Cash',
+                                        'gcash' => 'GCash',
+                                        'maya' => 'Maya',
+                                    ];
+                                })
+                                ->default(function ($get) {
+                                    $orderType = $get('order_type');
+
+                                    return $orderType === 'delivery' ? 'grab' : 'cash';
+                                })
                                 ->placeholder('Select payment method')
                                 ->helperText(
                                     'Payment method used for this order',
                                 )
+                                ->reactive()
+                                ->live()
                                 ->columnSpan(1),
 
                             TextInput::make('table_number')
@@ -197,6 +214,8 @@ final class OrderForm
                                         'cash' => '💵 Cash',
                                         'gcash' => '📱 GCash',
                                         'maya' => '📱 Maya',
+                                        'grab' => '🚗 Grab',
+                                        'food_panda' => '🥡 Food Panda',
                                     ];
 
                                     return $methods[$record->payment_method] ??

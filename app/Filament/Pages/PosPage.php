@@ -366,7 +366,7 @@ final class PosPage extends Page
 
             // Determine payment status and method based on payment timing
             $paymentStatus = $this->paymentTiming === 'pay_now' ? 'paid' : 'unpaid';
-            $paymentMethod = $this->paymentTiming === 'pay_now' ? $this->paymentMethod : ($this->orderType === 'delivery' ? 'grab' : 'cash');
+            $paymentMethod = $this->paymentTiming === 'pay_now' ? $this->paymentMethod : 'cash';
 
             // Prepare order data
             $orderData = [
@@ -388,9 +388,15 @@ final class PosPage extends Page
             ];
 
             // Add paid amount and change if paying now
-            if ($this->paymentTiming === 'pay_now' && $this->paidAmount > 0) {
-                $orderData['paid_amount'] = $this->paidAmount;
-                $orderData['change_amount'] = $this->changeAmount;
+            if ($this->paymentTiming === 'pay_now') {
+                // For delivery orders, set exact payment
+                if ($this->orderType === 'delivery' && in_array($this->paymentMethod, ['grab', 'food_panda'])) {
+                    $orderData['paid_amount'] = $finalTotal;
+                    $orderData['change_amount'] = 0;
+                } elseif ($this->paidAmount > 0) {
+                    $orderData['paid_amount'] = $this->paidAmount;
+                    $orderData['change_amount'] = $this->changeAmount;
+                }
             }
 
             $order = Order::create($orderData);
