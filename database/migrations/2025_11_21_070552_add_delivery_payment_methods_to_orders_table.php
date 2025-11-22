@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::table('orders', function (Blueprint $table) {
             // Update the enum to include all payment methods used in the application
-            $table->enum('payment_method', ['cash', 'gcash', 'maya', 'bank_transfer', 'grab', 'food_panda'])->default('cash')->change();
+            $table->enum('payment_method', ['cash', 'gcash', 'maya', 'bank_transfer', 'grab', 'food_panda'])->nullable()->change();
         });
     }
 
@@ -26,7 +26,7 @@ return new class extends Migration
     {
         Schema::table('orders', function (Blueprint $table) {
             // Revert back to exclude grab and food_panda (keeping bank_transfer)
-            $table->enum('payment_method', ['cash', 'gcash', 'maya', 'bank_transfer'])->default('cash')->change();
+            $table->enum('payment_method', ['cash', 'gcash', 'maya', 'bank_transfer'])->nullable()->change();
         });
     }
 };
