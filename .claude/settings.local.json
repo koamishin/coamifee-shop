@@ -1,9 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan tinker)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan --version)",
-      "Bash(\"C:\\Users\\user\\Desktop\\Goodland Cafe\\coamifee-shop\\vendor\\bin\\pint.bat\" --dirty)"
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" test_null_payment.php)",
+      "Bash(del:*)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan:*)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan tinker --execute=\"echo ''Showing form action validation rules...'';\")",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan test tests/Feature/Filament/Pages/PosPagePaymentTest.php::it_can_place_order_with_pay_later --debug)"
     ],
     "deny": [],
     "ask": []
