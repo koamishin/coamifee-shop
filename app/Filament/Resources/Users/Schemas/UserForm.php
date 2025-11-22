@@ -94,7 +94,7 @@ final class UserForm
                             ->onColor('success')
                             ->offColor('danger')
                             ->default(false)
-                            ->dehydrated(false)
+                            ->dehydrated()
                             ->afterStateHydrated(function (Toggle $component, $record) {
                                 if ($record) {
                                     $component->state($record->email_verified_at !== null);
