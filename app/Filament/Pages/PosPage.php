@@ -885,23 +885,36 @@ final class PosPage extends Page
                                         } else {
                                             $set('discountValue', null);
                                         }
+                                    } else {
+                                        // Clear discount value when no discount type is selected
+                                        $set('discountValue', null);
                                     }
                                 })
                                 ->helperText(function ($state) {
-                                    return ! empty($state) ? DiscountType::from($state)->getDescription() : null;
+                                    if (! empty($state)) {
+                                        $discountType = DiscountType::from($state);
+                                        $percentage = $discountType->getPercentage();
+
+                                        return $discountType->getDescription().' - Discount will be applied: '.$percentage.'%';
+                                    }
+
+                                    return null;
                                 }),
 
-                            Forms\Components\TextInput::make('discountValue')
-                                ->label('Discount Value')
-                                ->numeric()
-                                ->suffix('%')
-                                ->visible(function ($get) {
-                                    return ! empty($get('discountType')) && DiscountType::from($get('discountType'))->requiresCustomValue();
+                            // Hidden field to store the discount value
+                            Forms\Components\Hidden::make('discountValue'),
+
+                            // Display-only field to show the discount percentage
+                            Forms\Components\Placeholder::make('discount_display')
+                                ->label('Discount Amount')
+                                ->content(function ($get) {
+                                    if (! empty($get('discountType')) && ! empty($get('discountValue'))) {
+                                        return $get('discountValue').'% will be deducted from subtotal';
+                                    }
+
+                                    return 'No discount applied';
                                 })
-                                ->reactive()
-                                ->minValue(0)
-                                ->maxValue(100)
-                                ->helperText('Enter percentage (0-100)'),
+                                ->visible(fn ($get) => ! empty($get('discountType'))),
                         ])
                         ->columns(2)
                         ->collapsible()

@@ -106,7 +106,11 @@ final class OrdersTable
                     ->alignRight()
                     ->placeholder('-')
                     ->color('danger')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->icon('heroicon-o-tag')
+                    ->description(fn ($record) => $record->discount_amount > 0 && $record->discount_type && $record->discount_value
+                        ? ucfirst($record->discount_type).' ('.$record->discount_value.'%)'
+                        : null)
+                    ->toggleable(isToggledHiddenByDefault: false),
 
                 TextColumn::make('add_ons_total')
                     ->label('Add-ons')
