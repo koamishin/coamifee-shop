@@ -12,12 +12,15 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use UnitEnum;
 
 final class BestSellers extends Page
 {
     public Collection $bestSellersData;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-trophy';
+
+    protected static UnitEnum|string|null $navigationGroup = 'Operations';
 
     protected static ?string $navigationLabel = 'Best Sellers';
 

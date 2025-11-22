@@ -29,6 +29,7 @@ use Illuminate\Support\HtmlString;
 use JaOcero\RadioDeck\Forms\Components\RadioDeck;
 use Livewire\Attributes\Locked;
 use Storage;
+use UnitEnum;
 
 final class PosPage extends Page
 {
@@ -84,6 +85,8 @@ final class PosPage extends Page
     public array $productAvailability = [];
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shopping-cart';
+
+    protected static UnitEnum|string|null $navigationGroup = 'Operations';
 
     protected static ?int $navigationSort = 1;
 
