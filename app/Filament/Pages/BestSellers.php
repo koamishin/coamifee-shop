@@ -21,7 +21,7 @@ final class BestSellers extends Page
 
     protected static ?string $navigationLabel = 'Best Sellers';
 
-    protected static ?string $title = 'Best Sellers by Category';
+    protected static ?string $title = 'Best Sellers Report';
 
     protected static ?int $navigationSort = 3;
 
@@ -39,34 +39,37 @@ final class BestSellers extends Page
 
     protected function getBestSellersData(): Collection
     {
-        // Get products from completed orders in the last month (excluding add-ons)
         $oneMonthAgo = now()->subMonth();
 
-        // Get product sales data from completed orders in the last month
-        $productSales = OrderItem::query()
+        // Get all order items from completed orders in the last month
+        $orderItems = OrderItem::query()
             ->whereHas('order', function (Builder $query) use ($oneMonthAgo) {
                 $query->where('created_at', '>=', $oneMonthAgo)
-                    ->where('status', 'completed'); // Only count completed orders
+                    ->where('status', 'completed');
             })
             ->with(['product.category'])
-            ->selectRaw('
-                product_id,
-                SUM(quantity) as total_quantity,
-                SUM(quantity * price) as total_revenue
-            ')
-            ->groupBy('product_id')
-            ->orderByDesc('total_quantity')
             ->get();
 
-        // Group by category and filter categories with 1+ products
+        // Group by product and calculate totals
+        $productSales = $orderItems
+            ->groupBy('product_id')
+            ->map(function (Collection $items) {
+                $firstItem = $items->first();
+
+                return (object) [
+                    'product' => $firstItem->product,
+                    'total_quantity' => $items->sum('quantity'),
+                    'total_revenue' => $items->sum(fn ($item) => $item->quantity * $item->price),
+                ];
+            })
+            ->sortByDesc('total_quantity')
+            ->values();
+
+        // Group by category and get top 3 products per category
         $categoryProducts = $productSales
             ->groupBy(fn ($item) => $item->product->category->name ?? 'Uncategorized')
-            ->filter(function ($products, $categoryName) {
-                return $products->count() >= 1; // Show categories with at least 1 product
-            })
-            ->map(function ($products) {
-                return $products->take(3); // Take only top 3 products per category
-            });
+            ->filter(fn ($products) => $products->count() >= 1)
+            ->map(fn ($products) => $products->take(3)->values());
 
         return $categoryProducts;
     }
