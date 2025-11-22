@@ -52,10 +52,11 @@ final class ProductsTable
 
                 ImageColumn::make('image_url')
                     ->label('Image')
+                    ->disk('r2')
+                    ->visibility('public')
                     ->size(60)
                     ->circular()
                     ->defaultImageUrl(url('/placeholder-product.png'))
-
                     ->alignCenter(),
 
                 TextColumn::make('sku')

@@ -107,9 +107,10 @@
                                         <div class="aspect-square mb-2 rounded-lg overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 relative">
                                             @if($product->image_url)
                                                 <img
-                                                    src="{{ $product->image_url }}"
+                                                    src="{{ $this->getProductImageUrl($product->image_url) }}"
                                                     alt="{{ $product->name }}"
                                                     class="w-full h-full object-cover transition-transform duration-300"
+                                                    loading="lazy"
                                                 >
                                             @else
                                                 <div class="w-full h-full flex items-center justify-center">

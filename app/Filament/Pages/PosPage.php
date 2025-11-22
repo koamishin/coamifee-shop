@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use JaOcero\RadioDeck\Forms\Components\RadioDeck;
 use Livewire\Attributes\Locked;
+use Storage;
 
 final class PosPage extends Page
 {
@@ -500,6 +501,18 @@ final class PosPage extends Page
     public function getMaxProducibleQuantity(int $productId): int
     {
         return $this->posService->getMaxProducibleQuantity($productId);
+    }
+
+    /**
+     * Get product image URL from R2
+     */
+    public function getProductImageUrl(?string $imagePath): ?string
+    {
+        if (! $imagePath) {
+            return null;
+        }
+
+        return Storage::disk('r2')->url($imagePath);
     }
 
     protected function getActions(): array
