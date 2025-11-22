@@ -44,23 +44,23 @@ final class BestSellersStats extends BaseWidget
         $totalRevenue = $productSales->sum('total_revenue');
 
         return [
-            // Stat::make('Categories Featured', number_format($totalCategories))
-            //     ->description('Categories with products')
-            //     ->descriptionIcon('heroicon-m-tag')
-            //     ->color('primary')
-            //     ->chart([7, 2, 10, 3, 15, 4, 17]),
+            Stat::make('Categories Featured', number_format($totalCategories))
+                ->description('Categories with products')
+                ->descriptionIcon('heroicon-m-tag')
+                ->color('primary')
+                ->chart([7, 2, 10, 3, 15, 4, 17]),
 
-            // Stat::make('Total Units Sold', number_format($totalUnitsSold))
-            //     ->description('Products sold in last 30 days')
-            //     ->descriptionIcon('heroicon-m-shopping-cart')
-            //     ->color('success')
-            //     ->chart([65, 59, 80, 81, 56, 55, 72]),
+            Stat::make('Total Units Sold', number_format($totalUnitsSold))
+                ->description('Products sold in last 30 days')
+                ->descriptionIcon('heroicon-m-shopping-cart')
+                ->color('success')
+                ->chart([65, 59, 80, 81, 56, 55, 72]),
 
-            // Stat::make('Total Revenue', '₱'.number_format($totalRevenue, 0))
-            //     ->description('Revenue from best sellers')
-            //     ->descriptionIcon('heroicon-m-banknotes')
-            //     ->color('warning')
-            //     ->chart([12, 11, 14, 13, 15, 14, 16]),
+            Stat::make('Total Revenue', '₱'.number_format($totalRevenue, 0))
+                ->description('Revenue from best sellers')
+                ->descriptionIcon('heroicon-m-banknotes')
+                ->color('warning')
+                ->chart([12, 11, 14, 13, 15, 14, 16]),
         ];
     }
 }

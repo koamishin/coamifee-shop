@@ -12,25 +12,16 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use UnitEnum;
 
 final class BestSellers extends Page
 {
     public Collection $bestSellersData;
 
-    public ?string $startDate = null;
-
-    public ?string $endDate = null;
-
-    // protected static bool $shouldRegisterNavigation = true;
-
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-trophy';
-
-    // protected static UnitEnum|string|null $navigationGroup = 'Operations';
 
     protected static ?string $navigationLabel = 'Best Sellers';
 
-    protected static ?string $title = 'Best Sellers Report';
+    protected static ?string $title = 'Best Sellers by Category';
 
     protected static ?int $navigationSort = 3;
 
@@ -38,8 +29,6 @@ final class BestSellers extends Page
 
     public function mount(): void
     {
-        $this->startDate = now()->subMonth()->toDateString();
-        $this->endDate = now()->toDateString();
         $this->bestSellersData = $this->getBestSellersData();
     }
 
@@ -50,39 +39,34 @@ final class BestSellers extends Page
 
     protected function getBestSellersData(): Collection
     {
-        $startDate = $this->startDate ? now()->parse($this->startDate)->startOfDay() : now()->subMonth();
-        $endDate = $this->endDate ? now()->parse($this->endDate)->endOfDay() : now();
+        // Get products from completed orders in the last month (excluding add-ons)
+        $oneMonthAgo = now()->subMonth();
 
-        // Get all order items from completed orders within the date range
-        $orderItems = OrderItem::query()
-            ->whereHas('order', function (Builder $query) use ($startDate, $endDate) {
-                $query->where('created_at', '>=', $startDate)
-                    ->where('created_at', '<=', $endDate)
-                    ->where('status', 'completed');
+        // Get product sales data from completed orders in the last month
+        $productSales = OrderItem::query()
+            ->whereHas('order', function (Builder $query) use ($oneMonthAgo) {
+                $query->where('created_at', '>=', $oneMonthAgo)
+                    ->where('status', 'completed'); // Only count completed orders
             })
             ->with(['product.category'])
+            ->selectRaw('
+                product_id,
+                SUM(quantity) as total_quantity,
+                SUM(quantity * price) as total_revenue
+            ')
+            ->groupBy('product_id')
+            ->orderByDesc('total_quantity')
             ->get();
 
-        // Group by product and calculate totals
-        $productSales = $orderItems
-            ->groupBy('product_id')
-            ->map(function (Collection $items) {
-                $firstItem = $items->first();
-
-                return (object) [
-                    'product' => $firstItem->product,
-                    'total_quantity' => $items->sum('quantity'),
-                    'total_revenue' => $items->sum(fn ($item) => $item->quantity * $item->price),
-                ];
-            })
-            ->sortByDesc('total_quantity')
-            ->values();
-
-        // Group by category and get top 3 products per category
+        // Group by category and filter categories with 1+ products
         $categoryProducts = $productSales
             ->groupBy(fn ($item) => $item->product->category->name ?? 'Uncategorized')
-            ->filter(fn ($products) => $products->count() >= 1)
-            ->map(fn ($products) => $products->take(3)->values());
+            ->filter(function ($products, $categoryName) {
+                return $products->count() >= 1; // Show categories with at least 1 product
+            })
+            ->map(function ($products) {
+                return $products->take(3); // Take only top 3 products per category
+            });
 
         return $categoryProducts;
     }
@@ -141,22 +125,18 @@ final class BestSellers extends Page
                         ->schema([
                             Forms\Components\DatePicker::make('start_date')
                                 ->label('Start Date')
-                                ->default($this->startDate)
+                                ->default(now()->subMonth())
                                 ->required(),
 
                             Forms\Components\DatePicker::make('end_date')
                                 ->label('End Date')
-                                ->default($this->endDate)
-                                ->required()
-                                ->after('start_date'),
+                                ->default(now())
+                                ->required(),
                         ]),
                 ])
                 ->action(function (array $data) {
                     // Update best sellers data based on date range
-                    $this->startDate = $data['start_date'];
-                    $this->endDate = $data['end_date'];
-                    $this->refreshData();
-
+                    // This would require modifying the getBestSellersData method
                     \Filament\Notifications\Notification::make()
                         ->title('Date range updated')
                         ->body('Showing data from '.$data['start_date'].' to '.$data['end_date'])
