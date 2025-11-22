@@ -25,6 +25,7 @@ final class OrderFactory extends Factory
             'customer_id' => Customer::factory(),
             'order_type' => fake()->randomElement(['dine-in', 'takeout', 'delivery']),
             'payment_method' => fake()->randomElement(['cash', 'gcash', 'maya']),
+            'payment_status' => 'paid',
             'total' => fake()->randomFloat(2, 5.00, 150.00),
             'status' => fake()->randomElement(['pending', 'confirmed', 'completed']),
             'table_number' => fake()->optional(0.7)->randomElement(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']),

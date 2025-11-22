@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('customer_name')->nullable();
             $table->foreignId('customer_id')->nullable()->constrained()->onDelete('set null');
             $table->enum('order_type', ['dine-in', 'takeout', 'delivery'])->default('dine-in');
-            $table->enum('payment_method', ['cash', 'card', 'gcash', 'paypal'])->default('cash');
+            $table->enum('payment_method', ['cash', 'card', 'gcash', 'paypal'])->nullable();
             $table->decimal('total', 8, 2);
             $table->enum('status', ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'])->default('pending');
             $table->string('table_number')->nullable();

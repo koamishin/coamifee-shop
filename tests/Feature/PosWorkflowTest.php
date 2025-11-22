@@ -290,11 +290,12 @@ test('loads recent orders', function (): void {
 
 test('displays today statistics', function (): void {
     // Create some orders for today
-    Order::factory()->create(['total' => 15.0, 'created_at' => now()]);
-    Order::factory()->create(['total' => 25.0, 'created_at' => now()]);
+    Order::factory()->create(['total' => 15.0, 'created_at' => now(), 'payment_status' => 'paid']);
+    Order::factory()->create(['total' => 25.0, 'created_at' => now(), 'payment_status' => 'paid']);
     Order::factory()->create([
         'total' => 10.0,
         'created_at' => now()->subDay(),
+        'payment_status' => 'paid',
     ]);
 
     Livewire::test('pos')

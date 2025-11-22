@@ -29,6 +29,7 @@ use Illuminate\Support\HtmlString;
 use JaOcero\RadioDeck\Forms\Components\RadioDeck;
 use Livewire\Attributes\Locked;
 use Storage;
+use UnitEnum;
 
 final class PosPage extends Page
 {
@@ -84,6 +85,8 @@ final class PosPage extends Page
     public array $productAvailability = [];
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shopping-cart';
+
+    protected static UnitEnum|string|null $navigationGroup = 'Operations';
 
     protected static ?int $navigationSort = 1;
 
@@ -366,7 +369,7 @@ final class PosPage extends Page
 
             // Determine payment status and method based on payment timing
             $paymentStatus = $this->paymentTiming === 'pay_now' ? 'paid' : 'unpaid';
-            $paymentMethod = $this->paymentTiming === 'pay_now' ? $this->paymentMethod : 'cash';
+            $paymentMethod = $this->paymentTiming === 'pay_now' ? $this->paymentMethod : null;
 
             // Prepare order data
             $orderData = [
@@ -389,13 +392,18 @@ final class PosPage extends Page
 
             // Add paid amount and change if paying now
             if ($this->paymentTiming === 'pay_now') {
-                // For delivery orders, set exact payment
+                // For delivery orders or non-cash payments, set exact payment
                 if ($this->orderType === 'delivery' && in_array($this->paymentMethod, ['grab', 'food_panda'])) {
                     $orderData['paid_amount'] = $finalTotal;
                     $orderData['change_amount'] = 0;
-                } elseif ($this->paidAmount > 0) {
+                } elseif ($this->paymentMethod === 'cash' && $this->paidAmount > 0) {
+                    // Cash payment with custom amount
                     $orderData['paid_amount'] = $this->paidAmount;
                     $orderData['change_amount'] = $this->changeAmount;
+                } else {
+                    // Non-cash payments (GCash, Maya, Bank Transfer) - exact amount
+                    $orderData['paid_amount'] = $finalTotal;
+                    $orderData['change_amount'] = 0;
                 }
             }
 

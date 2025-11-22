@@ -25,7 +25,7 @@ final class OrderResource extends Resource
 
     protected static UnitEnum|string|null $navigationGroup = 'Sales Management';
 
-    protected static ?string $navigationLabel = 'Orders';
+    protected static ?string $navigationLabel = 'Order History';
 
     protected static ?string $modelLabel = 'Order';
 

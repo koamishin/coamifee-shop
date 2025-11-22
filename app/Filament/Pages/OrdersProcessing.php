@@ -21,6 +21,7 @@ use Filament\Schemas\Components\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use JaOcero\RadioDeck\Forms\Components\RadioDeck;
+use UnitEnum;
 
 final class OrdersProcessing extends Page
 {
@@ -32,9 +33,11 @@ final class OrdersProcessing extends Page
 
     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
+    protected static UnitEnum|string|null $navigationGroup = 'Operations';
+
     protected string $view = 'filament.pages.orders-processing';
 
-    protected static ?string $navigationLabel = 'Orders';
+    protected static ?string $navigationLabel = 'Orders Processing';
 
     protected static ?string $title = 'Orders Processing';
 
