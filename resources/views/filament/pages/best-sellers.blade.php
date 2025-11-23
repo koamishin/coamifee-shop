@@ -88,7 +88,7 @@
                             {{ $categoryName }}
                         </h3>
                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            {{ $products->count() }} {{ Str::plural('product', $products->count()) }} · Last 30 days
+                            {{ $products->count() }} {{ Str::plural('product', $products->count()) }} · {{ $this->startDate }} to {{ $this->endDate }}
                         </p>
                     </div>
 
@@ -214,7 +214,7 @@
                 <div class="text-sm text-blue-800 dark:text-blue-300">
                     <p class="font-semibold">About this report</p>
                     <p class="mt-1">
-                        Showing top 3 best-selling products per category from <strong>completed orders</strong> in the last 30 days. Performance percentages are relative to the top-selling product in each category.
+                        Showing top 3 best-selling products per category from <strong>completed orders</strong> between <strong>{{ $this->startDate }}</strong> and <strong>{{ $this->endDate }}</strong>. Performance percentages are relative to the top-selling product in each category.
                     </p>
                 </div>
             </div>
@@ -232,7 +232,7 @@
                 @if(\App\Models\OrderItem::count() === 0)
                     No orders have been placed yet. Once you start completing orders, your best-selling products will appear here.
                 @else
-                    No products found with completed orders in the last 30 days. Complete some orders to see your best sellers.
+                    No products found with completed orders between {{ $this->startDate }} and {{ $this->endDate }}. Try adjusting the date range or complete some orders to see your best sellers.
                 @endif
             </p>
             <button

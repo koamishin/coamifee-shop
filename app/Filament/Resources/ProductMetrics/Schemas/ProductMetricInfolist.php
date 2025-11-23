@@ -123,7 +123,7 @@ final class ProductMetricInfolist
                                 $sales = (float) $record->total_revenue;
 
                                 if ($orders === 0) {
-                                    return self::getMoneyConfig()['currency'].' 0.00';
+                                    return self::getMoneyConfig()['currency'].' 0.0';
                                 }
 
                                 $aov = $sales / $orders;

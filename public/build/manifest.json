@@ -1,10 +1,6 @@
 {
   "resources/css/app.css": {
-<<<<<<< HEAD
-    "file": "assets/app-CBs83A-q.css",
-=======
-    "file": "assets/app-BW5gEd-N.css",
->>>>>>> 140c7e1 (Fix discount processing and redesign order receipt display)
+    "file": "assets/app-B33BBTh0.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -13,11 +9,7 @@
     ]
   },
   "resources/css/filament/admin/theme.css": {
-<<<<<<< HEAD
-    "file": "assets/theme-B1SSSp1e.css",
-=======
-    "file": "assets/theme-DZdKoZGG.css",
->>>>>>> 140c7e1 (Fix discount processing and redesign order receipt display)
+    "file": "assets/theme-4iufNmF8.css",
     "src": "resources/css/filament/admin/theme.css",
     "isEntry": true,
     "name": "theme",
@@ -31,8 +23,4 @@
     "src": "resources/js/app.js",
     "isEntry": true
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 140c7e1 (Fix discount processing and redesign order receipt display)
