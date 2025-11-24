@@ -22,41 +22,41 @@
 
         .ticket {
             width: 100%;
-            padding: 4mm 1mm;
+            padding: 2mm 0.5mm;
             text-align: center;
         }
 
         .header {
             text-align: center;
-            border-bottom: 2px dashed #000;
-            padding-bottom: 2mm;
-            margin-bottom: 3mm;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 1mm;
+            margin-bottom: 1.5mm;
         }
 
         .header h1 {
-            font-size: 14pt;
+            font-size: 10pt;
             font-weight: bold;
             letter-spacing: 1px;
         }
 
         .header p {
-            font-size: 7pt;
-            margin-top: 1mm;
+            font-size: 6pt;
+            margin-top: 0.5mm;
         }
 
         .order-info {
-            margin-bottom: 3mm;
-            font-size: 8pt;
-            line-height: 1.3;
+            margin-bottom: 1.5mm;
+            font-size: 7pt;
+            line-height: 1.2;
             margin-left: auto;
             margin-right: auto;
-            width: 90%;
+            width: 95%;
         }
 
         .info-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 1mm;
+            margin-bottom: 0.5mm;
         }
 
         .info-label {
@@ -64,23 +64,23 @@
         }
 
         .items-section {
-            border-top: 2px dashed #000;
-            border-bottom: 2px dashed #000;
-            padding: 2mm 0;
-            margin-bottom: 3mm;
+            border-top: 1px dashed #000;
+            border-bottom: 1px dashed #000;
+            padding: 1mm 0;
+            margin-bottom: 1.5mm;
         }
 
         .items-title {
-            font-size: 9pt;
+            font-size: 7pt;
             font-weight: bold;
-            margin-bottom: 2mm;
+            margin-bottom: 1mm;
             text-align: center;
         }
 
         .item {
-            margin-bottom: 2mm;
-            font-size: 8pt;
-            line-height: 1.2;
+            margin-bottom: 1mm;
+            font-size: 7pt;
+            line-height: 1.1;
         }
 
         .item-name {
@@ -88,73 +88,73 @@
         }
 
         .item-quantity {
-            margin-top: 0.5mm;
+            margin-top: 0.3mm;
         }
 
         .item-variant {
-            font-size: 7pt;
+            font-size: 5pt;
             color: #333;
-            margin-top: 0.5mm;
+            margin-top: 0.3mm;
         }
 
         .special-notes {
             background: #f5f5f5;
-            padding: 2mm;
-            margin-bottom: 3mm;
-            font-size: 7pt;
+            padding: 1mm;
+            margin-bottom: 1.5mm;
+            font-size: 6pt;
             border: 1px solid #ddd;
             margin-left: auto;
             margin-right: auto;
-            width: 90%;
+            width: 95%;
         }
 
         .special-notes-title {
             font-weight: bold;
-            margin-bottom: 1mm;
+            margin-bottom: 0.5mm;
         }
 
         .addons {
             background: #fffacd;
-            padding: 2mm;
-            margin-bottom: 3mm;
-            font-size: 7pt;
+            padding: 1mm;
+            margin-bottom: 1.5mm;
+            font-size: 6pt;
             border: 1px solid #daa;
             margin-left: auto;
             margin-right: auto;
-            width: 90%;
+            width: 95%;
         }
 
         .addons-title {
             font-weight: bold;
-            margin-bottom: 1mm;
+            margin-bottom: 0.5mm;
         }
 
         .addon-item {
-            margin-bottom: 0.5mm;
+            margin-bottom: 0.3mm;
         }
 
         .footer {
             text-align: center;
-            font-size: 7pt;
-            padding-top: 2mm;
-            border-top: 2px dashed #000;
+            font-size: 6pt;
+            padding-top: 1mm;
+            border-top: 1px dashed #000;
         }
 
         .order-time {
             font-weight: bold;
-            margin-bottom: 1mm;
+            margin-bottom: 0.5mm;
         }
 
         .print-date {
-            font-size: 6pt;
+            font-size: 5pt;
             color: #666;
         }
 
         .customer-name {
             font-weight: bold;
             text-align: center;
-            margin-bottom: 2mm;
-            font-size: 9pt;
+            margin-bottom: 1mm;
+            font-size: 7pt;
         }
 
         table {
@@ -163,8 +163,8 @@
         }
 
         td {
-            padding: 0.5mm 0;
-            font-size: 8pt;
+            padding: 0.3mm 0;
+            font-size: 6pt;
         }
 
         td:first-child {
@@ -178,18 +178,30 @@
         @media print {
             @page {
                 margin: 0;
-                size: 75mm 95mm;
+                size: 58mm auto;
+                max-height: 200mm;
             }
 
             body {
-                margin: 0 0 0 1mm;
+                margin: 0;
                 padding: 0;
+                height: auto;
+                overflow: hidden;
             }
 
             .ticket {
                 margin: 0 auto;
-                padding: 2mm 1mm;
+                padding: 1mm 0.5mm;
                 page-break-after: avoid;
+                page-break-inside: avoid;
+                height: auto;
+                max-height: 195mm;
+                overflow: hidden;
+            }
+
+            .header, .items-section, .special-notes, .addons, .footer {
+                page-break-inside: avoid;
+                page-break-after: auto;
             }
         }
     </style>
@@ -235,12 +247,12 @@
             @foreach($order->items as $item)
                 <div class="item">
                     <div class="item-name">
-                        {{ $item->quantity }}x {{ $item->product->name }}
+                        {{ $item->quantity }}x {{ Str::limit($item->product->name, 30, '...') }}
                     </div>
 
                     @if($item->variant_name)
                         <div class="item-variant">
-                            {{ ucfirst($item->variant_name) }}
+                            {{ ucfirst(Str::limit($item->variant_name, 25, '...')) }}
                         </div>
                     @endif
                 </div>

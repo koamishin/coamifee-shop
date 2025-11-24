@@ -22,43 +22,43 @@
 
         .receipt {
             width: 100%;
-            padding: 4mm 1mm;
+            padding: 2mm 0.5mm;
             text-align: center;
         }
 
         .header {
             text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 2mm;
-            margin-bottom: 3mm;
+            border-bottom: 1px solid #000;
+            padding-bottom: 1mm;
+            margin-bottom: 1.5mm;
         }
 
         .header h1 {
-            font-size: 12pt;
+            font-size: 10pt;
             font-weight: bold;
-            margin-bottom: 1mm;
+            margin-bottom: 0.5mm;
         }
 
         .header p {
-            font-size: 7pt;
-            margin: 0.5mm 0;
+            font-size: 6pt;
+            margin: 0.3mm 0;
         }
 
         .order-header {
-            font-size: 8pt;
-            margin-bottom: 3mm;
+            font-size: 7pt;
+            margin-bottom: 1.5mm;
             text-align: center;
         }
 
         .order-header p {
-            margin: 0.5mm 0;
+            margin: 0.3mm 0;
         }
 
         .items-table {
             width: 100%;
-            margin-bottom: 3mm;
+            margin-bottom: 1.5mm;
             border-collapse: collapse;
-            font-size: 8pt;
+            font-size: 7pt;
             margin-left: auto;
             margin-right: auto;
         }
@@ -68,13 +68,16 @@
         }
 
         .items-table td {
-            padding: 1mm 0;
+            padding: 0.5mm 0;
             text-align: center;
+            vertical-align: top;
         }
 
         .item-name {
             text-align: left;
-            width: 50%;
+            width: 55%;
+            font-size: 6pt;
+            line-height: 1.2;
         }
 
         .item-qty {
@@ -84,31 +87,32 @@
 
         .item-price {
             text-align: right;
-            width: 35%;
+            width: 30%;
         }
 
         .items-header {
             font-weight: bold;
-            margin-bottom: 1mm;
-            padding-bottom: 1mm;
+            margin-bottom: 0.5mm;
+            padding-bottom: 0.5mm;
             border-bottom: 1px solid #000;
+            font-size: 6pt;
         }
 
         .totals {
-            border-top: 2px solid #000;
-            border-bottom: 2px solid #000;
-            padding: 2mm 0;
-            margin-bottom: 3mm;
-            font-size: 8pt;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 1mm 0;
+            margin-bottom: 1.5mm;
+            font-size: 7pt;
             margin-left: auto;
             margin-right: auto;
-            width: 90%;
+            width: 95%;
         }
 
         .total-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 1mm;
+            margin-bottom: 0.5mm;
         }
 
         .total-row.subtotal {
@@ -125,27 +129,27 @@
 
         .total-row.final {
             font-weight: bold;
-            font-size: 9pt;
-            margin-top: 1mm;
-            padding-top: 1mm;
+            font-size: 8pt;
+            margin-top: 0.5mm;
+            padding-top: 0.5mm;
             border-top: 1px dashed #000;
         }
 
         .payment-info {
             background: #f5f5f5;
-            padding: 2mm;
-            margin-bottom: 3mm;
+            padding: 1mm;
+            margin-bottom: 1.5mm;
             border: 1px solid #ddd;
-            font-size: 7pt;
+            font-size: 6pt;
             margin-left: auto;
             margin-right: auto;
-            width: 90%;
+            width: 95%;
         }
 
         .payment-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 0.5mm;
+            margin-bottom: 0.3mm;
         }
 
         .payment-row:last-child {
@@ -158,53 +162,69 @@
 
         .footer {
             text-align: center;
-            font-size: 7pt;
-            padding-top: 2mm;
+            font-size: 6pt;
+            padding-top: 1mm;
         }
 
         .thank-you {
             font-weight: bold;
-            margin-bottom: 1mm;
-            font-size: 8pt;
+            margin-bottom: 0.5mm;
+            font-size: 7pt;
         }
 
         .receipt-number {
-            font-size: 6pt;
+            font-size: 5pt;
             color: #666;
-            margin-bottom: 0.5mm;
+            margin-bottom: 0.3mm;
         }
 
         .notes-section {
             background: #fffacd;
-            padding: 2mm;
-            margin-bottom: 3mm;
-            font-size: 7pt;
+            padding: 1mm;
+            margin-bottom: 1.5mm;
+            font-size: 6pt;
             border: 1px solid #daa;
             margin-left: auto;
             margin-right: auto;
-            width: 90%;
+            width: 95%;
         }
 
         .notes-title {
             font-weight: bold;
-            margin-bottom: 1mm;
+            margin-bottom: 0.5mm;
         }
 
         @media print {
             @page {
                 margin: 0;
-                size: 70mm 95mm;
+                size: 58mm auto;
+                max-height: 200mm;
             }
 
             body {
-                margin: 0 0 0 0;
+                margin: 0;
                 padding: 0;
+                height: auto;
+                overflow: hidden;
             }
 
             .receipt {
                 margin: 0;
-                padding: 2mm 2mm 2mm 0;
+                padding: 1mm 0.5mm;
                 page-break-after: avoid;
+                page-break-inside: avoid;
+                height: auto;
+                max-height: 195mm;
+                overflow: hidden;
+            }
+
+            .items-table {
+                page-break-inside: avoid;
+            }
+
+            .totals, .payment-info, .notes-section, .footer {
+                page-break-inside: avoid;
+                page-break-after: auto;
             }
         }
     </style>
@@ -237,9 +257,9 @@
             @foreach($order->items as $item)
                 <tr>
                     <td class="item-name">
-                        {{ $item->product->name }}
+                        {{ Str::limit($item->product->name, 25, '...') }}
                         @if($item->variant_name)
-                            <br><span style="font-size: 8pt;">({{ $item->variant_name }})</span>
+                            <br><span style="font-size: 5pt;">({{ Str::limit($item->variant_name, 20, '...') }})</span>
                         @endif
                     </td>
                     <td class="item-qty">{{ $item->quantity }}</td>
