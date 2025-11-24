@@ -617,251 +617,78 @@ final class OrdersProcessing extends Page
         return Actions\Action::make('addProduct')
             ->modalHeading(fn (array $arguments) => 'Add Products - Order #'.$arguments['orderId'])
             ->modalWidth('6xl')
+            ->modalFooterActionsAlignment('right')
             ->fillForm(function (array $arguments): array {
+                // Reset cart when opening the modal
+                $this->cartItems = [];
+                $this->selectedCategoryId = null;
+                $this->search = '';
+
                 $order = Order::with('items.product', 'items.variant')->find($arguments['orderId']);
 
                 return [
                     'orderId' => $arguments['orderId'],
                     'order' => $order,
-                    'cartItems' => [],
-                    'selectedCategoryId' => null,
-                    'search' => '',
                 ];
             })
             ->form([
                 Forms\Components\Hidden::make('orderId'),
 
-                // Order Summary Section
-                Section::make('Current Order')
-                    ->schema([
-                        Forms\Components\Placeholder::make('current_order_summary')
-                            ->label('')
-                            ->content(function ($get) {
-                                $order = Order::find($get('orderId'));
-                                if (! $order) {
-                                    return 'Order not found';
-                                }
-
-                                $order->load('items.product', 'items.variant');
-
-                                $itemsHtml = '';
-                                foreach ($order->items as $item) {
-                                    $servedStatus = $item->is_served ? '✅' : '⏳';
-                                    $variantText = $item->variant_name ? " ({$item->variant_name})" : '';
-                                    $itemsHtml .= "
-                                        <div class='flex justify-between items-center py-1 text-sm border-b border-gray-100'>
-                                            <div class='flex items-center gap-2'>
-                                                <span>{$servedStatus}</span>
-                                                <span>{$item->quantity}x {$item->product->name}{$variantText}</span>
-                                            </div>
-                                            <span class='font-medium'>{$this->formatCurrency($item->subtotal)}</span>
-                                        </div>
-                                    ";
-                                }
-
-                                $paymentStatusColor = match ($order->payment_status) {
-                                    'paid' => 'text-green-600',
-                                    'partially_paid' => 'text-yellow-600',
-                                    default => 'text-red-600'
-                                };
-
-                                $paymentStatusText = match ($order->payment_status) {
-                                    'paid' => 'Paid',
-                                    'partially_paid' => 'Partially Paid',
-                                    default => 'Unpaid'
-                                };
-
-                                return new HtmlString("
-                                    <div class='bg-gray-50 p-4 rounded-lg'>
-                                        <div class='flex justify-between items-center mb-3'>
-                                            <h4 class='font-bold text-gray-900'>Order #{$order->id}</h4>
-                                            <span class='px-2 py-1 rounded-full text-xs font-bold {$paymentStatusColor} bg-opacity-10 {$paymentStatusColor}'>
-                                                {$paymentStatusText}
-                                            </span>
-                                        </div>
-                                        <div class='space-y-1 mb-3'>{$itemsHtml}</div>
-                                        <div class='border-t border-gray-300 pt-2'>
-                                            <div class='flex justify-between text-lg font-bold'>
-                                                <span>Current Total:</span>
-                                                <span class='text-orange-600'>{$this->formatCurrency($order->total)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ");
-                            }),
-                    ]),
-
-                // Product Selection Section
-                Section::make('Select Products')
-                    ->schema([
-                        Forms\Components\Select::make('selectedCategoryId')
-                            ->label('Category')
-                            ->options(function () {
-                                $categories = $this->posService->getActiveCategories();
-
-                                return $categories->pluck('name', 'id')->toArray();
-                            })
-                            ->placeholder('All Categories')
-                            ->reactive()
-                            ->live()
-                            ->afterStateUpdated(fn ($state) => $this->selectedCategoryId = $state),
-
-                        Forms\Components\TextInput::make('search')
-                            ->label('Search Products')
-                            ->placeholder('Search for products...')
-                            ->reactive()
-                            ->live()
-                            ->afterStateUpdated(fn ($state) => $this->search = $state ?? ''),
-
-                        Forms\Components\Placeholder::make('products_display')
-                            ->label('')
-                            ->content(function () {
-                                $products = $this->posService->getFilteredProducts(
-                                    $this->selectedCategoryId,
-                                    $this->search
-                                )->load('activeVariants');
-
-                                $productsHtml = '';
-                                foreach ($products as $product) {
-                                    if (! $this->posService->canAddToCart($product->id)) {
-                                        continue; // Skip unavailable products
-                                    }
-
-                                    $availabilityClass = 'bg-green-50 border-green-200';
-                                    $maxQuantity = $this->posService->getMaxProducibleQuantity($product->id);
-
-                                    $variantButtons = '';
-                                    if ($product->hasVariants()) {
-                                        foreach ($product->activeVariants as $variant) {
-                                            $variantButtons .= "
-                                                <button
-                                                    type='button'
-                                                    class='w-full text-left px-2 py-1 text-xs bg-blue-50 hover:bg-blue-100 rounded border border-blue-200'
-                                                    wire:click=\"addToCart({$product->id}, '{$product->name}', {$variant->price}, {$variant->id}, '{$variant->name}')\"
-                                                >
-                                                    <span class='font-medium'>{$variant->name}</span>
-                                                    <span class='float-right text-green-600 font-bold'>{$this->formatCurrency($variant->price)}</span>
-                                                </button>
-                                            ";
-                                        }
-                                    }
-
-                                    $productsHtml .= "
-                                        <div class='border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow {$availabilityClass}'>
-                                            <div class='flex items-center justify-between'>
-                                                <div class='flex-1'>
-                                                    <h5 class='font-semibold text-gray-900'>{$product->name}</h5>
-                                                    <p class='text-sm text-gray-600'>{$this->formatCurrency($product->price)} · Max: {$maxQuantity}</p>
-                                                </div>
-                                                <div class='flex flex-col gap-1'>
-                                                    ".($product->hasVariants() ? "
-                                                        <div class='space-y-1'>
-                                                            {$variantButtons}
-                                                        </div>
-                                                    " : "
-                                                        <button
-                                                            type='button'
-                                                            class='px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded font-medium transition-colors'
-                                                            wire:click=\"addToCart({$product->id}, '{$product->name}', {$product->price})\"
-                                                        >
-                                                            Add
-                                                        </button>
-                                                    ").'
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ';
-                                }
-
-                                if (empty($productsHtml)) {
-                                    return new HtmlString("
-                                        <div class='text-center py-8 text-gray-500'>
-                                            <p class='text-sm'>No products found.</p>
-                                        </div>
-                                    ");
-                                }
-
-                                return new HtmlString("
-                                    <div class='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto'>
-                                        {$productsHtml}
-                                    </div>
-                                ");
-                            }),
-                    ]),
-
-                // Simple cart form using hidden fields
-                Section::make('Selected Items')
-                    ->schema([
-                        Forms\Components\Hidden::make('items')
-                            ->default(fn () => json_encode($this->cartItems))
-                            ->reactive()
-                            ->live(),
-
-                        Forms\Components\Placeholder::make('selected_cart_display')
-                            ->label('')
-                            ->content(function () {
-                                $items = $this->cartItems;
-                                $total = 0;
-                                $cartHtml = '';
-
-                                if (empty($items)) {
-                                    return new HtmlString("
-                                        <div class='text-center py-8 text-gray-500'>
-                                            <p class='text-sm'>No items selected yet. Add items from the product list above.</p>
-                                        </div>
-                                    ");
-                                }
-
-                                foreach ($items as $index => $item) {
-                                    $quantity = (int) ($item['quantity'] ?? 1);
-                                    $price = (float) ($item['price'] ?? 0);
-                                    $subtotal = $quantity * $price;
-                                    $total += $subtotal;
-                                    $productName = htmlspecialchars($item['product_name'] ?? '');
-                                    $variantName = ! empty($item['variant_name']) ? " ({$item['variant_name']})" : '';
-                                    $productId = (int) $item['product_id'];
-                                    $variantId = ! empty($item['variant_id']) ? (int) $item['variant_id'] : 'null';
-
-                                    $cartHtml .= "
-                                        <div class='flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2'>
+                // Main content as raw HTML for two-column layout
+                Forms\Components\Placeholder::make('modal_content')
+                    ->label('')
+                    ->content(function () {
+                        return new HtmlString("
+                            <div class='grid grid-cols-3 gap-6 h-full'>
+                                <!-- Left Column: Products -->
+                                <div class='col-span-2'>
+                                    <div class='space-y-4'>
+                                        <div class='flex gap-2'>
                                             <div class='flex-1'>
-                                                <p class='font-medium text-gray-900'>{$productName}{$variantName}</p>
-                                                <p class='text-sm text-gray-600'>@{$this->formatCurrency($price)}</p>
+                                                <input
+                                                    type='text'
+                                                    wire:model.live='search'
+                                                    placeholder='Search products...'
+                                                    class='w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                                />
                                             </div>
-                                            <div class='flex items-center gap-2'>
-                                                 <input
-                                                     type='number'
-                                                     value='{$quantity}'
-                                                     min='1'
-                                                     wire:change=\"updateQuantity({$productId}, \$event.target.value, {$variantId})\"
-                                                     class='w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm'
-                                                 />
-                                                 <span class='font-bold text-gray-900 min-w-20 text-right'>{$this->formatCurrency($subtotal)}</span>
-                                                 <button
-                                                     type='button'
-                                                     wire:click=\"removeFromCart({$productId}, {$variantId})\"
-                                                     class='px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors'
-                                                 >
-                                                     Remove
-                                                 </button>
-                                             </div>
+                                            <select
+                                                wire:model.live='selectedCategoryId'
+                                                class='px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                            >
+                                                <option value=''>All Categories</option>
+                                                " . $this->getCategoryOptions() . "
+                                            </select>
                                         </div>
-                                    ";
-                                }
 
-                                return new HtmlString("
-                                    <div class='space-y-2'>
-                                        {$cartHtml}
-                                        <div class='border-t border-gray-300 pt-3 mt-3'>
-                                            <div class='flex justify-between items-center'>
-                                                <span class='text-lg font-bold'>Total:</span>
-                                                <span class='text-2xl font-bold text-orange-600'>{$this->formatCurrency($total)}</span>
-                                            </div>
+                                        <div class='grid grid-cols-2 gap-2 max-h-96 overflow-y-auto pr-2'>
+                                            " . $this->getProductsHtml() . "
                                         </div>
                                     </div>
-                                ");
-                            }),
-                    ]),
+                                </div>
+
+                                <!-- Right Column: Cart Summary -->
+                                <div class='col-span-1'>
+                                    <div class='bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 h-full flex flex-col'>
+                                        <h3 class='text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide'>Order Items</h3>
+                                        
+                                        <div class='flex-1 overflow-y-auto space-y-2 mb-4'>
+                                            " . ($this->getCartItemsHtml() ?: "<p class='text-xs text-gray-500 text-center py-8'>No items added</p>") . "
+                                        </div>
+
+                                        <div class='border-t border-gray-200 pt-3'>
+                                            " . $this->getCartTotalHtml() . "
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ");
+                    }),
+
+                Forms\Components\Hidden::make('items')
+                    ->default(fn () => json_encode($this->cartItems))
+                    ->reactive()
+                    ->live(),
             ])
             ->action(function (array $data) {
                 $orderId = $data['orderId'];
@@ -912,7 +739,7 @@ final class OrdersProcessing extends Page
                         ->send();
 
                     // Reset cart items
-                    $this->cartItems = [];
+                    $this->resetCart();
                     $this->dispatch('$refresh');
                 } else {
                     Notification::make()
@@ -924,6 +751,141 @@ final class OrdersProcessing extends Page
                 }
             })
             ->modalSubmitActionLabel('Add Products to Order');
+    }
+
+    private function resetCart(): void
+    {
+        $this->cartItems = [];
+        $this->selectedCategoryId = null;
+        $this->search = '';
+    }
+
+    private function getCategoryOptions(): string
+    {
+        $categories = $this->posService->getActiveCategories();
+        $options = '';
+        foreach ($categories as $category) {
+            $options .= "<option value='{$category->id}'>{$category->name}</option>";
+        }
+
+        return $options;
+    }
+
+    private function getProductsHtml(): string
+    {
+        $products = $this->posService->getFilteredProducts(
+            $this->selectedCategoryId,
+            $this->search
+        )->load('activeVariants');
+
+        if ($products->isEmpty()) {
+            return "<p class='col-span-2 text-xs text-gray-500 text-center py-4'>No products found</p>";
+        }
+
+        $html = '';
+        foreach ($products as $product) {
+            if (!$this->posService->canAddToCart($product->id)) {
+                continue;
+            }
+
+            $html .= "
+                <div class='border border-gray-200 rounded-lg p-2 hover:shadow-sm transition-shadow bg-white'>
+                    <div class='mb-2'>
+                        <p class='text-xs font-semibold text-gray-900'>{$product->name}</p>
+                        <p class='text-xs text-gray-600'>{$this->formatCurrency($product->price)}</p>
+                    </div>";
+
+            if ($product->hasVariants()) {
+                foreach ($product->activeVariants as $variant) {
+                    $html .= "
+                        <button
+                            type='button'
+                            wire:click=\"addToCart({$product->id}, '{$product->name}', {$variant->price}, {$variant->id}, '{$variant->name}')\"
+                            class='w-full mb-1 px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded font-medium transition-colors'
+                        >
+                            {$variant->name} {$this->formatCurrency($variant->price)}
+                        </button>";
+                }
+            } else {
+                $html .= "
+                    <button
+                        type='button'
+                        wire:click=\"addToCart({$product->id}, '{$product->name}', {$product->price})\"
+                        class='w-full px-2 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded font-medium transition-colors'
+                    >
+                        Add
+                    </button>";
+            }
+
+            $html .= "</div>";
+        }
+
+        return $html;
+    }
+
+    private function getCartItemsHtml(): string
+    {
+        if (empty($this->cartItems)) {
+            return '';
+        }
+
+        $html = '';
+        foreach ($this->cartItems as $item) {
+            $quantity = (int)($item['quantity'] ?? 1);
+            $price = (float)($item['price'] ?? 0);
+            $subtotal = $quantity * $price;
+            $productName = htmlspecialchars($item['product_name'] ?? '');
+            $variantName = !empty($item['variant_name']) ? " ({$item['variant_name']})" : '';
+            $productId = (int)$item['product_id'];
+            $variantId = !empty($item['variant_id']) ? (int)$item['variant_id'] : 'null';
+
+            $html .= "
+                <div class='bg-white rounded-lg p-2 border border-gray-200 text-xs'>
+                    <div class='flex justify-between items-start mb-2'>
+                        <div class='flex-1'>
+                            <p class='font-semibold text-gray-900'>{$productName}{$variantName}</p>
+                            <p class='text-gray-600'>{$this->formatCurrency($price)} × {$quantity}</p>
+                        </div>
+                        <p class='font-bold text-gray-900'>{$this->formatCurrency($subtotal)}</p>
+                    </div>
+                    <div class='flex gap-1 items-center'>
+                        <input
+                            type='number'
+                            value='{$quantity}'
+                            min='1'
+                            wire:change=\"updateQuantity({$productId}, \$event.target.value, {$variantId})\"
+                            class='w-10 px-1 py-0.5 border border-gray-300 rounded text-center text-xs'
+                        />
+                        <button
+                            type='button'
+                            wire:click=\"removeFromCart({$productId}, {$variantId})\"
+                            class='ml-auto px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-medium transition-colors'
+                        >
+                            Remove
+                        </button>
+                    </div>
+                </div>";
+        }
+
+        return $html;
+    }
+
+    private function getCartTotalHtml(): string
+    {
+        $total = 0;
+        foreach ($this->cartItems as $item) {
+            $quantity = (int)($item['quantity'] ?? 1);
+            $price = (float)($item['price'] ?? 0);
+            $total += $quantity * $price;
+        }
+
+        return "
+            <div class='text-sm'>
+                <div class='flex justify-between items-center'>
+                    <span class='font-semibold text-gray-700'>Subtotal:</span>
+                    <span class='font-bold text-gray-900'>{$this->formatCurrency($total)}</span>
+                </div>
+            </div>";
     }
 
     public function addToCart(int $productId, string $productName, float $price, ?int $variantId = null, ?string $variantName = null): void
