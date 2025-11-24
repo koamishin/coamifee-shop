@@ -176,12 +176,30 @@
                     </div>
 
                     {{-- Order Actions --}}
-                    <div class="p-4 bg-gray-50 border-t">
+                    <div class="p-4 bg-gray-50 border-t space-y-2">
                         @if($order->status === 'pending')
-                            <div class="text-center text-sm text-gray-600">
-                                <x-filament::icon icon="heroicon-o-clock" class="w-5 h-5 mx-auto mb-1 text-yellow-500" />
+                            <div class="grid grid-cols-2 gap-2">
+                                <a
+                                    href="{{ route('orders.print-kitchen', $order) }}"
+                                    target="_blank"
+                                    class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-sm"
+                                >
+                                    <x-filament::icon icon="heroicon-o-printer" class="w-4 h-4" />
+                                    Print
+                                </a>
+                                <button
+                                    wire:click="printKitchenTicket({{ $order->id }})"
+                                    type="button"
+                                    class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-sm"
+                                    title="Print directly to kitchen printer"
+                                >
+                                    <x-filament::icon icon="heroicon-o-arrow-up-tray" class="w-4 h-4" />
+                                    Direct
+                                </button>
+                            </div>
+                            <div class="text-center text-xs text-gray-600 mt-2">
+                                <x-filament::icon icon="heroicon-o-clock" class="w-4 h-4 mx-auto mb-1 text-yellow-500" />
                                 <p class="font-medium">Preparing Order</p>
-                                <p class="text-xs mt-1">Check off items as they're completed</p>
                             </div>
                         @elseif($order->status === 'completed')
                             @if($order->payment_status === 'unpaid')
@@ -193,13 +211,31 @@
                                     Collect Payment
                                 </button>
                             @else
-                                <div class="flex items-center justify-center gap-2 text-green-600">
-                                    <x-filament::icon icon="heroicon-o-check-badge" class="w-5 h-5" />
-                                    <span class="font-semibold text-sm">Completed & Paid</span>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <a
+                                        href="{{ route('orders.print-kitchen', $order) }}"
+                                        target="_blank"
+                                        class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-1 rounded-lg transition-all flex items-center justify-center gap-2 text-xs"
+                                    >
+                                        <x-filament::icon icon="heroicon-o-printer" class="w-4 h-4" />
+                                        Kitchen
+                                    </a>
+                                    <a
+                                        href="{{ route('orders.print-receipt', $order) }}"
+                                        target="_blank"
+                                        class="bg-green-500 hover:bg-green-600 text-white font-semibold py-1 rounded-lg transition-all flex items-center justify-center gap-2 text-xs"
+                                    >
+                                        <x-filament::icon icon="heroicon-o-document-text" class="w-4 h-4" />
+                                        Receipt
+                                    </a>
+                                </div>
+                                <div class="flex items-center justify-center gap-2 text-green-600 text-xs mt-2">
+                                    <x-filament::icon icon="heroicon-o-check-badge" class="w-4 h-4" />
+                                    <span class="font-semibold">Completed & Paid</span>
                                 </div>
                                 @if($order->payment_method)
                                     <p class="text-xs text-gray-500 text-center mt-1">
-                                        Payment: {{ ucfirst($order->payment_method) }}
+                                        {{ ucfirst(str_replace('_', ' ', $order->payment_method)) }}
                                     </p>
                                 @endif
                             @endif

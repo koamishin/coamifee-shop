@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PosApiController;
+use App\Http\Controllers\PrintOrderController;
 use App\Livewire\Pos;
 use App\Livewire\Settings\Appearance;
 use App\Livewire\Settings\Password;
@@ -37,6 +38,14 @@ Route::prefix('pos/api')->middleware(['auth'])->group(function () {
     Route::get('best-sellers', [PosApiController::class, 'getBestSellers']);
     Route::get('recent-orders', [PosApiController::class, 'getRecentOrders']);
     Route::get('stats', [PosApiController::class, 'getStats']);
+});
+
+// Order Printing Routes
+Route::middleware(['auth'])->group(function (): void {
+    Route::get('orders/{order}/print-kitchen', [PrintOrderController::class, 'printKitchenTicket'])
+        ->name('orders.print-kitchen');
+    Route::get('orders/{order}/print-receipt', [PrintOrderController::class, 'printCustomerReceipt'])
+        ->name('orders.print-receipt');
 });
 
 Route::middleware(['auth'])->group(function (): void {

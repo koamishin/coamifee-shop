@@ -12,6 +12,7 @@
     "php": "^8.4",
     "afatmustafa/blade-hugeicons": "^1.0",
     "andreiio/blade-remix-icon": "^3.7",
+    "barryvdh/laravel-dompdf": "^3.1",
     "bezhansalleh/filament-shield": "^4.0",
     "binary-cats/laravel-sku": "^0.8.0",
     "codeat3/blade-element-plus-icons": "^1.1",

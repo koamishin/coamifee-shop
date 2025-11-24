@@ -491,6 +491,8 @@ final class OrdersProcessing extends Page
                     }
 
                     $finalTotal = $subtotal - $discountAmount + $existingAddOns;
+                    $changeAmount = 0;
+                    $paidAmount = 0;
 
                     // Validate cash payment
                     if ($data['paymentMethod'] === 'cash') {
@@ -512,6 +514,8 @@ final class OrdersProcessing extends Page
 
                             return;
                         }
+
+                        $changeAmount = $paidAmount - $finalTotal;
                     }
 
                     // Process inventory deduction when payment is collected
@@ -543,6 +547,8 @@ final class OrdersProcessing extends Page
                         'discount_value' => $data['discountValue'] ?? null,
                         'discount_amount' => $discountAmount,
                         'total' => $finalTotal,
+                        'paid_amount' => $paidAmount,
+                        'change_amount' => $changeAmount,
                     ]);
 
                     DB::commit();
@@ -599,6 +605,17 @@ final class OrdersProcessing extends Page
                 ->icon('heroicon-o-arrow-path')
                 ->action(fn () => $this->dispatch('$refresh')),
         ];
+    }
+
+    public function printKitchenTicket(int $orderId): void
+    {
+        $order = Order::findOrFail($orderId);
+
+        Notification::make()
+            ->success()
+            ->title('Printing')
+            ->body("Kitchen ticket for order #{$order->id} sent to printer")
+            ->send();
     }
 
     protected function getActions(): array

@@ -65,7 +65,7 @@
                         </div>
                         <div class="ml-5 w-0 flex-1">
                             <dl>
-                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Revenue</dt>
+                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Sales</dt>
                                 <dd class="flex items-baseline">
                                     <div class="text-2xl font-semibold text-gray-900 dark:text-white">
                                         ₱{{ number_format($this->bestSellersData->sum(function($products) { return $products->sum('total_revenue'); }), 2) }}
@@ -107,7 +107,7 @@
                                         Units Sold
                                     </th>
                                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        Revenue
+                                        Sales
                                     </th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Performance
@@ -176,7 +176,7 @@
                                                 ₱{{ number_format($productData->total_revenue, 2) }}
                                             </div>
                                             <div class="text-xs text-gray-500 dark:text-gray-400">
-                                                revenue
+                                                sales
                                             </div>
                                         </td>
 
