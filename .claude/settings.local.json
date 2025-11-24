@@ -13,7 +13,8 @@
       "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan:*)",
       "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan test --filter=\"delivery\" --stop-on-failure)",
       "Bash(dir:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" vendor/bin/pint --dirty)"
     ],
     "deny": [],
     "ask": []

@@ -369,7 +369,7 @@ final class PosPage extends Page
 
             // Determine payment status and method based on payment timing
             $paymentStatus = $this->paymentTiming === 'pay_now' ? 'paid' : 'unpaid';
-            $paymentMethod = $this->paymentTiming === 'pay_now' ? $this->paymentMethod : null;
+            $paymentMethod = $this->paymentTiming === 'pay_now' ? $this->paymentMethod : 'cash';
 
             // Prepare order data
             $orderData = [
