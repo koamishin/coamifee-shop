@@ -55,8 +55,18 @@
                                     } }}">
                                         {{ $order->status === 'pending' ? 'In Progress' : ucfirst($order->status) }}
                                     </span>
-                                    <span class="px-2 py-1 rounded-full text-xs font-bold {{ $order->payment_status === 'paid' ? 'bg-green-600 text-white' : 'bg-red-500 text-white' }}">
-                                        {{ $order->payment_status === 'paid' ? 'Paid' : 'Unpaid' }}
+                                    <span class="px-2 py-1 rounded-full text-xs font-bold
+                                        {{ match($order->payment_status) {
+                                            'paid' => 'bg-green-600 text-white',
+                                            'partially_paid' => 'bg-yellow-600 text-white',
+                                            default => 'bg-red-500 text-white'
+                                        } }}
+                                    ">
+                                        {{ match($order->payment_status) {
+                                            'paid' => 'Paid',
+                                            'partially_paid' => 'Partially Paid',
+                                            default => 'Unpaid'
+                                        } }}
                                     </span>
                                 </div>
                                 <p class="text-sm text-gray-600 mt-1">
@@ -179,6 +189,13 @@
                     <div class="p-4 bg-gray-50 border-t space-y-2">
                         @if($order->status === 'pending')
                             <div class="grid grid-cols-2 gap-2">
+                                <button
+                                    wire:click="mountAction('addProduct', { orderId: {{ $order->id }} })"
+                                    class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-sm"
+                                >
+                                    <x-filament::icon icon="heroicon-o-plus-circle" class="w-4 h-4" />
+                                    Add Product
+                                </button>
                                 <a
                                     href="{{ route('orders.print-kitchen', $order) }}"
                                     target="_blank"
@@ -187,6 +204,8 @@
                                     <x-filament::icon icon="heroicon-o-printer" class="w-4 h-4" />
                                     Print
                                 </a>
+                            </div>
+                            <div class="grid grid-cols-1 gap-2">
                                 <button
                                     wire:click="printKitchenTicket({{ $order->id }})"
                                     type="button"
@@ -194,7 +213,7 @@
                                     title="Print directly to kitchen printer"
                                 >
                                     <x-filament::icon icon="heroicon-o-arrow-up-tray" class="w-4 h-4" />
-                                    Direct
+                                    Direct Print
                                 </button>
                             </div>
                             <div class="text-center text-xs text-gray-600 mt-2">
@@ -202,16 +221,32 @@
                                 <p class="font-medium">Preparing Order</p>
                             </div>
                         @elseif($order->status === 'completed')
-                            @if($order->payment_status === 'unpaid')
-                                <button
-                                    wire:click="mountAction('collectPayment', { orderId: {{ $order->id }} })"
-                                    class="w-full bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 rounded-lg transition-all flex items-center justify-center gap-2"
-                                >
-                                    <x-filament::icon icon="heroicon-o-credit-card" class="w-5 h-5" />
-                                    Collect Payment
-                                </button>
+                            @if($order->payment_status === 'unpaid' || $order->payment_status === 'partially_paid')
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button
+                                        wire:click="mountAction('addProduct', { orderId: {{ $order->id }} })"
+                                        class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-sm"
+                                    >
+                                        <x-filament::icon icon="heroicon-o-plus-circle" class="w-4 h-4" />
+                                        Add Product
+                                    </button>
+                                    <button
+                                        wire:click="mountAction('collectPayment', { orderId: {{ $order->id }} })"
+                                        class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-sm"
+                                    >
+                                        <x-filament::icon icon="heroicon-o-credit-card" class="w-4 h-4" />
+                                        Collect Payment
+                                    </button>
+                                </div>
                             @else
                                 <div class="grid grid-cols-2 gap-2">
+                                    <button
+                                        wire:click="mountAction('addProduct', { orderId: {{ $order->id }} })"
+                                        class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-sm"
+                                    >
+                                        <x-filament::icon icon="heroicon-o-plus-circle" class="w-4 h-4" />
+                                        Add Product
+                                    </button>
                                     <a
                                         href="{{ route('orders.print-kitchen', $order) }}"
                                         target="_blank"
@@ -220,6 +255,8 @@
                                         <x-filament::icon icon="heroicon-o-printer" class="w-4 h-4" />
                                         Kitchen
                                     </a>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
                                     <a
                                         href="{{ route('orders.print-receipt', $order) }}"
                                         target="_blank"

@@ -14,7 +14,14 @@
       "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan test --filter=\"delivery\" --stop-on-failure)",
       "Bash(dir:*)",
       "Bash(findstr:*)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" vendor/bin/pint --dirty)"
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" vendor/bin/pint --dirty)",
+      "Bash(php artisan make:migration:*)",
+      "Bash(where:*)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan config:clear)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan route:clear)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan test --filter=\"OrdersProcessing\")",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan tinker --execute=\"echo ''Testing OrderModificationService...'' . PHP_EOL; $service = app(App\\Services\\OrderModificationService::class); echo ''Service loaded successfully!'' . PHP_EOL;\")",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" -l \"c:\\Users\\user\\Desktop\\Goodland Cafe\\coamifee-shop\\app\\Filament\\Pages\\OrdersProcessing.php\")"
     ],
     "deny": [],
     "ask": []
