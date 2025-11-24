@@ -32,6 +32,12 @@ final class OrdersProcessing extends Page
 
     public Currency $currency;
 
+    public array $cartItems = [];
+
+    public string $search = '';
+
+    public ?int $selectedCategoryId = null;
+
     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     protected static UnitEnum|string|null $navigationGroup = 'Operations';
@@ -610,8 +616,7 @@ final class OrdersProcessing extends Page
     {
         return Actions\Action::make('addProduct')
             ->modalHeading(fn (array $arguments) => 'Add Products - Order #'.$arguments['orderId'])
-            ->modalWidth('7xl')
-            ->slideOver()
+            ->modalWidth('6xl')
             ->fillForm(function (array $arguments): array {
                 $order = Order::with('items.product', 'items.variant')->find($arguments['orderId']);
 
@@ -699,27 +704,22 @@ final class OrdersProcessing extends Page
                             ->placeholder('All Categories')
                             ->reactive()
                             ->live()
-                            ->afterStateUpdated(function ($state) {
-                                // This will trigger a refresh of the products
-                            }),
+                            ->afterStateUpdated(fn ($state) => $this->selectedCategoryId = $state),
 
                         Forms\Components\TextInput::make('search')
                             ->label('Search Products')
                             ->placeholder('Search for products...')
                             ->reactive()
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(function ($state) {
-                                // This will trigger a refresh of the products
-                            }),
+                            ->live()
+                            ->afterStateUpdated(fn ($state) => $this->search = $state ?? ''),
 
                         Forms\Components\Placeholder::make('products_display')
                             ->label('')
-                            ->content(function ($get) {
-                                $categoryId = $get('selectedCategoryId');
-                                $search = $get('search') ?: '';
-
-                                $products = $this->posService->getFilteredProducts($categoryId, $search)
-                                    ->load('activeVariants');
+                            ->content(function () {
+                                $products = $this->posService->getFilteredProducts(
+                                    $this->selectedCategoryId,
+                                    $this->search
+                                )->load('activeVariants');
 
                                 $productsHtml = '';
                                 foreach ($products as $product) {
@@ -737,7 +737,7 @@ final class OrdersProcessing extends Page
                                                 <button
                                                     type='button'
                                                     class='w-full text-left px-2 py-1 text-xs bg-blue-50 hover:bg-blue-100 rounded border border-blue-200'
-                                                    onclick=\"addToCart({$product->id}, '{$product->name}', {$variant->price}, {$variant->id}, '{$variant->name}')\"
+                                                    wire:click=\"addToCart({$product->id}, '{$product->name}', {$variant->price}, {$variant->id}, '{$variant->name}')\"
                                                 >
                                                     <span class='font-medium'>{$variant->name}</span>
                                                     <span class='float-right text-green-600 font-bold'>{$this->formatCurrency($variant->price)}</span>
@@ -762,7 +762,7 @@ final class OrdersProcessing extends Page
                                                         <button
                                                             type='button'
                                                             class='px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded font-medium transition-colors'
-                                                            onclick=\"addToCart({$product->id}, '{$product->name}', {$product->price})\"
+                                                            wire:click=\"addToCart({$product->id}, '{$product->name}', {$product->price})\"
                                                         >
                                                             Add
                                                         </button>
@@ -771,6 +771,14 @@ final class OrdersProcessing extends Page
                                             </div>
                                         </div>
                                     ';
+                                }
+
+                                if (empty($productsHtml)) {
+                                    return new HtmlString("
+                                        <div class='text-center py-8 text-gray-500'>
+                                            <p class='text-sm'>No products found.</p>
+                                        </div>
+                                    ");
                                 }
 
                                 return new HtmlString("
@@ -784,45 +792,80 @@ final class OrdersProcessing extends Page
                 // Simple cart form using hidden fields
                 Section::make('Selected Items')
                     ->schema([
-                        Forms\Components\Hidden::make('items'),
+                        Forms\Components\Hidden::make('items')
+                            ->default(fn () => json_encode($this->cartItems))
+                            ->reactive()
+                            ->live(),
 
-                        Forms\Components\Placeholder::make('selected_count')
-                            ->label('Selected Items')
-                            ->content(function ($get) {
-                                $items = json_decode($get('items') ?? '[]', true);
-                                $count = count($items);
-
-                                return $count.' item'.($count !== 1 ? 's' : '');
-                            }),
-
-                        Forms\Components\Placeholder::make('selected_total')
-                            ->label('Additional Total')
-                            ->content(function ($get) {
-                                $items = json_decode($get('items') ?? '[]', true);
+                        Forms\Components\Placeholder::make('selected_cart_display')
+                            ->label('')
+                            ->content(function () {
+                                $items = $this->cartItems;
                                 $total = 0;
+                                $cartHtml = '';
 
-                                foreach ($items as $item) {
+                                if (empty($items)) {
+                                    return new HtmlString("
+                                        <div class='text-center py-8 text-gray-500'>
+                                            <p class='text-sm'>No items selected yet. Add items from the product list above.</p>
+                                        </div>
+                                    ");
+                                }
+
+                                foreach ($items as $index => $item) {
                                     $quantity = (int) ($item['quantity'] ?? 1);
                                     $price = (float) ($item['price'] ?? 0);
-                                    $total += $quantity * $price;
+                                    $subtotal = $quantity * $price;
+                                    $total += $subtotal;
+                                    $productName = htmlspecialchars($item['product_name'] ?? '');
+                                    $variantName = ! empty($item['variant_name']) ? " ({$item['variant_name']})" : '';
+                                    $productId = (int) $item['product_id'];
+                                    $variantId = ! empty($item['variant_id']) ? (int) $item['variant_id'] : 'null';
+
+                                    $cartHtml .= "
+                                        <div class='flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2'>
+                                            <div class='flex-1'>
+                                                <p class='font-medium text-gray-900'>{$productName}{$variantName}</p>
+                                                <p class='text-sm text-gray-600'>@{$this->formatCurrency($price)}</p>
+                                            </div>
+                                            <div class='flex items-center gap-2'>
+                                                 <input
+                                                     type='number'
+                                                     value='{$quantity}'
+                                                     min='1'
+                                                     wire:change=\"updateQuantity({$productId}, \$event.target.value, {$variantId})\"
+                                                     class='w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm'
+                                                 />
+                                                 <span class='font-bold text-gray-900 min-w-20 text-right'>{$this->formatCurrency($subtotal)}</span>
+                                                 <button
+                                                     type='button'
+                                                     wire:click=\"removeFromCart({$productId}, {$variantId})\"
+                                                     class='px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors'
+                                                 >
+                                                     Remove
+                                                 </button>
+                                             </div>
+                                        </div>
+                                    ";
                                 }
 
                                 return new HtmlString("
-                                    <div class='text-xl font-bold text-orange-600'>
-                                        {$this->formatCurrency($total)}
+                                    <div class='space-y-2'>
+                                        {$cartHtml}
+                                        <div class='border-t border-gray-300 pt-3 mt-3'>
+                                            <div class='flex justify-between items-center'>
+                                                <span class='text-lg font-bold'>Total:</span>
+                                                <span class='text-2xl font-bold text-orange-600'>{$this->formatCurrency($total)}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 ");
                             }),
                     ]),
-
-                // Include JavaScript for cart management
-                View::make('filament.components.cart-js')
-                    ->viewData(['js' => $this->getCartJs()]),
             ])
             ->action(function (array $data) {
                 $orderId = $data['orderId'];
-                $itemsJson = $data['items'] ?? '[]';
-                $items = json_decode($itemsJson, true) ?? [];
+                $items = $this->cartItems;
 
                 if (empty($items)) {
                     Notification::make()
@@ -868,6 +911,8 @@ final class OrdersProcessing extends Page
                         ->body($result['message'])
                         ->send();
 
+                    // Reset cart items
+                    $this->cartItems = [];
                     $this->dispatch('$refresh');
                 } else {
                     Notification::make()
@@ -879,6 +924,57 @@ final class OrdersProcessing extends Page
                 }
             })
             ->modalSubmitActionLabel('Add Products to Order');
+    }
+
+    public function addToCart(int $productId, string $productName, float $price, ?int $variantId = null, ?string $variantName = null): void
+    {
+        $existingIndex = array_search(
+            array_filter(
+                $this->cartItems,
+                fn ($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
+            ),
+            $this->cartItems,
+            true
+        );
+
+        if ($existingIndex !== false) {
+            $this->cartItems[$existingIndex]['quantity'] += 1;
+        } else {
+            $this->cartItems[] = [
+                'product_id' => $productId,
+                'product_name' => $productName,
+                'variant_id' => $variantId,
+                'variant_name' => $variantName,
+                'price' => $price,
+                'quantity' => 1,
+            ];
+        }
+    }
+
+    public function removeFromCart(int $productId, ?int $variantId = null): void
+    {
+        $this->cartItems = array_values(
+            array_filter(
+                $this->cartItems,
+                fn ($item) => !($item['product_id'] === $productId && $item['variant_id'] === $variantId)
+            )
+        );
+    }
+
+    public function updateQuantity(int $productId, int $quantity, ?int $variantId = null): void
+    {
+        $item = array_search(
+            array_filter(
+                $this->cartItems,
+                fn ($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
+            ),
+            $this->cartItems,
+            true
+        );
+
+        if ($item !== false && $quantity > 0) {
+            $this->cartItems[$item]['quantity'] = $quantity;
+        }
     }
 
     protected function getHeaderActions(): array
@@ -905,66 +1001,5 @@ final class OrdersProcessing extends Page
         ];
     }
 
-    private function getCartJs(): string
-    {
-        return "
-        <script>
-            let cartItems = [];
 
-            function addToCart(productId, product_name, price, variant_id = null, variant_name = null) {
-                const existingItemIndex = cartItems.findIndex(item =>
-                    item.product_id == productId && item.variant_id == variant_id
-                );
-
-                if (existingItemIndex !== -1) {
-                    cartItems[existingItemIndex].quantity += 1;
-                } else {
-                    cartItems.push({
-                        product_id: productId,
-                        product_name: product_name,
-                        variant_id: variant_id,
-                        variant_name: variant_name,
-                        price: price,
-                        quantity: 1
-                    });
-                }
-
-                updateCartDisplay();
-                updateCartHiddenField();
-            }
-
-            function removeFromCart(productId, variant_id = null) {
-                cartItems = cartItems.filter(item =>
-                    !(item.product_id == productId && item.variant_id == variant_id)
-                );
-                updateCartDisplay();
-                updateCartHiddenField();
-            }
-
-            function updateQuantity(productId, quantity, variant_id = null) {
-                const item = cartItems.find(item =>
-                    item.product_id == productId && item.variant_id == variant_id
-                );
-
-                if (item) {
-                    item.quantity = Math.max(1, parseInt(quantity) || 1);
-                    updateCartDisplay();
-                    updateCartHiddenField();
-                }
-            }
-
-            function updateCartDisplay() {
-                // Dispatch Livewire event to update the placeholders
-                window.livewire.dispatch('updateCartDisplay', { items: cartItems });
-            }
-
-            function updateCartHiddenField() {
-                const hiddenField = document.querySelector('input[name=\"items\"]');
-                if (hiddenField) {
-                    hiddenField.value = JSON.stringify(cartItems);
-                    hiddenField.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            }
-        </script>";
-    }
 }
