@@ -294,3 +294,39 @@ it('can place order with delivery and Food Panda payment', function () {
         ->paid_amount->toBe('100.00')
         ->change_amount->toBe('0.00');
 });
+
+it('correctly calculates change with paid amount 50 and total 45', function () {
+    Livewire::test(PosPage::class)
+        ->set('orderType', 'dine_in')
+        ->set('cartItems', [
+            [
+                'product_id' => $this->product->id,
+                'variant_id' => null,
+                'variant_name' => null,
+                'name' => $this->product->name,
+                'price' => 45.00,
+                'quantity' => 1,
+                'subtotal' => 45.00,
+            ],
+        ])
+        ->set('totalAmount', 45.00)
+        ->mountAction('placeOrder')
+        ->fillForm([
+            'customerName' => 'Test Customer',
+            'tableNumber' => 'table_1',
+            'paymentTiming' => 'pay_now',
+            'paymentMethod' => 'cash',
+            'paidAmount' => 50.00,
+            'changeAmount' => 5.00,
+        ])
+        ->callMountedAction()
+        ->assertHasNoActionErrors();
+
+    expect(Order::count())->toBe(1);
+
+    $order = Order::first();
+    expect($order)
+        ->total->toBe('45.00')
+        ->paid_amount->toBe('50.00')
+        ->change_amount->toBe('5.00');
+});

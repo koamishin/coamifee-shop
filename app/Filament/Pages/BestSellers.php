@@ -18,9 +18,15 @@ final class BestSellers extends Page
 {
     public Collection $bestSellersData;
 
+    public ?string $startDate = null;
+
+    public ?string $endDate = null;
+
+    // protected static bool $shouldRegisterNavigation = true;
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-trophy';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Operations';
+    // protected static UnitEnum|string|null $navigationGroup = 'Operations';
 
     protected static ?string $navigationLabel = 'Best Sellers';
 
@@ -32,6 +38,8 @@ final class BestSellers extends Page
 
     public function mount(): void
     {
+        $this->startDate = now()->subMonth()->toDateString();
+        $this->endDate = now()->toDateString();
         $this->bestSellersData = $this->getBestSellersData();
     }
 
@@ -42,12 +50,14 @@ final class BestSellers extends Page
 
     protected function getBestSellersData(): Collection
     {
-        $oneMonthAgo = now()->subMonth();
+        $startDate = $this->startDate ? now()->parse($this->startDate)->startOfDay() : now()->subMonth();
+        $endDate = $this->endDate ? now()->parse($this->endDate)->endOfDay() : now();
 
-        // Get all order items from completed orders in the last month
+        // Get all order items from completed orders within the date range
         $orderItems = OrderItem::query()
-            ->whereHas('order', function (Builder $query) use ($oneMonthAgo) {
-                $query->where('created_at', '>=', $oneMonthAgo)
+            ->whereHas('order', function (Builder $query) use ($startDate, $endDate) {
+                $query->where('created_at', '>=', $startDate)
+                    ->where('created_at', '<=', $endDate)
                     ->where('status', 'completed');
             })
             ->with(['product.category'])
@@ -131,18 +141,22 @@ final class BestSellers extends Page
                         ->schema([
                             Forms\Components\DatePicker::make('start_date')
                                 ->label('Start Date')
-                                ->default(now()->subMonth())
+                                ->default($this->startDate)
                                 ->required(),
 
                             Forms\Components\DatePicker::make('end_date')
                                 ->label('End Date')
-                                ->default(now())
-                                ->required(),
+                                ->default($this->endDate)
+                                ->required()
+                                ->after('start_date'),
                         ]),
                 ])
                 ->action(function (array $data) {
                     // Update best sellers data based on date range
-                    // This would require modifying the getBestSellersData method
+                    $this->startDate = $data['start_date'];
+                    $this->endDate = $data['end_date'];
+                    $this->refreshData();
+
                     \Filament\Notifications\Notification::make()
                         ->title('Date range updated')
                         ->body('Showing data from '.$data['start_date'].' to '.$data['end_date'])
