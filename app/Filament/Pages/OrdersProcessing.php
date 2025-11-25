@@ -49,7 +49,7 @@ final class OrdersProcessing extends Page
 
     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Operations';
+    // protected static UnitEnum|string|null $navigationGroup = 'Operations';
 
     protected string $view = 'filament.pages.orders-processing';
 

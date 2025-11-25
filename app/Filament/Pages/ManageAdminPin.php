@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use BackedEnum;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -18,6 +19,7 @@ use UnitEnum;
 final class ManageAdminPin extends Page implements HasForms
 {
     use InteractsWithForms;
+    use HasPageShield;
 
     #[Validate('regex:/^\d{4,6}$/', message: 'PIN must be 4-6 digits')]
     public ?string $admin_pin = '';
@@ -30,6 +32,8 @@ final class ManageAdminPin extends Page implements HasForms
     protected static UnitEnum|string|null $navigationGroup = 'Settings';
 
     protected static ?int $navigationSort = 5;
+
+
 
     protected static ?string $title = 'Manage Admin PIN';
 
