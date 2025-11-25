@@ -21,7 +21,7 @@ COPY docker/php.ini /etc/php/8.4/cli/conf.d/99-vito.ini
 COPY docker/php.ini /etc/php/8.4/fpm/conf.d/99-vito.ini
 
 # Install composer dependencies using multi-stage build
-FROM composer:2.9.1 AS composer-deps
+FROM composer:2-php8.4 AS composer-deps
 RUN apk add --no-cache icu-dev \
     && docker-php-ext-install intl
 WORKDIR /app
