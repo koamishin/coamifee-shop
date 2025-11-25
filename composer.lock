@@ -248,16 +248,16 @@
         },
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.363.0",
+            "version": "3.363.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "b2f78a0787a73801957eb329048d52b4181e9660"
+                "reference": "bcc08c51e133f6b48f4ecb6acb59372b15dda388"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/b2f78a0787a73801957eb329048d52b4181e9660",
-                "reference": "b2f78a0787a73801957eb329048d52b4181e9660",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/bcc08c51e133f6b48f4ecb6acb59372b15dda388",
+                "reference": "bcc08c51e133f6b48f4ecb6acb59372b15dda388",
                 "shasum": ""
             },
             "require": {
@@ -339,9 +339,9 @@
             "support": {
                 "forum": "https://github.com/aws/aws-sdk-php/discussions",
                 "issues": "https://github.com/aws/aws-sdk-php/issues",
-                "source": "https://github.com/aws/aws-sdk-php/tree/3.363.0"
+                "source": "https://github.com/aws/aws-sdk-php/tree/3.363.1"
             },
-            "time": "2025-11-21T19:41:10+00:00"
+            "time": "2025-11-24T19:04:49+00:00"
         },
         {
             "name": "bacon/bacon-qr-code",
@@ -787,16 +787,16 @@
         },
         {
             "name": "brick/math",
-            "version": "0.14.0",
+            "version": "0.14.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/brick/math.git",
-                "reference": "113a8ee2656b882d4c3164fa31aa6e12cbb7aaa2"
+                "reference": "f05858549e5f9d7bb45875a75583240a38a281d0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/brick/math/zipball/113a8ee2656b882d4c3164fa31aa6e12cbb7aaa2",
-                "reference": "113a8ee2656b882d4c3164fa31aa6e12cbb7aaa2",
+                "url": "https://api.github.com/repos/brick/math/zipball/f05858549e5f9d7bb45875a75583240a38a281d0",
+                "reference": "f05858549e5f9d7bb45875a75583240a38a281d0",
                 "shasum": ""
             },
             "require": {
@@ -835,7 +835,7 @@
             ],
             "support": {
                 "issues": "https://github.com/brick/math/issues",
-                "source": "https://github.com/brick/math/tree/0.14.0"
+                "source": "https://github.com/brick/math/tree/0.14.1"
             },
             "funding": [
                 {
@@ -843,7 +843,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-08-29T12:40:03+00:00"
+            "time": "2025-11-24T14:40:29+00:00"
         },
         {
             "name": "carbonphp/carbon-doctrine-types",
@@ -916,16 +916,16 @@
         },
         {
             "name": "chillerlan/php-qrcode",
-            "version": "5.0.4",
+            "version": "5.0.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/chillerlan/php-qrcode.git",
-                "reference": "390393e97a6e42ccae0e0d6205b8d4200f7ddc43"
+                "reference": "7b66282572fc14075c0507d74d9837dab25b38d6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/chillerlan/php-qrcode/zipball/390393e97a6e42ccae0e0d6205b8d4200f7ddc43",
-                "reference": "390393e97a6e42ccae0e0d6205b8d4200f7ddc43",
+                "url": "https://api.github.com/repos/chillerlan/php-qrcode/zipball/7b66282572fc14075c0507d74d9837dab25b38d6",
+                "reference": "7b66282572fc14075c0507d74d9837dab25b38d6",
                 "shasum": ""
             },
             "require": {
@@ -936,7 +936,7 @@
             "require-dev": {
                 "chillerlan/php-authenticator": "^4.3.1 || ^5.2.1",
                 "ext-fileinfo": "*",
-                "phan/phan": "^5.5.1",
+                "phan/phan": "^5.5.2",
                 "phpcompatibility/php-compatibility": "10.x-dev",
                 "phpmd/phpmd": "^2.15",
                 "phpunit/phpunit": "^9.6",
@@ -1005,7 +1005,7 @@
                     "type": "Ko-Fi"
                 }
             ],
-            "time": "2025-09-19T17:30:27+00:00"
+            "time": "2025-11-23T23:51:44+00:00"
         },
         {
             "name": "chillerlan/php-settings-container",
@@ -4739,16 +4739,16 @@
         },
         {
             "name": "livewire/flux",
-            "version": "v2.6.2",
+            "version": "v2.8.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/livewire/flux.git",
-                "reference": "beff0f35bfe8c322198bec1968f0fcdddf4b4455"
+                "reference": "f975c58a53ef1a45246b244438e213050e1e8aab"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/livewire/flux/zipball/beff0f35bfe8c322198bec1968f0fcdddf4b4455",
-                "reference": "beff0f35bfe8c322198bec1968f0fcdddf4b4455",
+                "url": "https://api.github.com/repos/livewire/flux/zipball/f975c58a53ef1a45246b244438e213050e1e8aab",
+                "reference": "f975c58a53ef1a45246b244438e213050e1e8aab",
                 "shasum": ""
             },
             "require": {
@@ -4799,9 +4799,9 @@
             ],
             "support": {
                 "issues": "https://github.com/livewire/flux/issues",
-                "source": "https://github.com/livewire/flux/tree/v2.6.2"
+                "source": "https://github.com/livewire/flux/tree/v2.8.0"
             },
-            "time": "2025-11-18T18:22:26+00:00"
+            "time": "2025-11-25T07:08:06+00:00"
         },
         {
             "name": "livewire/livewire",
@@ -5491,16 +5491,16 @@
         },
         {
             "name": "nette/utils",
-            "version": "v4.0.8",
+            "version": "v4.0.9",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nette/utils.git",
-                "reference": "c930ca4e3cf4f17dcfb03037703679d2396d2ede"
+                "reference": "505a30ad386daa5211f08a318e47015b501cad30"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nette/utils/zipball/c930ca4e3cf4f17dcfb03037703679d2396d2ede",
-                "reference": "c930ca4e3cf4f17dcfb03037703679d2396d2ede",
+                "url": "https://api.github.com/repos/nette/utils/zipball/505a30ad386daa5211f08a318e47015b501cad30",
+                "reference": "505a30ad386daa5211f08a318e47015b501cad30",
                 "shasum": ""
             },
             "require": {
@@ -5574,9 +5574,9 @@
             ],
             "support": {
                 "issues": "https://github.com/nette/utils/issues",
-                "source": "https://github.com/nette/utils/tree/v4.0.8"
+                "source": "https://github.com/nette/utils/tree/v4.0.9"
             },
-            "time": "2025-08-06T21:43:34+00:00"
+            "time": "2025-10-31T00:45:47+00:00"
         },
         {
             "name": "nikic/php-parser",
@@ -12283,16 +12283,16 @@
         },
         {
             "name": "phpdocumentor/type-resolver",
-            "version": "1.11.1",
+            "version": "1.12.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpDocumentor/TypeResolver.git",
-                "reference": "f626740b38009078de0dc8b2b9dc4e7f749c6eba"
+                "reference": "92a98ada2b93d9b201a613cb5a33584dde25f195"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpDocumentor/TypeResolver/zipball/f626740b38009078de0dc8b2b9dc4e7f749c6eba",
-                "reference": "f626740b38009078de0dc8b2b9dc4e7f749c6eba",
+                "url": "https://api.github.com/repos/phpDocumentor/TypeResolver/zipball/92a98ada2b93d9b201a613cb5a33584dde25f195",
+                "reference": "92a98ada2b93d9b201a613cb5a33584dde25f195",
                 "shasum": ""
             },
             "require": {
@@ -12335,9 +12335,9 @@
             "description": "A PSR-5 based resolver of Class names, Types and Structural Element Names",
             "support": {
                 "issues": "https://github.com/phpDocumentor/TypeResolver/issues",
-                "source": "https://github.com/phpDocumentor/TypeResolver/tree/1.11.1"
+                "source": "https://github.com/phpDocumentor/TypeResolver/tree/1.12.0"
             },
-            "time": "2025-11-21T11:31:57+00:00"
+            "time": "2025-11-21T15:09:14+00:00"
         },
         {
             "name": "phpstan/phpdoc-parser",
@@ -14064,5 +14064,5 @@
         "php": "^8.4"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }
