@@ -22,11 +22,11 @@ final class BestSellers extends Page
 
     public ?string $endDate = null;
 
-    protected static bool $shouldRegisterNavigation = false;
+    // protected static bool $shouldRegisterNavigation = true;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-trophy';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Operations';
+    // protected static UnitEnum|string|null $navigationGroup = 'Operations';
 
     protected static ?string $navigationLabel = 'Best Sellers';
 
