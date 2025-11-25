@@ -9,8 +9,10 @@ use App\Enums\DiscountType;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\GeneralSettingsService;
+use App\Services\OrderCancellationService;
 use App\Services\OrderProcessingService;
 use App\Services\PosService;
+use App\Services\RefundService;
 use BackedEnum;
 use Exception;
 use Filament\Actions;
@@ -19,6 +21,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\View;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use JaOcero\RadioDeck\Forms\Components\RadioDeck;
@@ -37,6 +40,12 @@ final class OrdersProcessing extends Page
     public string $search = '';
 
     public ?int $selectedCategoryId = null;
+
+    public string $cancelOrderPin = '';
+
+    public ?int $cancelOrderId = null;
+
+    public string $cancelOrderReason = '';
 
     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
@@ -261,7 +270,6 @@ final class OrdersProcessing extends Page
                             'maya' => 'Maya',
                             'bank_transfer' => 'Bank Transfer',
                         ];
-
                     })
                     ->descriptions(function ($get) {
                         $order = Order::find($get('orderId'));
@@ -279,7 +287,6 @@ final class OrdersProcessing extends Page
                             'maya' => 'Maya mobile payment',
                             'bank_transfer' => 'Bank transfer',
                         ];
-
                     })
                     ->icons(function ($get) {
                         $order = Order::find($get('orderId'));
@@ -297,7 +304,6 @@ final class OrdersProcessing extends Page
                             'maya' => 'heroicon-o-device-phone-mobile',
                             'bank_transfer' => 'heroicon-o-building-office',
                         ];
-
                     })
                     ->default(function ($get) {
                         $order = Order::find($get('orderId'));
@@ -657,12 +663,12 @@ final class OrdersProcessing extends Page
                                                 class='px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
                                             >
                                                 <option value=''>All Categories</option>
-                                                " . $this->getCategoryOptions() . "
+                                                ".$this->getCategoryOptions()."
                                             </select>
                                         </div>
 
                                         <div class='grid grid-cols-2 gap-2 max-h-96 overflow-y-auto pr-2'>
-                                            " . $this->getProductsHtml() . "
+                                            ".$this->getProductsHtml()."
                                         </div>
                                     </div>
                                 </div>
@@ -673,16 +679,16 @@ final class OrdersProcessing extends Page
                                         <h3 class='text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide'>Order Items</h3>
                                         
                                         <div class='flex-1 overflow-y-auto space-y-2 mb-4'>
-                                            " . ($this->getCartItemsHtml() ?: "<p class='text-xs text-gray-500 text-center py-8'>No items added</p>") . "
+                                            ".($this->getCartItemsHtml() ?: "<p class='text-xs text-gray-500 text-center py-8'>No items added</p>")."
                                         </div>
 
                                         <div class='border-t border-gray-200 pt-3'>
-                                            " . $this->getCartTotalHtml() . "
+                                            ".$this->getCartTotalHtml().'
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        ");
+                        ');
                     }),
 
                 Forms\Components\Hidden::make('items')
@@ -753,6 +759,223 @@ final class OrdersProcessing extends Page
             ->modalSubmitActionLabel('Add Products to Order');
     }
 
+    public function addToCart(int $productId, string $productName, float $price, ?int $variantId = null, ?string $variantName = null): void
+    {
+        $existingIndex = array_search(
+            array_filter(
+                $this->cartItems,
+                fn ($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
+            ),
+            $this->cartItems,
+            true
+        );
+
+        if ($existingIndex !== false) {
+            $this->cartItems[$existingIndex]['quantity'] += 1;
+        } else {
+            $this->cartItems[] = [
+                'product_id' => $productId,
+                'product_name' => $productName,
+                'variant_id' => $variantId,
+                'variant_name' => $variantName,
+                'price' => $price,
+                'quantity' => 1,
+            ];
+        }
+    }
+
+    public function removeFromCart(int $productId, ?int $variantId = null): void
+    {
+        $this->cartItems = array_values(
+            array_filter(
+                $this->cartItems,
+                fn ($item) => ! ($item['product_id'] === $productId && $item['variant_id'] === $variantId)
+            )
+        );
+    }
+
+    public function updateQuantity(int $productId, int $quantity, ?int $variantId = null): void
+    {
+        $item = array_search(
+            array_filter(
+                $this->cartItems,
+                fn ($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
+            ),
+            $this->cartItems,
+            true
+        );
+
+        if ($item !== false && $quantity > 0) {
+            $this->cartItems[$item]['quantity'] = $quantity;
+        }
+    }
+
+    /**
+     * Check if cancel button should be shown for an order
+     */
+    public function canShowCancel(Order $order): bool
+    {
+        $cancellationService = app(OrderCancellationService::class);
+
+        return $cancellationService->canCancelOrder($order);
+    }
+
+    /**
+     * Check if refund button should be shown for an order
+     */
+    public function canShowRefund(Order $order): bool
+    {
+        $refundService = app(RefundService::class);
+
+        return $refundService->canShowRefundButton($order);
+    }
+
+    /**
+     * Get refund button label based on refund type
+     */
+    public function getRefundLabel(Order $order): string
+    {
+        $refundService = app(RefundService::class);
+        $refundData = $refundService->getRefundableItems($order);
+
+        return $refundData['type'] === 'full' ? 'Refund' : 'Cancel Unpaid';
+    }
+
+    public function openCancelModal(int $orderId): void
+    {
+        $this->cancelOrderId = $orderId;
+        $this->cancelOrderPin = '';
+        $this->cancelOrderReason = '';
+        $this->dispatch('open-cancel-modal');
+    }
+
+    public function submitCancelOrder(): void
+    {
+        if (! $this->cancelOrderId) {
+            Notification::make()
+                ->danger()
+                ->title('Error')
+                ->body('No order selected')
+                ->send();
+
+            return;
+        }
+
+        $order = Order::findOrFail($this->cancelOrderId);
+        $cancellationService = app(OrderCancellationService::class);
+
+        $result = $cancellationService->processCancellation(
+            $order,
+            Auth::user(),
+            $this->cancelOrderPin,
+            ! empty($this->cancelOrderReason) ? $this->cancelOrderReason : null
+        );
+
+        if ($result['success']) {
+            Notification::make()
+                ->success()
+                ->title('Order Cancelled')
+                ->body($result['message'])
+                ->send();
+
+            $this->cancelOrderPin = '';
+            $this->cancelOrderReason = '';
+            $this->cancelOrderId = null;
+            $this->dispatch('close-cancel-modal');
+            $this->dispatch('$refresh');
+        } else {
+            Notification::make()
+                ->danger()
+                ->title('Cancellation Failed')
+                ->body($result['message'])
+                ->send();
+        }
+    }
+
+    public function refundAction(): Actions\Action
+    {
+        return Actions\Action::make('refund')
+            ->modalHeading(fn (array $arguments) => 'Refund Order #'.$arguments['orderId'])
+            ->modalWidth('sm')
+            ->requiresConfirmation()
+            ->fillForm(function (array $arguments): array {
+                return [
+                    'orderId' => (int) ($arguments['orderId'] ?? 0),
+                ];
+            })
+            ->form([
+                Forms\Components\Hidden::make('orderId'),
+
+                Forms\Components\TextInput::make('pin')
+                    ->label('Admin PIN')
+                    ->password()
+                    ->placeholder('Enter your 4-6 digit PIN')
+                    ->required()
+                    ->length(4, 6),
+            ])
+            ->action(function (array $data) {
+                try {
+                    $order = Order::findOrFail($data['orderId']);
+                    $refundService = app(RefundService::class);
+
+                    $result = $refundService->processRefund($order, Auth::user(), $data['pin']);
+
+                    if ($result['success']) {
+                        Notification::make()
+                            ->success()
+                            ->title('Refund Processed')
+                            ->body($result['message'])
+                            ->send();
+
+                        $this->dispatch('$refresh');
+                    } else {
+                        Notification::make()
+                            ->danger()
+                            ->title('Refund Failed')
+                            ->body($result['message'])
+                            ->send();
+                    }
+                } catch (Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Error processing refund', [
+                        'order_id' => $data['orderId'] ?? null,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    Notification::make()
+                        ->danger()
+                        ->title('Error')
+                        ->body('An error occurred: '.$e->getMessage())
+                        ->send();
+                }
+            })
+            ->modalSubmitActionLabel('Confirm Refund')
+            ->icon('heroicon-o-arrow-uturn-left');
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('toggleMode')
+                ->label($this->isTabletMode ? 'Desktop Mode' : 'Tablet Mode')
+                ->icon($this->isTabletMode ? 'heroicon-o-computer-desktop' : 'heroicon-o-device-tablet')
+                ->color('gray')
+                ->action(fn () => $this->toggleMode()),
+
+            Actions\Action::make('refresh')
+                ->label('Refresh')
+                ->icon('heroicon-o-arrow-path')
+                ->action(fn () => $this->dispatch('$refresh')),
+        ];
+    }
+
+    protected function getActions(): array
+    {
+        return [
+            $this->collectPaymentAction(),
+            $this->addProductAction(),
+        ];
+    }
+
     private function resetCart(): void
     {
         $this->cartItems = [];
@@ -784,7 +1007,7 @@ final class OrdersProcessing extends Page
 
         $html = '';
         foreach ($products as $product) {
-            if (!$this->posService->canAddToCart($product->id)) {
+            if (! $this->posService->canAddToCart($product->id)) {
                 continue;
             }
 
@@ -817,7 +1040,7 @@ final class OrdersProcessing extends Page
                     </button>";
             }
 
-            $html .= "</div>";
+            $html .= '</div>';
         }
 
         return $html;
@@ -831,13 +1054,13 @@ final class OrdersProcessing extends Page
 
         $html = '';
         foreach ($this->cartItems as $item) {
-            $quantity = (int)($item['quantity'] ?? 1);
-            $price = (float)($item['price'] ?? 0);
+            $quantity = (int) ($item['quantity'] ?? 1);
+            $price = (float) ($item['price'] ?? 0);
             $subtotal = $quantity * $price;
             $productName = htmlspecialchars($item['product_name'] ?? '');
-            $variantName = !empty($item['variant_name']) ? " ({$item['variant_name']})" : '';
-            $productId = (int)$item['product_id'];
-            $variantId = !empty($item['variant_id']) ? (int)$item['variant_id'] : 'null';
+            $variantName = ! empty($item['variant_name']) ? " ({$item['variant_name']})" : '';
+            $productId = (int) $item['product_id'];
+            $variantId = ! empty($item['variant_id']) ? (int) $item['variant_id'] : 'null';
 
             $html .= "
                 <div class='bg-white rounded-lg p-2 border border-gray-200 text-xs'>
@@ -874,8 +1097,8 @@ final class OrdersProcessing extends Page
     {
         $total = 0;
         foreach ($this->cartItems as $item) {
-            $quantity = (int)($item['quantity'] ?? 1);
-            $price = (float)($item['price'] ?? 0);
+            $quantity = (int) ($item['quantity'] ?? 1);
+            $price = (float) ($item['price'] ?? 0);
             $total += $quantity * $price;
         }
 
@@ -887,81 +1110,4 @@ final class OrdersProcessing extends Page
                 </div>
             </div>";
     }
-
-    public function addToCart(int $productId, string $productName, float $price, ?int $variantId = null, ?string $variantName = null): void
-    {
-        $existingIndex = array_search(
-            array_filter(
-                $this->cartItems,
-                fn ($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
-            ),
-            $this->cartItems,
-            true
-        );
-
-        if ($existingIndex !== false) {
-            $this->cartItems[$existingIndex]['quantity'] += 1;
-        } else {
-            $this->cartItems[] = [
-                'product_id' => $productId,
-                'product_name' => $productName,
-                'variant_id' => $variantId,
-                'variant_name' => $variantName,
-                'price' => $price,
-                'quantity' => 1,
-            ];
-        }
-    }
-
-    public function removeFromCart(int $productId, ?int $variantId = null): void
-    {
-        $this->cartItems = array_values(
-            array_filter(
-                $this->cartItems,
-                fn ($item) => !($item['product_id'] === $productId && $item['variant_id'] === $variantId)
-            )
-        );
-    }
-
-    public function updateQuantity(int $productId, int $quantity, ?int $variantId = null): void
-    {
-        $item = array_search(
-            array_filter(
-                $this->cartItems,
-                fn ($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
-            ),
-            $this->cartItems,
-            true
-        );
-
-        if ($item !== false && $quantity > 0) {
-            $this->cartItems[$item]['quantity'] = $quantity;
-        }
-    }
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Actions\Action::make('toggleMode')
-                ->label($this->isTabletMode ? 'Desktop Mode' : 'Tablet Mode')
-                ->icon($this->isTabletMode ? 'heroicon-o-computer-desktop' : 'heroicon-o-device-tablet')
-                ->color('gray')
-                ->action(fn () => $this->toggleMode()),
-
-            Actions\Action::make('refresh')
-                ->label('Refresh')
-                ->icon('heroicon-o-arrow-path')
-                ->action(fn () => $this->dispatch('$refresh')),
-        ];
-    }
-
-    protected function getActions(): array
-    {
-        return [
-            $this->collectPaymentAction(),
-            $this->addProductAction(),
-        ];
-    }
-
-
 }

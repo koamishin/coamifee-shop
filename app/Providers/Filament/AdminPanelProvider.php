@@ -62,7 +62,7 @@ final class AdminPanelProvider extends PanelProvider
                 SalesTrendsWidget::class,
                 TopProductsWidget::class,
                 // idget::class,
-                FinancialSummaryWidget::class,
+                // FinancialSummaryWidget::class,
                 OrderStatusWidget::class,
                 LowStockAlertWidget::class,
                 AccountWidget::class,

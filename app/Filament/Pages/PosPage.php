@@ -435,7 +435,6 @@ final class PosPage extends Page
                 ->send();
 
             $this->resetOrder();
-
         } catch (Exception $e) {
             DB::rollBack();
 
@@ -560,14 +559,14 @@ final class PosPage extends Page
                         ->label('')
                         ->content(function ($get) {
                             // Left Column Content
-                            $icon = match($this->orderType) {
+                            $icon = match ($this->orderType) {
                                 'dine_in' => '🍽️',
                                 'takeaway' => '🛍️',
                                 'delivery' => '🚚',
                                 default => '📋',
                             };
-                            
-                            $label = match($this->orderType) {
+
+                            $label = match ($this->orderType) {
                                 'dine_in' => 'Dine In',
                                 'takeaway' => 'Takeaway',
                                 'delivery' => 'Delivery',
@@ -585,7 +584,7 @@ final class PosPage extends Page
                                     $tableHtml .= "
                                         <label wire:click='\$set(\"tableNumber\", \"$value\")' class='cursor-pointer group'>
                                             <input type='radio' name='tableNumber' value='$value' class='hidden'>
-                                            <div class='p-3 rounded-lg border-2 transition-all text-center text-xs font-bold " . ($isSelected ? 'border-orange-500 bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/50 scale-105' : 'border-gray-300 bg-white text-gray-700 hover:border-orange-300 hover:bg-orange-50') . "'>
+                                            <div class='p-3 rounded-lg border-2 transition-all text-center text-xs font-bold ".($isSelected ? 'border-orange-500 bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/50 scale-105' : 'border-gray-300 bg-white text-gray-700 hover:border-orange-300 hover:bg-orange-50')."'>
                                                 {$tableLabel}
                                             </div>
                                         </label>";
@@ -615,19 +614,19 @@ final class PosPage extends Page
                                                 <input type='hidden' name='customerId' wire:model='customerId'>
                                                 <select wire:model='customerId' class='w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'>
                                                     <option value=''>Walk-in Customer</option>
-                                                    " . collect($this->customers)->map(fn($customer) => "<option value='{$customer->id}'>{$customer->name}</option>")->implode('') . "
+                                                    ".collect($this->customers)->map(fn ($customer) => "<option value='{$customer->id}'>{$customer->name}</option>")->implode('')."
                                                 </select>
                                             </div>
                                         </div>
                                         <div wire:key='customer-name'>
-                                            " . (!filled($get('customerId')) ? "
+                                            ".(! filled($get('customerId')) ? "
                                             <label class='text-xs font-semibold text-gray-700 mb-2 block'>Customer Name</label>
                                             <input type='text' name='customerName' wire:model='customerName' placeholder='Optional' class='w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'>
-                                            " : "") . "
+                                            " : '').'
                                         </div>
                                     </div>
                                 </div>
-                            ");
+                            ');
                         }),
 
                     Forms\Components\Textarea::make('notes')
@@ -682,6 +681,7 @@ final class PosPage extends Page
                         })
                         ->default(function ($get) {
                             $orderType = $get('orderType') ?? $this->orderType;
+
                             return $orderType === 'dine_in' ? 'pay_later' : 'pay_now';
                         })
                         ->required()
@@ -692,6 +692,7 @@ final class PosPage extends Page
                         })
                         ->columns(function ($get) {
                             $orderType = $get('orderType') ?? $this->orderType;
+
                             return $orderType === 'dine_in' ? 2 : 1;
                         })
                         ->color('primary')
@@ -721,7 +722,6 @@ final class PosPage extends Page
                                         'maya' => 'Maya',
                                         'bank_transfer' => 'Bank Transfer',
                                     ];
-
                                 })
                                 ->default(function ($get) {
                                     $orderType = $get('orderType') ?? $this->orderType;
@@ -810,7 +810,25 @@ final class PosPage extends Page
                             Forms\Components\Placeholder::make('changeDisplay')
                                 ->label('Change')
                                 ->content(function ($get) {
-                                    $changeAmount = (float) ($get('changeAmount') ?? 0);
+                                    // Calculate final total with discounts and add-ons
+                                    $subtotal = $this->totalAmount;
+                                    $discountAmount = 0.0;
+
+                                    if ($get('discountType') && $get('discountValue')) {
+                                        $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
+                                    }
+
+                                    $addOnsTotal = 0.0;
+                                    $addOns = $get('addOns') ?? [];
+                                    foreach ($addOns as $addOn) {
+                                        if (! empty($addOn['price'])) {
+                                            $addOnsTotal += (float) $addOn['price'];
+                                        }
+                                    }
+
+                                    $finalTotal = $subtotal - $discountAmount + $addOnsTotal;
+                                    $paidAmount = (float) ($get('paidAmount') ?? 0);
+                                    $changeAmount = $paidAmount - $finalTotal;
                                     $changeFormatted = $this->formatCurrency(abs($changeAmount));
 
                                     if ($changeAmount > 0) {
@@ -956,6 +974,23 @@ final class PosPage extends Page
     private function calculateTotals(): void
     {
         $this->totalAmount = collect($this->cartItems)->sum('subtotal');
-        $this->changeAmount = $this->paidAmount - $this->totalAmount;
+
+        // Calculate final total with discounts and add-ons
+        $discountAmount = 0.0;
+        if (! empty($this->discountType) && ! empty($this->discountValue)) {
+            $discountAmount = $this->totalAmount * ($this->discountValue / 100);
+        }
+
+        $addOnsTotal = 0.0;
+        foreach ($this->addOns as $addOn) {
+            if (! empty($addOn['price'])) {
+                $addOnsTotal += (float) $addOn['price'];
+            }
+        }
+
+        $finalTotal = $this->totalAmount - $discountAmount + $addOnsTotal;
+
+        // Calculate change based on final total
+        $this->changeAmount = $this->paidAmount - $finalTotal;
     }
 }

@@ -17,11 +17,22 @@ final class DeliveryOverview extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $deliveryOrders = Order::where('order_type', 'delivery')->get();
-        $dineInOrders = Order::whereIn('order_type', ['dine_in', 'dine-in'])->get();
-        $takeawayOrders = Order::where('order_type', 'takeaway')->get();
+        $deliveryOrders = Order::where('order_type', 'delivery')
+            ->where('payment_status', '!=', 'refunded')
+            ->where('payment_status', '!=', 'refund_partial')
+            ->get();
+        $dineInOrders = Order::whereIn('order_type', ['dine_in', 'dine-in'])
+            ->where('payment_status', '!=', 'refunded')
+            ->where('payment_status', '!=', 'refund_partial')
+            ->get();
+        $takeawayOrders = Order::where('order_type', 'takeaway')
+            ->where('payment_status', '!=', 'refunded')
+            ->where('payment_status', '!=', 'refund_partial')
+            ->get();
 
-        $totalOrders = Order::count();
+        $totalOrders = Order::where('payment_status', '!=', 'refunded')
+            ->where('payment_status', '!=', 'refund_partial')
+            ->count();
         $deliveryPercentage = $totalOrders > 0 ? round(($deliveryOrders->count() / $totalOrders) * 100, 1) : 0;
         $dineInPercentage = $totalOrders > 0 ? round(($dineInOrders->count() / $totalOrders) * 100, 1) : 0;
         $takeawayPercentage = $totalOrders > 0 ? round(($takeawayOrders->count() / $totalOrders) * 100, 1) : 0;
@@ -59,7 +70,9 @@ final class DeliveryOverview extends StatsOverviewWidget
         $data = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->format('Y-m-d');
-            $query = Order::whereDate('created_at', $date);
+            $query = Order::whereDate('created_at', $date)
+                ->where('payment_status', '!=', 'refunded')
+                ->where('payment_status', '!=', 'refund_partial');
 
             if ($type === 'dine_in') {
                 $total = $query->whereIn('order_type', ['dine_in', 'dine-in'])->sum('total');

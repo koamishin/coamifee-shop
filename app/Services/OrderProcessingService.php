@@ -35,7 +35,7 @@ final readonly class OrderProcessingService
 
         // Skip if inventory already processed
         if ($order->inventory_processed) {
-            Log::info('Order already processed, skipping', ['order_id' => $order->id]);
+            Log::info('Ordewanr already processed, skipping', ['order_id' => $order->id]);
 
             return true;
         }

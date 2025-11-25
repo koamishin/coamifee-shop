@@ -26,6 +26,8 @@ final class CoffeeShopOverviewWidget extends BaseWidget
 
         $currency = app(\App\Services\GeneralSettingsService::class)->getCurrency();
         $todaysSales = Order::query()->whereDate('created_at', $today)->where('payment_status', 'paid')->sum('total');
+        $totalRevenue = $this->getTotalRevenue();
+        $totalUnitsSold = $this->getTotalUnitsSold();
 
         return [
             Stat::make('Today\'s Orders', Order::query()->whereDate('created_at', $today)->count())
@@ -35,9 +37,14 @@ final class CoffeeShopOverviewWidget extends BaseWidget
                 ->chart([0, 2, 5, 3, 8, 12, 15]),
 
             Stat::make('Today\'s Sales', number_format($todaysSales, 2))
-                ->description("{$currency} ".number_format($todaysSales, 2).' from today')
+                ->description("{$currency} " . number_format($todaysSales, 2) . ' from today')
                 ->descriptionIcon('mdi-currency-php')
                 ->color('primary'),
+            
+            Stat::make('Total Revenue', "{$currency} " . number_format($totalRevenue, 2))
+                ->description('All-time total revenue')
+                ->descriptionIcon('heroicon-m-banknotes')
+                ->color('success'),
 
             Stat::make('Active Products', Product::query()->count())
                 ->description('Total products available')
@@ -49,13 +56,37 @@ final class CoffeeShopOverviewWidget extends BaseWidget
                 ->description('Ingredients needing restock')
                 ->descriptionIcon('heroicon-m-exclamation-triangle')
                 ->color($this->getLowStockCount() > 0 ? 'danger' : 'success'),
+
+            Stat::make('Total Units Sold', number_format($totalUnitsSold))
+                ->description('All-time units sold')
+                ->descriptionIcon('heroicon-m-cube')
+                ->color('info'),
+
+
         ];
     }
 
     private function getLowStockCount(): int
     {
-        return IngredientInventory::whereHas('ingredient', fn ($query) => $query->whereNotNull('id'))
+        return IngredientInventory::whereHas('ingredient', fn($query) => $query->whereNotNull('id'))
             ->whereColumn('current_stock', '<=', 'min_stock_level')
             ->count();
+    }
+
+    private function getTotalRevenue(): float
+    {
+        return (float) Order::query()
+            ->where('payment_status', 'paid')
+            ->where('status', 'completed')
+            ->sum('total');
+    }
+
+    private function getTotalUnitsSold(): int
+    {
+        return (int) Order::query()
+            ->where('payment_status', 'paid')
+            ->where('status', 'completed')
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->sum('order_items.quantity');
     }
 }

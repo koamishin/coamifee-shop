@@ -21,7 +21,9 @@ final class MetricsService
             return;
         }
 
+        // Exclude refunded orders from metrics calculation
         $orders = Order::query()->whereDate('created_at', $date)
+            ->where('payment_status', '!=', 'refunded')
             ->whereHas('items', function ($query) use ($productId): void {
                 $query->where('product_id', $productId);
             })
@@ -40,11 +42,20 @@ final class MetricsService
             }
         }
 
-        ProductMetric::query()->updateOrCreate([
+        $dateStr = $date->toDateString();
+
+        // Delete existing metric first to avoid constraint violations
+        ProductMetric::query()
+            ->where('product_id', $productId)
+            ->where('metric_date', $dateStr)
+            ->where('period_type', 'daily')
+            ->delete();
+
+        // Create new metric
+        ProductMetric::create([
             'product_id' => $productId,
-            'metric_date' => $date->toDateString(),
+            'metric_date' => $dateStr,
             'period_type' => 'daily',
-        ], [
             'orders_count' => $totalOrders,
             'total_revenue' => $totalRevenue,
         ]);
@@ -127,11 +138,18 @@ final class MetricsService
         $totalOrders = $weeklyMetrics->sum('orders_count');
         $totalRevenue = $weeklyMetrics->sum('total_revenue');
 
-        ProductMetric::query()->updateOrCreate([
+        // Delete existing metric first to avoid constraint violations
+        ProductMetric::query()
+            ->where('product_id', $productId)
+            ->where('metric_date', $weekStart)
+            ->where('period_type', 'weekly')
+            ->delete();
+
+        // Create new metric
+        ProductMetric::create([
             'product_id' => $productId,
             'metric_date' => $weekStart,
             'period_type' => 'weekly',
-        ], [
             'orders_count' => $totalOrders,
             'total_revenue' => $totalRevenue,
         ]);
@@ -150,11 +168,18 @@ final class MetricsService
         $totalOrders = $monthlyMetrics->sum('orders_count');
         $totalRevenue = $monthlyMetrics->sum('total_revenue');
 
-        ProductMetric::query()->updateOrCreate([
+        // Delete existing metric first to avoid constraint violations
+        ProductMetric::query()
+            ->where('product_id', $productId)
+            ->where('metric_date', $monthStart)
+            ->where('period_type', 'monthly')
+            ->delete();
+
+        // Create new metric
+        ProductMetric::create([
             'product_id' => $productId,
             'metric_date' => $monthStart,
             'period_type' => 'monthly',
-        ], [
             'orders_count' => $totalOrders,
             'total_revenue' => $totalRevenue,
         ]);

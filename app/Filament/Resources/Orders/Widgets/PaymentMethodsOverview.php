@@ -23,7 +23,10 @@ final class PaymentMethodsOverview extends StatsOverviewWidget
         $stats = [];
 
         foreach ($enabledPaymentMethods as $method => $config) {
-            $orders = Order::where('payment_method', $method)->get();
+            $orders = Order::where('payment_method', $method)
+                ->where('status', 'completed')
+                ->whereNotIn('payment_status', ['refunded', 'refund_partial'])
+                ->get();
 
             $stats[] = Stat::make($config['name'], $this->formatMoney($orders->sum('total')))
                 ->description($orders->count().' orders paid with '.$config['name'])
@@ -48,7 +51,9 @@ final class PaymentMethodsOverview extends StatsOverviewWidget
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->format('Y-m-d');
             $total = Order::where('payment_method', $method)
+                ->where('status', 'completed')
                 ->whereDate('created_at', $date)
+                ->whereNotIn('payment_status', ['refunded', 'refund_partial'])
                 ->sum('total');
             $data[] = (float) $total;
         }
