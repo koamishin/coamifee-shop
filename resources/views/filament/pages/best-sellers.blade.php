@@ -65,7 +65,7 @@
                         </div>
                         <div class="ml-5 w-0 flex-1">
                             <dl>
-                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Sales</dt>
+                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Revenue</dt>
                                 <dd class="flex items-baseline">
                                     <div class="text-2xl font-semibold text-gray-900 dark:text-white">
                                         ₱{{ number_format($this->bestSellersData->sum(function($products) { return $products->sum('total_revenue'); }), 2) }}
@@ -88,7 +88,7 @@
                             {{ $categoryName }}
                         </h3>
                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            {{ $products->count() }} {{ Str::plural('product', $products->count()) }} · {{ $this->startDate }} to {{ $this->endDate }}
+                            {{ $products->count() }} {{ Str::plural('product', $products->count()) }} · Last 30 days
                         </p>
                     </div>
 
@@ -107,7 +107,7 @@
                                         Units Sold
                                     </th>
                                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        Sales
+                                        Revenue
                                     </th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Performance
@@ -176,7 +176,7 @@
                                                 ₱{{ number_format($productData->total_revenue, 2) }}
                                             </div>
                                             <div class="text-xs text-gray-500 dark:text-gray-400">
-                                                sales
+                                                revenue
                                             </div>
                                         </td>
 
@@ -214,7 +214,7 @@
                 <div class="text-sm text-blue-800 dark:text-blue-300">
                     <p class="font-semibold">About this report</p>
                     <p class="mt-1">
-                        Showing top 3 best-selling products per category from <strong>completed orders</strong> between <strong>{{ $this->startDate }}</strong> and <strong>{{ $this->endDate }}</strong>. Performance percentages are relative to the top-selling product in each category.
+                        Showing top 3 best-selling products per category from <strong>completed orders</strong> in the last 30 days. Performance percentages are relative to the top-selling product in each category.
                     </p>
                 </div>
             </div>
@@ -232,7 +232,7 @@
                 @if(\App\Models\OrderItem::count() === 0)
                     No orders have been placed yet. Once you start completing orders, your best-selling products will appear here.
                 @else
-                    No products found with completed orders between {{ $this->startDate }} and {{ $this->endDate }}. Try adjusting the date range or complete some orders to see your best sellers.
+                    No products found with completed orders in the last 30 days. Complete some orders to see your best sellers.
                 @endif
             </p>
             <button
