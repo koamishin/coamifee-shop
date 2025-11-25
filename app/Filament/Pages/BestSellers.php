@@ -22,6 +22,8 @@ final class BestSellers extends Page
 
     public ?string $endDate = null;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-trophy';
 
     protected static UnitEnum|string|null $navigationGroup = 'Operations';
