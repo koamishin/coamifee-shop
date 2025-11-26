@@ -31,6 +31,8 @@ final class OrdersProcessing extends Page
 {
     public string $statusFilter = 'all';
 
+    public string $paymentStatusFilter = 'all';
+
     public bool $isTabletMode = true;
 
     public Currency $currency;
@@ -91,12 +93,25 @@ final class OrdersProcessing extends Page
             $query->where('status', $this->statusFilter);
         }
 
+        if ($this->paymentStatusFilter === 'refunded') {
+            $query->whereIn('payment_status', ['refunded', 'refund_partial']);
+        } elseif ($this->paymentStatusFilter === 'cancelled') {
+            $query->where('status', 'cancelled');
+        }
+
         return $query->get();
     }
 
     public function filterByStatus(string $status): void
     {
         $this->statusFilter = $status;
+        $this->paymentStatusFilter = 'all';
+    }
+
+    public function filterByPaymentStatus(string $paymentStatus): void
+    {
+        $this->paymentStatusFilter = $paymentStatus;
+        $this->statusFilter = 'all';
     }
 
     public function toggleServed(int $itemId): void

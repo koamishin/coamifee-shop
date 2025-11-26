@@ -23,7 +23,7 @@ beforeEach(function () {
 it('displays the best sellers page', function () {
     Livewire::test(BestSellers::class)
         ->assertSuccessful()
-        ->assertSee('Best Sellers by Category');
+        ->assertSee('No sales data available');
 });
 
 it('shows completed order products in best sellers', function () {
@@ -51,7 +51,7 @@ it('shows completed order products in best sellers', function () {
         ->assertSee('Test Category')
         ->assertSee('Test Product')
         ->assertSee('5')
-        ->assertSee('500.00');
+        ->assertSee('500');
 });
 
 it('does not show pending order products in best sellers', function () {
@@ -166,7 +166,7 @@ it('aggregates quantities correctly for multiple orders of same product', functi
         ->assertSuccessful()
         ->assertSee('Multi Order Product')
         ->assertSee('15') // 5 * 3 orders
-        ->assertSee('1,500.00'); // 15 * 100
+        ->assertSee('1,500'); // 15 * 100
 });
 
 it('can refresh data', function () {

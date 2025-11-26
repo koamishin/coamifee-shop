@@ -1,34 +1,52 @@
 <x-filament-panels::page>
     <div class="space-y-4">
         {{-- Status Filter Tabs --}}
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <div class="flex items-center gap-2 overflow-x-auto">
-                <button
-                    wire:click="filterByStatus('all')"
-                    class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $statusFilter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
-                >
-                    All Orders
-                </button>
-                <button
-                    wire:click="filterByStatus('pending')"
-                    class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $statusFilter === 'pending' ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
-                >
-                    <span class="inline-flex items-center gap-1">
-                        <span class="w-2 h-2 bg-yellow-400 rounded-full"></span>
-                        In Progress
-                    </span>
-                </button>
-                <button
-                    wire:click="filterByStatus('completed')"
-                    class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $statusFilter === 'completed' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
-                >
-                    <span class="inline-flex items-center gap-1">
-                        <span class="w-2 h-2 bg-green-400 rounded-full"></span>
-                        Completed
-                    </span>
-                </button>
-            </div>
-        </div>
+         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+             <div class="flex items-center gap-2 overflow-x-auto">
+                 <button
+                     wire:click="filterByStatus('all')"
+                     class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $statusFilter === 'all' && $paymentStatusFilter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                 >
+                     All Orders
+                 </button>
+                 <button
+                     wire:click="filterByStatus('pending')"
+                     class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $statusFilter === 'pending' ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                 >
+                     <span class="inline-flex items-center gap-1">
+                         <span class="w-2 h-2 bg-yellow-400 rounded-full"></span>
+                         In Progress
+                     </span>
+                 </button>
+                 <button
+                     wire:click="filterByStatus('completed')"
+                     class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $statusFilter === 'completed' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                 >
+                     <span class="inline-flex items-center gap-1">
+                         <span class="w-2 h-2 bg-green-400 rounded-full"></span>
+                         Completed
+                     </span>
+                 </button>
+                 <button
+                     wire:click="filterByPaymentStatus('refunded')"
+                     class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $paymentStatusFilter === 'refunded' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                 >
+                     <span class="inline-flex items-center gap-1">
+                         <span class="w-2 h-2 bg-orange-400 rounded-full"></span>
+                         Refunded
+                     </span>
+                 </button>
+                 <button
+                     wire:click="filterByPaymentStatus('cancelled')"
+                     class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $paymentStatusFilter === 'cancelled' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                 >
+                     <span class="inline-flex items-center gap-1">
+                         <span class="w-2 h-2 bg-red-400 rounded-full"></span>
+                         Cancelled
+                     </span>
+                 </button>
+             </div>
+         </div>
 
         {{-- Orders Grid --}}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
