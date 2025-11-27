@@ -11,7 +11,6 @@ use App\Enums\TableNumber;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Product;
 use App\Services\GeneralSettingsService;
 use App\Services\PosService;
 use BackedEnum;
@@ -29,7 +28,6 @@ use Illuminate\Support\HtmlString;
 use JaOcero\RadioDeck\Forms\Components\RadioDeck;
 use Livewire\Attributes\Locked;
 use Storage;
-use UnitEnum;
 
 final class PosPage extends Page
 {
@@ -84,7 +82,7 @@ final class PosPage extends Page
 
     public array $productAvailability = [];
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shopping-cart';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-shopping-cart';
 
     // protected static UnitEnum|string|null $navigationGroup = 'Operations';
 
@@ -230,6 +228,9 @@ final class PosPage extends Page
                 'price' => $productPrice,
                 'quantity' => 1,
                 'subtotal' => $productPrice,
+                'discount_type' => null,
+                'discount_percentage' => 0,
+                'discount_amount' => 0,
             ];
         }
 
@@ -280,6 +281,13 @@ final class PosPage extends Page
 
             $this->cartItems[$index]['quantity'] = $quantity;
             $this->cartItems[$index]['subtotal'] = $quantity * $this->cartItems[$index]['price'];
+
+            // Recalculate item discount amount based on new subtotal
+            $discountPercentage = $this->cartItems[$index]['discount_percentage'] ?? 0;
+            $originalSubtotal = $this->cartItems[$index]['subtotal'];
+            $discountAmount = $discountPercentage > 0 ? ($originalSubtotal * $discountPercentage / 100) : 0;
+            $this->cartItems[$index]['discount_amount'] = $discountAmount;
+
             $this->calculateTotals();
             $this->refreshProducts(); // Refresh availability
         }
@@ -288,6 +296,64 @@ final class PosPage extends Page
     public function updatedPaidAmount(): void
     {
         $this->calculateTotals();
+    }
+
+    public function updatedCartItems($value, $key): void
+    {
+        // Handle live updates to cart items
+        if (! is_string($key)) {
+            return;
+        }
+
+        if (mb_strpos($key, '.discount_type') !== false) {
+            $this->updatedCartItemDiscountType($key, $value);
+        } elseif (mb_strpos($key, '.discount_percentage') !== false) {
+            $this->updatedCartItemDiscountPercentage($key, $value);
+        }
+    }
+
+    public function updatedCartItemDiscountType(string $key, string $value): void
+    {
+        $index = (int) explode('.', $key)[0];
+
+        if (isset($this->cartItems[$index])) {
+            $this->cartItems[$index]['discount_type'] = $value ?: null;
+
+            // Auto-fill percentage if it's a predefined discount type
+            if ($value) {
+                $discountType = DiscountType::tryFrom($value);
+                if ($discountType) {
+                    $percentage = $discountType->getPercentage();
+                    if ($percentage !== null) {
+                        $this->cartItems[$index]['discount_percentage'] = $percentage;
+                    }
+                }
+            } else {
+                $this->cartItems[$index]['discount_percentage'] = 0;
+            }
+
+            // Recalculate discount amount
+            $this->recalculateItemDiscount($index);
+            $this->calculateTotals();
+        }
+    }
+
+    public function updatedCartItemDiscountPercentage(string $key, float $value): void
+    {
+        $index = (int) explode('.', $key)[0];
+
+        if (isset($this->cartItems[$index])) {
+            $this->cartItems[$index]['discount_percentage'] = $value;
+
+            // Clear discount type if custom percentage is entered
+            if ($value > 0 && ! $this->cartItems[$index]['discount_type']) {
+                $this->cartItems[$index]['discount_type'] = null;
+            }
+
+            // Recalculate discount amount
+            $this->recalculateItemDiscount($index);
+            $this->calculateTotals();
+        }
     }
 
     public function updatedSearch(): void
@@ -410,6 +476,11 @@ final class PosPage extends Page
             $order = Order::create($orderData);
 
             foreach ($this->cartItems as $item) {
+                $originalSubtotal = (float) $item['subtotal'];
+                $discountPercentage = $item['discount_percentage'] ?? 0;
+                $discountAmount = $discountPercentage > 0 ? ($originalSubtotal * $discountPercentage / 100) : 0;
+                $finalSubtotal = $originalSubtotal - $discountAmount;
+
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item['product_id'],
@@ -418,6 +489,9 @@ final class PosPage extends Page
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],
                     'subtotal' => $item['subtotal'],
+                    'discount_percentage' => $discountPercentage,
+                    'discount_amount' => $discountAmount,
+                    'discount' => $discountAmount, // Using the same value for legacy compatibility
                 ]);
             }
 
@@ -629,6 +703,77 @@ final class PosPage extends Page
                             ');
                         }),
 
+                    Forms\Components\Placeholder::make('item_discounts')
+                        ->label('Item Discounts')
+                        ->content(function () {
+                            if (empty($this->cartItems)) {
+                                return new HtmlString('<div class="text-center text-gray-500 py-2">No items in cart</div>');
+                            }
+
+                            $discountHtml = '<div class="space-y-3 mb-4">';
+
+                            foreach ($this->cartItems as $index => $item) {
+                                $formattedPrice = $this->formatCurrency((float) $item['price']);
+                                $originalSubtotal = (float) $item['subtotal'];
+                                $currentDiscountType = $item['discount_type'] ?? '';
+                                $currentDiscountPercentage = $item['discount_percentage'] ?? 0;
+                                $discountAmount = $currentDiscountPercentage > 0 ? ($originalSubtotal * $currentDiscountPercentage / 100) : 0;
+                                $finalSubtotal = $originalSubtotal - $discountAmount;
+                                $formattedFinalSubtotal = $this->formatCurrency($finalSubtotal);
+
+                                $discountOptions = DiscountType::getOptions();
+                                $discountSelectOptions = "<option value=''>No discount</option>";
+                                foreach ($discountOptions as $value => $label) {
+                                    $selected = $currentDiscountType === $value ? 'selected' : '';
+                                    $discountSelectOptions .= "<option value='{$value}' {$selected}>{$label}</option>";
+                                }
+
+                                $discountHtml .= "
+                                    <div class='bg-gray-50 border border-gray-200 rounded-lg p-3'>
+                                        <div class='flex justify-between items-start mb-2'>
+                                            <div class='flex-1'>
+                                                <h4 class='text-sm font-semibold text-gray-900'>{$item['name']}</h4>
+                                                <div class='text-xs text-gray-600'>×{$item['quantity']} @ {$formattedPrice} = {$this->formatCurrency($originalSubtotal)}</div>
+                                            </div>
+                                            <div class='text-right'>
+                                                <div class='text-sm font-bold text-orange-600'>{$formattedFinalSubtotal}</div>
+                                                ".($discountAmount > 0 ? "<div class='text-xs text-green-600'>-{$this->formatCurrency($discountAmount)} discount</div>" : '')."
+                                            </div>
+                                        </div>
+                                        <div class='grid grid-cols-2 gap-2'>
+                                            <div>
+                                                <label class='text-xs font-medium text-gray-700 mb-1 block'>Discount Type</label>
+                                                <select
+                                                    wire:model.live=\"cartItems.{$index}.discount_type\"
+                                                    class='w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                                >
+                                                    {$discountSelectOptions}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class='text-xs font-medium text-gray-700 mb-1 block'>Discount %</label>
+                                                <input
+                                                    type='number'
+                                                    wire:model.live=\"cartItems.{$index}.discount_percentage\"
+                                                    min='0'
+                                                    max='100'
+                                                    step='1'
+                                                    placeholder='0'
+                                                    class='w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ";
+                            }
+
+                            $discountHtml .= '</div>';
+
+                            return new HtmlString($discountHtml);
+                        })
+                        ->columnSpanFull()
+                        ->visible(fn () => ! empty($this->cartItems)),
+
                     Forms\Components\Placeholder::make('cart_items_display')
                         ->label('Order Items')
                         ->content(function () {
@@ -640,7 +785,24 @@ final class PosPage extends Page
 
                             foreach ($this->cartItems as $item) {
                                 $formattedPrice = $this->formatCurrency((float) $item['price']);
-                                $formattedSubtotal = $this->formatCurrency((float) $item['subtotal']);
+                                $originalSubtotal = (float) $item['subtotal'];
+                                $discountPercentage = $item['discount_percentage'] ?? 0;
+                                $discountAmount = $discountPercentage > 0 ? ($originalSubtotal * $discountPercentage / 100) : 0;
+                                $finalSubtotal = $originalSubtotal - $discountAmount;
+                                $formattedOriginalSubtotal = $this->formatCurrency($originalSubtotal);
+                                $formattedFinalSubtotal = $this->formatCurrency($finalSubtotal);
+
+                                $discountDisplay = '';
+                                if ($discountPercentage > 0) {
+                                    $formattedDiscountAmount = $this->formatCurrency($discountAmount);
+                                    $discountType = $item['discount_type'] ?? 'Custom';
+                                    $discountDisplay = "
+                                        <div class='text-xs text-green-600 mb-1'>
+                                            <span>{$discountPercentage}% off ({$discountType})</span>
+                                            <div class='text-gray-500 line-through'>{$formattedOriginalSubtotal}</div>
+                                        </div>
+                                    ";
+                                }
 
                                 $cartHtml .= "
                                     <div class='bg-white border border-gray-200 rounded px-2 py-1.5 hover:shadow-sm transition-shadow'>
@@ -649,8 +811,9 @@ final class PosPage extends Page
                                             <span class='text-gray-600'>×{$item['quantity']}</span>
                                             <span class='font-medium text-orange-600'>{$formattedPrice}</span>
                                         </div>
+                                        {$discountDisplay}
                                         <div class='text-xs font-bold text-gray-900 border-t border-gray-100 pt-0.5'>
-                                            {$formattedSubtotal}
+                                            {$formattedFinalSubtotal}
                                         </div>
                                     </div>
                                 ";
@@ -1004,14 +1167,46 @@ final class PosPage extends Page
         ];
     }
 
+    private function recalculateItemDiscount(int $index): void
+    {
+        if (! isset($this->cartItems[$index])) {
+            return;
+        }
+
+        $subtotal = (float) $this->cartItems[$index]['subtotal'];
+        $discountPercentage = $this->cartItems[$index]['discount_percentage'] ?? 0;
+
+        $discountAmount = $discountPercentage > 0 ? ($subtotal * $discountPercentage / 100) : 0;
+
+        $this->cartItems[$index]['discount_amount'] = $discountAmount;
+    }
+
     private function calculateTotals(): void
     {
-        $this->totalAmount = collect($this->cartItems)->sum('subtotal');
+        // Calculate original subtotal (before any item-level discounts)
+        $originalSubtotal = 0.0;
+        foreach ($this->cartItems as $item) {
+            $originalSubtotal += (float) $item['subtotal'];
+        }
 
-        // Calculate final total with discounts and add-ons
-        $discountAmount = 0.0;
+        // Calculate item-level discounts
+        $itemDiscountTotal = 0.0;
+        foreach ($this->cartItems as $item) {
+            $itemSubtotal = (float) $item['subtotal'];
+            $itemDiscountPercentage = $item['discount_percentage'] ?? 0;
+            if ($itemDiscountPercentage > 0) {
+                $itemDiscountAmount = $itemSubtotal * ($itemDiscountPercentage / 100);
+                $itemDiscountTotal += $itemDiscountAmount;
+            }
+        }
+
+        // Calculate order-level subtotal (after item discounts)
+        $this->totalAmount = $originalSubtotal - $itemDiscountTotal;
+
+        // Calculate final total with order-level discounts and add-ons
+        $orderDiscountAmount = 0.0;
         if (! empty($this->discountType) && ! empty($this->discountValue)) {
-            $discountAmount = $this->totalAmount * ($this->discountValue / 100);
+            $orderDiscountAmount = $this->totalAmount * ($this->discountValue / 100);
         }
 
         $addOnsTotal = 0.0;
@@ -1021,7 +1216,7 @@ final class PosPage extends Page
             }
         }
 
-        $finalTotal = $this->totalAmount - $discountAmount + $addOnsTotal;
+        $finalTotal = $this->totalAmount - $orderDiscountAmount + $addOnsTotal;
 
         // Calculate change based on final total
         $this->changeAmount = $this->paidAmount - $finalTotal;

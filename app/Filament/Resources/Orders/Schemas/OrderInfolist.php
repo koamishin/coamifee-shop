@@ -38,7 +38,7 @@ final class OrderInfolist
                                 TextEntry::make('status')
                                     ->label('Order Status')
                                     ->badge()
-                                    ->icon(fn ($state): string => match ($state) {
+                                    ->icon(fn($state): string => match ($state) {
                                         'pending' => 'heroicon-o-clock',
                                         'confirmed' => 'heroicon-o-check-circle',
                                         'preparing' => 'heroicon-o-arrow-path',
@@ -48,7 +48,7 @@ final class OrderInfolist
                                         'cancelled' => 'heroicon-o-x-circle',
                                         default => 'heroicon-o-question-mark-circle',
                                     })
-                                    ->color(fn ($state): string => match ($state) {
+                                    ->color(fn($state): string => match ($state) {
                                         'pending' => 'warning',
                                         'confirmed' => 'info',
                                         'preparing' => 'primary',
@@ -58,24 +58,24 @@ final class OrderInfolist
                                         'cancelled' => 'danger',
                                         default => 'gray',
                                     })
-                                    ->formatStateUsing(fn ($state): string => ucfirst((string) $state)),
+                                    ->formatStateUsing(fn($state): string => ucfirst((string) $state)),
 
                                 TextEntry::make('order_type')
                                     ->label('Order Type')
                                     ->badge()
-                                    ->icon(fn ($state): string => match ($state) {
+                                    ->icon(fn($state): string => match ($state) {
                                         'dine_in', 'dine-in' => 'heroicon-o-building-storefront',
                                         'takeaway' => 'heroicon-o-shopping-bag',
                                         'delivery' => 'heroicon-o-truck',
                                         default => 'heroicon-o-question-mark-circle',
                                     })
-                                    ->color(fn ($state): string => match ($state) {
+                                    ->color(fn($state): string => match ($state) {
                                         'dine_in', 'dine-in' => 'success',
                                         'takeaway' => 'info',
                                         'delivery' => 'warning',
                                         default => 'gray',
                                     })
-                                    ->formatStateUsing(fn ($state): string => match ($state) {
+                                    ->formatStateUsing(fn($state): string => match ($state) {
                                         'dine_in', 'dine-in' => 'Dine In',
                                         'takeaway' => 'Takeaway',
                                         'delivery' => 'Delivery',
@@ -88,8 +88,8 @@ final class OrderInfolist
                                     ->icon('heroicon-o-building-office-2')
                                     ->color('primary')
                                     ->placeholder('N/A')
-                                    ->formatStateUsing(fn ($state): string => $state ? str_replace('_', ' ', ucfirst($state)) : 'N/A')
-                                    ->visible(fn ($record) => $record->order_type === 'dine_in' || $record->order_type === 'dine-in'),
+                                    ->formatStateUsing(fn($state): string => $state ? str_replace('_', ' ', ucfirst($state)) : 'N/A')
+                                    ->visible(fn($record) => $record->order_type === 'dine_in' || $record->order_type === 'dine-in'),
 
                                 TextEntry::make('created_at')
                                     ->label('Order Placed')
@@ -117,23 +117,23 @@ final class OrderInfolist
                                     ->label('Registered Account')
                                     ->placeholder('Guest Customer')
                                     ->badge()
-                                    ->icon(fn ($record) => $record->customer_id ? 'heroicon-o-check-badge' : 'heroicon-o-user')
-                                    ->color(fn ($record): string => $record->customer_id ? 'success' : 'gray')
-                                    ->formatStateUsing(fn ($state) => $state ?: 'Guest'),
+                                    ->icon(fn($record) => $record->customer_id ? 'heroicon-o-check-badge' : 'heroicon-o-user')
+                                    ->color(fn($record): string => $record->customer_id ? 'success' : 'gray')
+                                    ->formatStateUsing(fn($state) => $state ?: 'Guest'),
 
                                 TextEntry::make('customer.email')
                                     ->label('Email')
                                     ->placeholder('Not available')
                                     ->icon('heroicon-o-envelope')
                                     ->copyable()
-                                    ->visible(fn ($record) => $record->customer_id),
+                                    ->visible(fn($record) => $record->customer_id),
 
                                 TextEntry::make('customer.phone')
                                     ->label('Phone')
                                     ->placeholder('Not available')
                                     ->icon('heroicon-o-phone')
                                     ->copyable()
-                                    ->visible(fn ($record) => $record->customer_id),
+                                    ->visible(fn($record) => $record->customer_id),
                             ])
                             ->columns(2),
                     ]),
@@ -169,14 +169,14 @@ final class OrderInfolist
                             TextEntry::make('order_type')
                                 ->label('Order Type')
                                 ->badge()
-                                ->formatStateUsing(fn ($state): string => ucfirst(str_replace('_', ' ', $state))),
+                                ->formatStateUsing(fn($state): string => ucfirst(str_replace('_', ' ', $state))),
 
                             TextEntry::make('table_number')
                                 ->label('Table')
                                 ->badge()
                                 ->color('primary')
-                                ->formatStateUsing(fn ($state): string => $state ? str_replace('_', ' ', ucfirst($state)) : 'N/A')
-                                ->visible(fn ($record) => $record->order_type === 'dine_in'),
+                                ->formatStateUsing(fn($state): string => $state ? str_replace('_', ' ', ucfirst($state)) : 'N/A')
+                                ->visible(fn($record) => $record->order_type === 'dine_in'),
                         ]),
 
                     Section::make('Order Items')
@@ -192,7 +192,7 @@ final class OrderInfolist
                                                 ->formatStateUsing(function ($record) {
                                                     $name = $record->product->name ?? 'Unknown Product';
                                                     if ($record->variant_name) {
-                                                        $name .= ' ('.$record->variant_name.')';
+                                                        $name .= ' (' . $record->variant_name . ')';
                                                     }
 
                                                     return $name;
@@ -212,7 +212,16 @@ final class OrderInfolist
                                                 ->money(self::getMoneyConfig())
                                                 ->weight(FontWeight::Bold)
                                                 ->color('success')
-                                                ->state(fn ($record) => $record->quantity * $record->price),
+                                                ->state(fn($record) => $record->quantity * $record->price),
+                                        ]),
+
+                                    Grid::make(2)
+                                        ->schema([
+                                            TextEntry::make('discounted_price')
+                                                ->label('Discounted Price')
+                                                ->money(self::getMoneyConfig())
+                                                ->color('warning')
+                                                ->visible(fn($record) => $record->discounted_price !== null),
                                         ]),
                                 ])
                                 ->contained(false),
@@ -234,12 +243,12 @@ final class OrderInfolist
                                 ->icon('heroicon-o-tag')
                                 ->formatStateUsing(function ($record) {
                                     if ($record->discount_amount > 0 && $record->discount_type && $record->discount_value) {
-                                        return ucfirst($record->discount_type).' ('.$record->discount_value.'%) - '.self::getMoneyConfig()['currency'].' '.number_format($record->discount_amount, 2);
+                                        return ucfirst($record->discount_type) . ' (' . $record->discount_value . '%) - ' . self::getMoneyConfig()['currency'] . ' ' . number_format($record->discount_amount, 2);
                                     }
 
                                     return 'No discount';
                                 })
-                                ->visible(fn ($record) => $record->discount_amount > 0),
+                                ->visible(fn($record) => $record->discount_amount > 0),
                         ]),
 
                     Grid::make(2)
@@ -251,7 +260,7 @@ final class OrderInfolist
                                 ->prefix('- ')
                                 ->size(TextSize::Large)
                                 ->weight(FontWeight::Bold)
-                                ->visible(fn ($record) => $record->discount_amount > 0),
+                                ->visible(fn($record) => $record->discount_amount > 0),
 
                             TextEntry::make('add_ons_total')
                                 ->label('Add-ons Total')
@@ -260,7 +269,7 @@ final class OrderInfolist
                                 ->prefix('+ ')
                                 ->size(TextSize::Large)
                                 ->weight(FontWeight::Bold)
-                                ->visible(fn ($record) => $record->add_ons_total > 0),
+                                ->visible(fn($record) => $record->add_ons_total > 0),
                         ]),
 
                     TextEntry::make('total')
@@ -277,26 +286,26 @@ final class OrderInfolist
                             TextEntry::make('payment_method')
                                 ->label('Payment Method')
                                 ->badge()
-                                ->icon(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodIcon((string) $state))
-                                ->color(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodColor((string) $state))
-                                ->formatStateUsing(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodDisplayName((string) $state)),
+                                ->icon(fn($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodIcon((string) $state))
+                                ->color(fn($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodColor((string) $state))
+                                ->formatStateUsing(fn($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodDisplayName((string) $state)),
 
                             TextEntry::make('payment_status')
                                 ->label('Payment Status')
                                 ->badge()
-                                ->color(fn ($state): string => match ($state) {
+                                ->color(fn($state): string => match ($state) {
                                     'paid' => 'success',
                                     'unpaid' => 'warning',
                                     'failed' => 'danger',
                                     default => 'gray',
                                 })
-                                ->formatStateUsing(fn ($state): string => ucfirst((string) $state)),
+                                ->formatStateUsing(fn($state): string => ucfirst((string) $state)),
 
                             TextEntry::make('paid_amount')
                                 ->label('Amount Paid')
                                 ->money(self::getMoneyConfig())
                                 ->weight(FontWeight::Bold)
-                                ->visible(fn ($record) => $record->paid_amount > 0),
+                                ->visible(fn($record) => $record->paid_amount > 0),
                         ]),
 
                     TextEntry::make('change_amount')
@@ -305,14 +314,14 @@ final class OrderInfolist
                         ->color('success')
                         ->weight(FontWeight::Bold)
                         ->icon('heroicon-o-banknotes')
-                        ->visible(fn ($record) => $record->change_amount > 0),
+                        ->visible(fn($record) => $record->change_amount > 0),
 
                     TextEntry::make('notes')
                         ->label('Special Instructions')
                         ->placeholder('No special instructions')
                         ->columnSpanFull()
                         ->icon('heroicon-o-chat-bubble-left-right')
-                        ->visible(fn ($record) => ! empty($record->notes)),
+                        ->visible(fn($record) => ! empty($record->notes)),
                 ])
                 ->columnSpanFull()
                 ->collapsible(),
@@ -337,12 +346,12 @@ final class OrderInfolist
 
                             return collect($state)->map(function ($addon) {
                                 $name = is_array($addon) ? ($addon['name'] ?? 'Unknown') : $addon;
-                                $price = is_array($addon) && isset($addon['price']) ? ' - PHP '.number_format($addon['price'], 2) : '';
+                                $price = is_array($addon) && isset($addon['price']) ? ' - PHP ' . number_format($addon['price'], 2) : '';
 
-                                return '• '.$name.$price;
+                                return '• ' . $name . $price;
                             })->join("\n");
                         })
-                        ->visible(fn ($record) => $record->add_ons && is_array($record->add_ons) && count($record->add_ons) > 0),
+                        ->visible(fn($record) => $record->add_ons && is_array($record->add_ons) && count($record->add_ons) > 0),
                 ])
                 ->collapsible()
                 ->collapsed(),

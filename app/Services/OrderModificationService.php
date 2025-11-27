@@ -126,7 +126,6 @@ final readonly class OrderModificationService
                 'message' => 'Products added successfully',
                 'order' => $order->fresh(['items.product', 'items.variant']),
             ];
-
         } catch (Exception $e) {
             DB::rollBack();
 
@@ -195,6 +194,9 @@ final readonly class OrderModificationService
         $discountAmount = 0.0;
         if ($order->discount_type && $order->discount_value) {
             $discountAmount = $newSubtotal * ($order->discount_value / 100);
+
+            // Update discounted prices for all items
+            $this->updateItemDiscountedPrices($order, $newSubtotal, (float) $order->discount_value / 100);
         }
 
         // Calculate final total
@@ -245,6 +247,26 @@ final readonly class OrderModificationService
                     'order_id' => $order->id,
                 ]);
             }
+        }
+    }
+
+    /**
+     * Update discounted prices for all order items
+     */
+    private function updateItemDiscountedPrices(Order $order, float $totalSubtotal, float $discountPercentage): void
+    {
+        if ($totalSubtotal <= 0) {
+            return;
+        }
+
+        foreach ($order->items as $orderItem) {
+            $itemSubtotal = $orderItem->price * $orderItem->quantity;
+            $itemDiscountAmount = $itemSubtotal * $discountPercentage;
+            $discountedPrice = $orderItem->price - ($itemDiscountAmount / $orderItem->quantity);
+
+            $orderItem->update([
+                'discounted_price' => round($discountedPrice, 2),
+            ]);
         }
     }
 }

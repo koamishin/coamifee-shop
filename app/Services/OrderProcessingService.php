@@ -44,7 +44,7 @@ final readonly class OrderProcessingService
         if (! $this->canFulfillOrder($order)) {
             Log::warning('Insufficient inventory for order', [
                 'order_id' => $order->id,
-                'order_items' => $order->items->map(fn ($item) => [
+                'order_items' => $order->items->map(fn($item) => [
                     'product_id' => $item->product_id,
                     'product_name' => $item->product?->name,
                     'quantity' => $item->quantity,
@@ -58,6 +58,9 @@ final readonly class OrderProcessingService
             DB::beginTransaction();
 
             Log::info('Starting inventory processing', ['order_id' => $order->id]);
+
+            // Calculate and store discounted prices for each item
+            $this->updateOrderItemDiscountedPrices($order);
 
             foreach ($order->items as $orderItem) {
                 assert($orderItem instanceof OrderItem);
@@ -278,5 +281,60 @@ final readonly class OrderProcessingService
         }
 
         return true;
+    }
+
+    private function updateOrderItemDiscountedPrices(Order $order): void
+    {
+        // If no discount applied, skip
+        if (! $order->discount_type || ! $order->discount_value || $order->discount_amount <= 0) {
+            Log::info('No discount applied to order, skipping discounted price calculation', [
+                'order_id' => $order->id,
+            ]);
+
+            return;
+        }
+
+        // Calculate discount percentage
+        $discountPercentage = (float) $order->discount_value / 100;
+
+        // Calculate total subtotal for proportional distribution
+        $totalSubtotal = $order->items->sum(function ($item) {
+            return $item->price * $item->quantity;
+        });
+
+        if ($totalSubtotal <= 0) {
+            Log::warning('Total subtotal is zero, cannot calculate discounted prices', [
+                'order_id' => $order->id,
+            ]);
+
+            return;
+        }
+
+        // Update each item with its discounted price
+        foreach ($order->items as $orderItem) {
+            $itemSubtotal = $orderItem->price * $orderItem->quantity;
+
+            // Calculate proportional discount for this item
+            $itemDiscountAmount = $itemSubtotal * $discountPercentage;
+            $discountedPrice = $orderItem->price - ($itemDiscountAmount / $orderItem->quantity);
+
+            $orderItem->update([
+                'discounted_price' => round($discountedPrice, 2),
+            ]);
+
+            Log::info('Updated order item discounted price', [
+                'order_item_id' => $orderItem->id,
+                'original_price' => $orderItem->price,
+                'discounted_price' => $discountedPrice,
+                'quantity' => $orderItem->quantity,
+                'item_discount_amount' => $itemDiscountAmount,
+            ]);
+        }
+
+        Log::info('Successfully updated discounted prices for all order items', [
+            'order_id' => $order->id,
+            'items_count' => $order->items->count(),
+            'total_discount' => $order->discount_amount,
+        ]);
     }
 }
