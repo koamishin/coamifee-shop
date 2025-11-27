@@ -11,7 +11,7 @@ use App\Enums\TableNumber;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
-// use App\Models\Product; // Not used directly, using PosService instead
+use App\Models\Product;
 use App\Services\GeneralSettingsService;
 use App\Services\PosService;
 use BackedEnum;
@@ -86,7 +86,7 @@ final class PosPage extends Page
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shopping-cart';
 
-   // protected static UnitEnum|string|null $navigationGroup = 'Operations';
+    // protected static UnitEnum|string|null $navigationGroup = 'Operations';
 
     protected static ?int $navigationSort = 1;
 
@@ -628,6 +628,39 @@ final class PosPage extends Page
                                 </div>
                             ');
                         }),
+
+                    Forms\Components\Placeholder::make('cart_items_display')
+                        ->label('Order Items')
+                        ->content(function () {
+                            if (empty($this->cartItems)) {
+                                return new HtmlString('<div class="text-center text-gray-500 py-2">No items in cart</div>');
+                            }
+
+                            $cartHtml = '<div class="grid grid-cols-3 sm:grid-cols-4 gap-2">';
+
+                            foreach ($this->cartItems as $item) {
+                                $formattedPrice = $this->formatCurrency((float) $item['price']);
+                                $formattedSubtotal = $this->formatCurrency((float) $item['subtotal']);
+
+                                $cartHtml .= "
+                                    <div class='bg-white border border-gray-200 rounded px-2 py-1.5 hover:shadow-sm transition-shadow'>
+                                        <h4 class='text-xs font-semibold text-gray-900 line-clamp-2 mb-0.5'>{$item['name']}</h4>
+                                        <div class='flex items-center justify-between mb-0.5 text-xs'>
+                                            <span class='text-gray-600'>×{$item['quantity']}</span>
+                                            <span class='font-medium text-orange-600'>{$formattedPrice}</span>
+                                        </div>
+                                        <div class='text-xs font-bold text-gray-900 border-t border-gray-100 pt-0.5'>
+                                            {$formattedSubtotal}
+                                        </div>
+                                    </div>
+                                ";
+                            }
+
+                            $cartHtml .= '</div>';
+
+                            return new HtmlString($cartHtml);
+                        })
+                        ->columnSpanFull(),
 
                     Forms\Components\Textarea::make('notes')
                         ->label('Special Instructions')
