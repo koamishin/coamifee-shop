@@ -475,13 +475,20 @@ final class PosPage extends Page
 
             $order = Order::create($orderData);
 
+            \Illuminate\Support\Facades\Log::info('POS Order Created', [
+                'order_id' => $order->id,
+                'order_type' => $orderData['order_type'],
+                'payment_timing' => $paymentTiming,
+                'cart_items_count' => count($this->cartItems),
+            ]);
+
             foreach ($this->cartItems as $item) {
                 $originalSubtotal = (float) $item['subtotal'];
                 $discountPercentage = $item['discount_percentage'] ?? 0;
                 $discountAmount = $discountPercentage > 0 ? ($originalSubtotal * $discountPercentage / 100) : 0;
                 $finalSubtotal = $originalSubtotal - $discountAmount;
 
-                OrderItem::create([
+                $orderItemData = [
                     'order_id' => $order->id,
                     'product_id' => $item['product_id'],
                     'product_variant_id' => $item['variant_id'] ?? null,
@@ -492,6 +499,27 @@ final class PosPage extends Page
                     'discount_percentage' => $discountPercentage,
                     'discount_amount' => $discountAmount,
                     'discount' => $discountAmount, // Using the same value for legacy compatibility
+                ];
+
+                \Illuminate\Support\Facades\Log::info('Creating Order Item with Discount', [
+                    'order_id' => $order->id,
+                    'product_id' => $item['product_id'],
+                    'product_name' => $item['product_name'] ?? 'Unknown',
+                    'original_subtotal' => $originalSubtotal,
+                    'discount_percentage' => $discountPercentage,
+                    'discount_amount' => $discountAmount,
+                    'final_subtotal' => $finalSubtotal,
+                    'data_to_save' => $orderItemData,
+                ]);
+
+                $createdItem = OrderItem::create($orderItemData);
+
+                \Illuminate\Support\Facades\Log::info('Order Item Created - Verification', [
+                    'item_id' => $createdItem->id,
+                    'saved_discount_percentage' => $createdItem->discount_percentage,
+                    'saved_discount_amount' => $createdItem->discount_amount,
+                    'saved_discount' => $createdItem->discount,
+                    'saved_subtotal' => $createdItem->subtotal,
                 ]);
             }
 

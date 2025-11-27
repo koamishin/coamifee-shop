@@ -19,6 +19,10 @@ final class OrderItem extends Model
         'variant_name',
         'quantity',
         'price',
+        'subtotal',
+        'discount_percentage',
+        'discount_amount',
+        'discount',
         'notes',
         'is_served',
     ];
@@ -29,6 +33,10 @@ final class OrderItem extends Model
         'product_variant_id' => 'integer',
         'quantity' => 'integer',
         'price' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'discount_percentage' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'discount' => 'decimal:2',
         'is_served' => 'boolean',
     ];
 

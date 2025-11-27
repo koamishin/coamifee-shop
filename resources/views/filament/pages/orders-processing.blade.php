@@ -173,11 +173,14 @@
                     <div class="p-4 space-y-2 max-h-48 overflow-y-auto {{ $order->status === 'completed' ? 'pointer-events-none opacity-75' : '' }}">
                         @foreach($order->items as $item)
                             @php
-                                // Calculate discount per item if order has a discount
-                                $itemDiscountAmount = 0;
-                                if ($order->discount_amount && $order->discount_amount > 0) {
+                                // Use item-level discount if available, otherwise fallback to order-level discount calculation
+                                $itemDiscountAmount = (float) ($item->discount_amount ?? $item->discount ?? 0);
+
+                                // Fallback: Calculate discount per item if order has a discount and item doesn't have its own
+                                if ($itemDiscountAmount === 0.0 && $order->discount_amount && $order->discount_amount > 0 && $order->subtotal > 0) {
                                     $itemDiscountAmount = ($item->subtotal / $order->subtotal) * $order->discount_amount;
                                 }
+
                                 $itemFinalTotal = $item->subtotal - $itemDiscountAmount;
                                 // Check if order is refunded
                                 $isRefunded = $order->payment_status === 'refunded' || $order->payment_status === 'refund_partial';
@@ -213,9 +216,16 @@
 
                                     {{-- Item Name --}}
                                     <div class="flex flex-col">
-                                        <span class="font-medium {{ $item->is_served ? 'text-gray-400 line-through' : '' }} {{ $isRefunded ? 'text-red-600 line-through' : 'text-gray-900' }}">
-                                            {{ $item->product->name }}
-                                        </span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium {{ $item->is_served ? 'text-gray-400 line-through' : '' }} {{ $isRefunded ? 'text-red-600 line-through' : 'text-gray-900' }}">
+                                                {{ $item->product->name }}
+                                            </span>
+                                            @if($itemDiscountAmount > 0 && isset($item->discount_percentage) && $item->discount_percentage > 0)
+                                                <span class="inline-flex items-center px-1.5 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">
+                                                    -{{ number_format($item->discount_percentage, 0) }}%
+                                                </span>
+                                            @endif
+                                        </div>
                                         @if($item->variant_name)
                                             <span class="text-xs {{ $item->is_served ? 'text-gray-400' : '' }} {{ $isRefunded ? 'text-red-500' : 'text-gray-500' }} flex items-center gap-1">
                                                 @if(strtolower($item->variant_name) === 'hot')

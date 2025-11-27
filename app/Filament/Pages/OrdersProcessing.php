@@ -86,6 +86,11 @@ final class OrdersProcessing extends Page
 
     public function getOrders()
     {
+        \Illuminate\Support\Facades\Log::info('OrdersProcessing: Loading orders', [
+            'status_filter' => $this->statusFilter,
+            'payment_status_filter' => $this->paymentStatusFilter,
+        ]);
+
         $query = Order::with(['items.product', 'items.variant', 'customer'])
             ->latest();
 
@@ -99,7 +104,33 @@ final class OrdersProcessing extends Page
             $query->where('status', 'cancelled');
         }
 
-        return $query->get();
+        $orders = $query->get();
+
+        // Log order items with discount information
+        foreach ($orders as $order) {
+            $itemsWithDiscount = $order->items->filter(function ($item) {
+                return ($item->discount_amount ?? 0) > 0 || ($item->discount_percentage ?? 0) > 0;
+            });
+
+            if ($itemsWithDiscount->isNotEmpty()) {
+                \Illuminate\Support\Facades\Log::info('OrdersProcessing: Order with discounted items loaded', [
+                    'order_id' => $order->id,
+                    'items_with_discount' => $itemsWithDiscount->map(function ($item) {
+                        return [
+                            'item_id' => $item->id,
+                            'product_id' => $item->product_id,
+                            'product_name' => $item->product->name ?? 'Unknown',
+                            'subtotal' => $item->subtotal,
+                            'discount_percentage' => $item->discount_percentage,
+                            'discount_amount' => $item->discount_amount,
+                            'discount' => $item->discount,
+                        ];
+                    })->toArray(),
+                ]);
+            }
+        }
+
+        return $orders;
     }
 
     public function filterByStatus(string $status): void
