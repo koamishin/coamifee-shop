@@ -33,7 +33,7 @@ final class OrdersProcessing extends Page
 
     public string $paymentStatusFilter = 'all';
 
-    public bool $isTabletMode = true;
+    public bool $isTabletMode = false;
 
     public Currency $currency;
 
@@ -81,7 +81,7 @@ final class OrdersProcessing extends Page
     public function mount(): void
     {
         // Load tablet mode preference from session
-        $this->isTabletMode = session('pos_tablet_mode', true);
+        $this->isTabletMode = session('pos_tablet_mode', false);
     }
 
     public function getOrders()

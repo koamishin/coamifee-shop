@@ -57,7 +57,7 @@ final class PosPage extends Page
 
     public float $changeAmount = 0.0;
 
-    public bool $isTabletMode = true;
+    public bool $isTabletMode = false;
 
     public ?string $discountType = null;
 
@@ -105,7 +105,7 @@ final class PosPage extends Page
         $this->loadData();
 
         // Load tablet mode preference from session
-        $this->isTabletMode = session('pos_tablet_mode', true);
+        $this->isTabletMode = session('pos_tablet_mode', false);
     }
 
     public function boot(PosService $posService, GeneralSettingsService $settingsService): void
