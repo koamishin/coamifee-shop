@@ -374,95 +374,135 @@ final class OrdersProcessing extends Page
                         Forms\Components\Placeholder::make('order_details')
                             ->label('')
                             ->content(function ($get) {
-                                $order = Order::find($get('orderId'));
-                                $subtotal = (float) $order->subtotal ?? (float) $order->total;
-                                $existingDiscount = (float) ($order->discount_amount ?? 0);
-                                $existingAddOns = (float) ($order->add_ons_total ?? 0);
-                                $discountAmount = $existingDiscount;
+                                $order = Order::with(['items.product', 'items.variant'])->find($get('orderId'));
 
-                                if ($get('discountType') && $get('discountValue')) {
-                                    // All discounts are percentage-based
-                                    $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
+                                // Build items HTML
+                                $itemsHtml = '';
+                                $itemLevelDiscountTotal = 0.0;
+
+                                foreach ($order->items as $item) {
+                                    $itemSubtotal = (float) $item->subtotal;
+                                    $itemDiscountAmount = (float) ($item->discount_amount ?? $item->discount ?? 0);
+                                    $itemDiscountPercentage = (float) ($item->discount_percentage ?? 0);
+                                    $itemFinalPrice = $itemSubtotal - $itemDiscountAmount;
+                                    $itemLevelDiscountTotal += $itemDiscountAmount;
+
+                                    $productName = $item->product->name ?? 'Unknown Product';
+                                    $variantName = $item->variant_name ? " ({$item->variant_name})" : '';
+                                    $quantity = $item->quantity;
+
+                                    $priceFormatted = $this->formatCurrency($itemSubtotal);
+                                    $finalPriceFormatted = $this->formatCurrency($itemFinalPrice);
+
+                                    $hasDiscount = $itemDiscountAmount > 0;
+
+                                    if ($hasDiscount) {
+                                        $discountBadge = "<span class='inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700'>-{$itemDiscountPercentage}%</span>";
+                                        $itemsHtml .= "
+                                            <div class='flex justify-between items-start py-2 border-b border-gray-200'>
+                                                <div class='flex-1'>
+                                                    <div class='flex items-center gap-2'>
+                                                        <span class='font-medium'>{$quantity}x {$productName}{$variantName}</span>
+                                                        {$discountBadge}
+                                                    </div>
+                                                    <div class='text-xs text-gray-500 mt-1'>
+                                                        <span class='line-through'>{$priceFormatted}</span>
+                                                        <span class='ml-2 text-red-600 font-semibold'>→ {$finalPriceFormatted}</span>
+                                                    </div>
+                                                </div>
+                                                <div class='text-right'>
+                                                    <div class='font-bold text-green-600'>{$finalPriceFormatted}</div>
+                                                    <div class='text-xs text-red-600'>-{$this->formatCurrency($itemDiscountAmount)}</div>
+                                                </div>
+                                            </div>
+                                        ";
+                                    } else {
+                                        $itemsHtml .= "
+                                            <div class='flex justify-between items-center py-2 border-b border-gray-200'>
+                                                <div class='flex-1'>
+                                                    <span class='font-medium'>{$quantity}x {$productName}{$variantName}</span>
+                                                    <div class='text-xs text-gray-500 mt-1'>{$priceFormatted}</div>
+                                                </div>
+                                                <div class='font-semibold'>{$finalPriceFormatted}</div>
+                                            </div>
+                                        ";
+                                    }
                                 }
 
-                                $total = $subtotal - $discountAmount + $existingAddOns;
+                                $originalSubtotal = (float) $order->subtotal;
+                                $subtotalAfterItemDiscounts = $originalSubtotal - $itemLevelDiscountTotal;
+                                $orderLevelDiscount = (float) ($order->discount_amount ?? 0);
+                                $existingAddOns = (float) ($order->add_ons_total ?? 0);
 
-                                $subtotalFormatted = $this->formatCurrency($subtotal);
-                                $totalFormatted = $this->formatCurrency($total);
-                                $discountFormatted = $this->formatCurrency($discountAmount);
-                                $addOnsFormatted = $this->formatCurrency($existingAddOns);
+                                // Calculate additional discount if applying new one
+                                $newDiscountAmount = 0.0;
+                                if ($get('discountType') && $get('discountValue')) {
+                                    $newDiscountAmount = $originalSubtotal * ((float) $get('discountValue') / 100);
+                                    $orderLevelDiscount = $newDiscountAmount;
+                                }
 
-                                $discountHtml = $discountAmount > 0 ? "
-                                    <div class='flex justify-between text-sm text-green-600'>
-                                        <span>Discount:</span>
-                                        <span class='font-medium'>- {$discountFormatted}</span>
+                                $finalTotal = $subtotalAfterItemDiscounts - $orderLevelDiscount + $existingAddOns;
+
+                                // Build summary HTML
+                                $summaryHtml = "
+                                    <div class='flex justify-between text-sm font-semibold border-t-2 border-gray-300 pt-2 mt-2'>
+                                        <span>Original Subtotal:</span>
+                                        <span>{$this->formatCurrency($originalSubtotal)}</span>
                                     </div>
-                                " : '';
+                                ";
 
-                                $addOnsHtml = $existingAddOns > 0 ? "
-                                    <div class='flex justify-between text-sm text-blue-600'>
-                                        <span>Add-ons:</span>
-                                        <span class='font-medium'>+ {$addOnsFormatted}</span>
+                                if ($itemLevelDiscountTotal > 0) {
+                                    $summaryHtml .= "
+                                        <div class='flex justify-between text-sm text-red-600'>
+                                            <span>Item Discounts:</span>
+                                            <span class='font-medium'>-{$this->formatCurrency($itemLevelDiscountTotal)}</span>
+                                        </div>
+                                        <div class='flex justify-between text-sm'>
+                                            <span class='text-gray-600'>Subtotal After Item Discounts:</span>
+                                            <span class='font-medium'>{$this->formatCurrency($subtotalAfterItemDiscounts)}</span>
+                                        </div>
+                                    ";
+                                }
+
+                                if ($orderLevelDiscount > 0) {
+                                    $discountLabel = $order->discount_value ? "Order Discount (-{$order->discount_value}%)" : 'Order Discount';
+                                    $summaryHtml .= "
+                                        <div class='flex justify-between text-sm text-orange-600'>
+                                            <span>{$discountLabel}:</span>
+                                            <span class='font-medium'>-{$this->formatCurrency($orderLevelDiscount)}</span>
+                                        </div>
+                                    ";
+                                }
+
+                                if ($existingAddOns > 0) {
+                                    $summaryHtml .= "
+                                        <div class='flex justify-between text-sm text-purple-600'>
+                                            <span>Add-ons:</span>
+                                            <span class='font-medium'>+{$this->formatCurrency($existingAddOns)}</span>
+                                        </div>
+                                    ";
+                                }
+
+                                $summaryHtml .= "
+                                    <div class='flex justify-between text-xl font-bold border-t-2 border-gray-400 pt-3 mt-2'>
+                                        <span>Total to Pay:</span>
+                                        <span class='text-orange-600'>{$this->formatCurrency($finalTotal)}</span>
                                     </div>
-                                " : '';
+                                ";
 
                                 return new HtmlString("
-                                    <div class='space-y-2 p-4 bg-gray-50 rounded-lg'>
-                                        <div class='flex justify-between text-sm'>
-                                            <span class='text-gray-600'>Subtotal:</span>
-                                            <span class='font-medium'>{$subtotalFormatted}</span>
-                                        </div>
-                                        {$discountHtml}
-                                        {$addOnsHtml}
-                                        <div class='flex justify-between text-xl font-bold border-t border-gray-300 pt-2'>
-                                            <span>Total:</span>
-                                            <span class='text-orange-600'>{$totalFormatted}</span>
+                                    <div class='space-y-1 p-4 bg-gray-50 rounded-lg'>
+                                        <div class='text-xs font-semibold text-gray-500 uppercase mb-3'>Order Items</div>
+                                        {$itemsHtml}
+                                        <div class='mt-4 space-y-1'>
+                                            {$summaryHtml}
                                         </div>
                                     </div>
                                 ");
                             }),
                     ]),
 
-                Section::make('Apply Discount (Optional)')
-                    ->schema([
-                        Forms\Components\Select::make('discountType')
-                            ->label('Discount Type')
-                            ->options(DiscountType::getOptions())
-                            ->placeholder('No discount')
-                            ->reactive()
-                            ->live()
-                            ->afterStateUpdated(function ($state, $set) {
-                                if (! empty($state)) {
-                                    $discountType = DiscountType::from($state);
-                                    $percentage = $discountType->getPercentage();
-
-                                    if ($percentage !== null) {
-                                        $set('discountValue', $percentage);
-                                    } else {
-                                        $set('discountValue', null);
-                                    }
-                                }
-                            })
-                            ->helperText(fn ($state) => ! empty($state) ? DiscountType::from($state)->getDescription() : null),
-
-                        Forms\Components\TextInput::make('discountValue')
-                            ->label('Discount Value')
-                            ->numeric()
-                            ->suffix('%')
-                            ->visible(fn ($get) => ! empty($get('discountType')) && DiscountType::from($get('discountType'))->requiresCustomValue())
-                            ->reactive()
-                            ->live()
-                            ->minValue(0)
-                            ->maxValue(100)
-                            ->helperText('Enter percentage (0-100)')
-                            ->dehydrated(true),
-                    ])
-                    ->columns(2)
-                    ->collapsible()
-                    ->visible(function ($get) {
-                        // Show discount section for all order types
-                        return true;
-                    }),
+               
 
                 Section::make('Payment Details')
                     ->schema([
@@ -1001,11 +1041,11 @@ final class OrdersProcessing extends Page
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('toggleMode')
-                ->label($this->isTabletMode ? 'Desktop Mode' : 'Tablet Mode')
-                ->icon($this->isTabletMode ? 'heroicon-o-computer-desktop' : 'heroicon-o-device-tablet')
-                ->color('gray')
-                ->action(fn () => $this->toggleMode()),
+            // Actions\Action::make('toggleMode')
+                // ->label($this->isTabletMode ? 'Desktop Mode' : 'Tablet Mode')
+                // ->icon($this->isTabletMode ? 'heroicon-o-computer-desktop' : 'heroicon-o-device-tablet')
+                // ->color('gray')
+                // ->action(fn () => $this->toggleMode()),
 
             Actions\Action::make('refresh')
                 ->label('Refresh')

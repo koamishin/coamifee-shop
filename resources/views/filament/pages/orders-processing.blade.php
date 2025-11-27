@@ -251,11 +251,38 @@
                             </div>
                         @endforeach
 
-                         {{-- Total After Discount --}}
-                         @if($order->discount_amount && $order->discount_amount > 0)
-                             <div class="mt-2 pt-2 border-t border-gray-200 flex items-center justify-between text-sm">
-                                 <span class="text-gray-600 font-medium">Total After Discount:</span>
-                                 <span class="text-green-600 font-semibold">{{ $this->formatCurrency($order->subtotal - $order->discount_amount) }}</span>
+                         {{-- Subtotal After Item Discounts --}}
+                         @php
+                             $itemDiscountTotal = $order->items->sum(function($item) {
+                                 return (float) ($item->discount_amount ?? $item->discount ?? 0);
+                             });
+                             $subtotalAfterItemDiscounts = $order->subtotal - $itemDiscountTotal;
+                         @endphp
+
+                         @if($itemDiscountTotal > 0 || ($order->discount_amount && $order->discount_amount > 0))
+                             <div class="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                                 @if($itemDiscountTotal > 0)
+                                     <div class="flex items-center justify-between text-sm">
+                                         <span class="text-gray-600">Subtotal After Item Discounts:</span>
+                                         <span class="text-gray-700 font-medium">{{ $this->formatCurrency($subtotalAfterItemDiscounts) }}</span>
+                                     </div>
+                                 @endif
+                                 @if($order->discount_amount && $order->discount_amount > 0)
+                                     <div class="flex items-center justify-between text-sm">
+                                         <span class="text-gray-600">Order Discount (-{{ $order->discount_value }}%):</span>
+                                         <span class="text-red-600 font-medium">-{{ $this->formatCurrency($order->discount_amount) }}</span>
+                                     </div>
+                                 @endif
+                                 @if($order->add_ons_total && $order->add_ons_total > 0)
+                                     <div class="flex items-center justify-between text-sm">
+                                         <span class="text-gray-600">Add-ons:</span>
+                                         <span class="text-purple-600 font-medium">+{{ $this->formatCurrency($order->add_ons_total) }}</span>
+                                     </div>
+                                 @endif
+                                 <div class="flex items-center justify-between text-sm font-semibold pt-1 border-t border-gray-300">
+                                     <span class="text-gray-700">Order Total:</span>
+                                     <span class="text-green-600">{{ $this->formatCurrency($order->total) }}</span>
+                                 </div>
                              </div>
                          @endif
 

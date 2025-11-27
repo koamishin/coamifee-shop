@@ -414,13 +414,28 @@ final class PosPage extends Page
         try {
             DB::beginTransaction();
 
-            // Calculate discount
-            $subtotal = $this->totalAmount;
-            $discountAmount = 0.0;
+            // Calculate ORIGINAL subtotal (before any item-level discounts)
+            $originalSubtotal = 0.0;
+            foreach ($this->cartItems as $item) {
+                $originalSubtotal += (float) $item['subtotal'];
+            }
 
+            // Calculate total item-level discounts
+            $itemLevelDiscountTotal = 0.0;
+            foreach ($this->cartItems as $item) {
+                $itemSubtotal = (float) $item['subtotal'];
+                $itemDiscountPercentage = $item['discount_percentage'] ?? 0;
+                if ($itemDiscountPercentage > 0) {
+                    $itemDiscountAmount = $itemSubtotal * ($itemDiscountPercentage / 100);
+                    $itemLevelDiscountTotal += $itemDiscountAmount;
+                }
+            }
+
+            // Calculate order-level discount (applied to original subtotal, NOT after item discounts)
+            $orderLevelDiscountAmount = 0.0;
             if (! empty($this->discountType) && ! empty($this->discountValue)) {
-                // All discounts are percentage-based
-                $discountAmount = $subtotal * ($this->discountValue / 100);
+                // Order-level discount applies to original subtotal
+                $orderLevelDiscountAmount = $originalSubtotal * ($this->discountValue / 100);
             }
 
             // Calculate add-ons total
@@ -431,7 +446,8 @@ final class PosPage extends Page
                 }
             }
 
-            $finalTotal = $subtotal - $discountAmount + $addOnsTotal;
+            // Final total = original subtotal - item discounts - order discount + add-ons
+            $finalTotal = $originalSubtotal - $itemLevelDiscountTotal - $orderLevelDiscountAmount + $addOnsTotal;
 
             // Determine payment status and method based on payment timing
             $paymentStatus = $this->paymentTiming === 'pay_now' ? 'paid' : 'unpaid';
@@ -444,13 +460,13 @@ final class PosPage extends Page
                 'order_type' => $this->orderType,
                 'table_number' => $this->tableNumber,
                 'notes' => $this->notes,
-                'subtotal' => $subtotal,
+                'subtotal' => $originalSubtotal,  // Original subtotal before any discounts
                 'discount_type' => $this->discountType,
                 'discount_value' => $this->discountValue,
-                'discount_amount' => $discountAmount,
+                'discount_amount' => $orderLevelDiscountAmount,  // Only order-level discount (item discounts are stored per-item)
                 'add_ons' => ! empty($this->addOns) ? $this->addOns : null,
                 'add_ons_total' => $addOnsTotal,
-                'total' => $finalTotal,
+                'total' => $finalTotal,  // Final total after all discounts and add-ons
                 'status' => 'pending',
                 'payment_status' => $paymentStatus,
                 'payment_method' => $paymentMethod,
@@ -478,15 +494,20 @@ final class PosPage extends Page
             \Illuminate\Support\Facades\Log::info('POS Order Created', [
                 'order_id' => $order->id,
                 'order_type' => $orderData['order_type'],
-                'payment_timing' => $paymentTiming,
+                'payment_timing' => $this->paymentTiming,
                 'cart_items_count' => count($this->cartItems),
+                'original_subtotal' => $originalSubtotal,
+                'item_level_discount_total' => $itemLevelDiscountTotal,
+                'order_level_discount' => $orderLevelDiscountAmount,
+                'add_ons_total' => $addOnsTotal,
+                'final_total' => $finalTotal,
             ]);
 
             foreach ($this->cartItems as $item) {
-                $originalSubtotal = (float) $item['subtotal'];
+                $itemSubtotal = (float) $item['subtotal'];
                 $discountPercentage = $item['discount_percentage'] ?? 0;
-                $discountAmount = $discountPercentage > 0 ? ($originalSubtotal * $discountPercentage / 100) : 0;
-                $finalSubtotal = $originalSubtotal - $discountAmount;
+                $discountAmount = $discountPercentage > 0 ? ($itemSubtotal * $discountPercentage / 100) : 0;
+                $itemFinalSubtotal = $itemSubtotal - $discountAmount;
 
                 $orderItemData = [
                     'order_id' => $order->id,
@@ -505,10 +526,10 @@ final class PosPage extends Page
                     'order_id' => $order->id,
                     'product_id' => $item['product_id'],
                     'product_name' => $item['product_name'] ?? 'Unknown',
-                    'original_subtotal' => $originalSubtotal,
+                    'item_subtotal' => $itemSubtotal,
                     'discount_percentage' => $discountPercentage,
                     'discount_amount' => $discountAmount,
-                    'final_subtotal' => $finalSubtotal,
+                    'item_final_subtotal' => $itemFinalSubtotal,
                     'data_to_save' => $orderItemData,
                 ]);
 
@@ -1089,58 +1110,7 @@ final class PosPage extends Page
                             return $get('paymentTiming') === 'pay_now';
                         }),
 
-                    Section::make('Discount & Add-ons (Optional)')
-                        ->columns(2)
-                        ->schema([
-                            Forms\Components\Select::make('discountType')
-                                ->label('Discount Type')
-                                ->options(DiscountType::getOptions())
-                                ->placeholder('No discount')
-                                ->reactive()
-                                ->live()
-                                ->afterStateUpdated(function ($state, $set) {
-                                    if (! empty($state)) {
-                                        $discountType = DiscountType::from($state);
-                                        $percentage = $discountType->getPercentage();
-
-                                        if ($percentage !== null) {
-                                            $set('discountValue', $percentage);
-                                        } else {
-                                            $set('discountValue', null);
-                                        }
-                                    } else {
-                                        // Clear discount value when no discount type is selected
-                                        $set('discountValue', null);
-                                    }
-                                })
-                                ->columnSpan(1),
-
-                            // Display-only field to show the discount percentage
-                            Forms\Components\Placeholder::make('discount_display')
-                                ->label('Discount Amount')
-                                ->content(function ($get) {
-                                    if (! empty($get('discountType')) && ! empty($get('discountValue'))) {
-                                        return new HtmlString("<div class='p-2 bg-green-50 border border-green-200 rounded text-sm font-semibold text-green-700'>{$get('discountValue')}% discount will be applied</div>");
-                                    }
-
-                                    return 'No discount applied';
-                                })
-                                ->columnSpan(1)
-                                ->visible(fn ($get) => ! empty($get('discountType'))),
-
-                            // Hidden field to store the discount value
-                            Forms\Components\Hidden::make('discountValue'),
-                        ])
-                        ->collapsible()
-                        ->visible(function ($get) {
-                            // Hide discount section for Dine In + Pay Later
-                            $orderType = $get('orderType') ?? $this->orderType;
-                            $paymentTiming = $get('paymentTiming') ?? 'pay_later';
-
-                            // Show discount section unless it's dine_in AND pay_later
-                            return ! ($orderType === 'dine_in' && $paymentTiming === 'pay_later');
-                        }),
-
+                   
                     Section::make('Add-Ons (Optional)')
                         ->schema([
                             Forms\Components\Repeater::make('addOns')
