@@ -715,42 +715,44 @@ final class PosPage extends Page
                                 $tableHtml .= "</div><div class='p-3 bg-orange-50 border border-orange-200 rounded-lg text-center'>{$selectedTableDisplay}</div></div>";
                             }
 
+                            $customerOptions = collect($this->customers)->map(fn ($customer) => "<option value='{$customer->id}'>{$customer->name}</option>")->implode('');
+                            
                             return new HtmlString("
                                 <div class='grid grid-cols-2 gap-6'>
-                                    <!-- Left Column -->
-                                    <div class='space-y-4'>
-                                        <div>
-                                            <label class='text-xs font-semibold text-gray-700 mb-2 block'>Order Type</label>
-                                            <div class='inline-block p-4 rounded-lg border-2 border-blue-500 bg-blue-50 w-full text-center'>
-                                                <div class='text-3xl mb-2'>{$icon}</div>
-                                                <div class='text-sm font-bold text-blue-700'>{$label}</div>
-                                            </div>
-                                        </div>
-                                        {$tableHtml}
-                                    </div>
+                                     <!-- Left Column -->
+                                     <div class='space-y-4'>
+                                         <div>
+                                             <label class='text-xs font-semibold text-gray-700 mb-2 block'>Order Type</label>
+                                             <div class='inline-block p-4 rounded-lg border-2 border-blue-500 bg-blue-50 w-full text-center'>
+                                                 <div class='text-3xl mb-2'>{$icon}</div>
+                                                 <div class='text-sm font-bold text-blue-700'>{$label}</div>
+                                             </div>
+                                         </div>
+                                         {$tableHtml}
+                                     </div>
 
-                                    <!-- Right Column -->
-                                    <div class='space-y-4'>
-                                        <div>
-                                            <label class='text-xs font-semibold text-gray-700 mb-2 block'>Customer</label>
-                                            <div class='bg-gray-50 p-3 rounded-lg border border-gray-200'>
-                                                <input type='hidden' name='customerId' wire:model='customerId'>
-                                                <select wire:model='customerId' class='w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'>
-                                                    <option value=''>Walk-in Customer</option>
-                                                    ".collect($this->customers)->map(fn ($customer) => "<option value='{$customer->id}'>{$customer->name}</option>")->implode('')."
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div wire:key='customer-name'>
-                                            ".(! filled($get('customerId')) ? "
-                                            <label class='text-xs font-semibold text-gray-700 mb-2 block'>Customer Name</label>
-                                            <input type='text' name='customerName' wire:model='customerName' placeholder='Optional' class='w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'>
-                                            " : '').'
-                                        </div>
-                                    </div>
-                                </div>
-                            ');
+                                     <!-- Right Column -->
+                                     <div class='space-y-4'>
+                                         <div>
+                                             <label class='text-xs font-semibold text-gray-700 mb-2 block'>Customer</label>
+                                             <div class='bg-gray-50 p-3 rounded-lg border border-gray-200'>
+                                                 <input type='hidden' name='customerId' wire:model='customerId'>
+                                                 <select wire:model='customerId' class='w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'>
+                                                     <option value=''>Walk-in Customer</option>
+                                                     " . $customerOptions . "
+                                                 </select>
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </div>
+                             ");
                         }),
+
+                    Forms\Components\TextInput::make('customerName')
+                        ->label('Customer Name')
+                        ->placeholder('Optional - Enter name for walk-in customer')
+                        ->visible(fn ($get) => ! filled($get('customerId')))
+                        ->nullable(),
 
                     Forms\Components\Placeholder::make('item_discounts')
                         ->label('Item Discounts')
