@@ -21,7 +21,6 @@ use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
-use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
@@ -293,8 +292,11 @@ final class PosPage extends Page
         }
     }
 
-    public function updatedPaidAmount(): void
+    public function updatedPaidAmount(?float $value): void
     {
+        if ($value !== null) {
+            $this->paidAmount = (float) $value;
+        }
         $this->calculateTotals();
     }
 
@@ -671,17 +673,16 @@ final class PosPage extends Page
                 ->label('Place Order')
                 ->icon('heroicon-o-shopping-bag')
                 ->color('success')
-                ->modalHeading('Confirm Order')
-                ->modalWidth('2xl')
                 ->form([
-                    // Hidden field to track tableNumber in form state
+                    // Hidden fields to track state
                     Forms\Components\Hidden::make('tableNumber'),
+                    Forms\Components\Hidden::make('orderType')->default(fn () => $this->orderType),
+                    Forms\Components\Hidden::make('paymentTiming')->default(fn () => $this->paymentTiming),
 
-                    // Main 2-Column Layout
-                    Forms\Components\Placeholder::make('two_column_layout')
+                    // COMPACT HEADER ROW
+                    Forms\Components\Placeholder::make('header_row')
                         ->label('')
                         ->content(function ($get) {
-                            // Left Column Content
                             $icon = match ($this->orderType) {
                                 'dine_in' => '🍽️',
                                 'takeaway' => '🛍️',
@@ -689,63 +690,55 @@ final class PosPage extends Page
                                 default => '📋',
                             };
 
-                            $label = match ($this->orderType) {
-                                'dine_in' => 'Dine In',
-                                'takeaway' => 'Takeaway',
-                                'delivery' => 'Delivery',
-                                default => 'Unknown',
-                            };
+                            $customerOptions = collect($this->customers)->map(fn ($customer) => "<option value='{$customer->id}'>{$customer->name}</option>")->implode('');
 
+                            // Table selection for dine-in
                             $tableHtml = '';
                             if ($this->orderType === 'dine_in') {
                                 $tables = TableNumber::getOptions();
                                 $selectedTable = $get('tableNumber') ?? $this->tableNumber;
-                                $selectedTableDisplay = $selectedTable ? "Table Number: <strong class='text-lg text-orange-600'>{$selectedTable}</strong>" : '<span class="text-gray-400">No table selected</span>';
-                                $tableHtml = "<div class='mb-6'><label class='text-xs font-semibold text-gray-700 mb-2 block'>Select Table</label><div class='grid grid-cols-6 gap-2 mb-4'>";
+                                $tableSelectHtml = '<option value="">Select Table</option>';
                                 foreach ($tables as $value => $tableLabel) {
-                                    $isSelected = $selectedTable === $value;
-                                    $tableHtml .= "
-                                        <label wire:click='\$set(\"tableNumber\", \"$value\")' class='cursor-pointer group'>
-                                            <input type='radio' name='tableNumber' value='$value' class='hidden'>
-                                            <div class='p-3 rounded-lg border-2 transition-all text-center text-xs font-bold ".($isSelected ? 'border-orange-500 bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/50 scale-105' : 'border-gray-300 bg-white text-gray-700 hover:border-orange-300 hover:bg-orange-50')."'>
-                                                {$tableLabel}
-                                            </div>
-                                        </label>";
+                                    $selected = $selectedTable === $value ? 'selected' : '';
+                                    $tableSelectHtml .= "<option value='{$value}' {$selected}>{$tableLabel}</option>";
                                 }
-                                $tableHtml .= "</div><div class='p-3 bg-orange-50 border border-orange-200 rounded-lg text-center'>{$selectedTableDisplay}</div></div>";
+                                $tableHtml = "
+                                    <div class='col-span-2'>
+                                        <label class='text-xs font-bold text-gray-600 mb-1 block'>TABLE</label>
+                                        <select wire:model='tableNumber' class='w-full px-2 py-2 border border-gray-300 rounded text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500'>
+                                            {$tableSelectHtml}
+                                        </select>
+                                    </div>
+                                ";
                             }
 
-                            $customerOptions = collect($this->customers)->map(fn ($customer) => "<option value='{$customer->id}'>{$customer->name}</option>")->implode('');
-                            
                             return new HtmlString("
-                                <div class='grid grid-cols-2 gap-6'>
-                                     <!-- Left Column -->
-                                     <div class='space-y-4'>
-                                         <div>
-                                             <label class='text-xs font-semibold text-gray-700 mb-2 block'>Order Type</label>
-                                             <div class='inline-block p-4 rounded-lg border-2 border-blue-500 bg-blue-50 w-full text-center'>
-                                                 <div class='text-3xl mb-2'>{$icon}</div>
-                                                 <div class='text-sm font-bold text-blue-700'>{$label}</div>
-                                             </div>
-                                         </div>
-                                         {$tableHtml}
-                                     </div>
-
-                                     <!-- Right Column -->
-                                     <div class='space-y-4'>
-                                         <div>
-                                             <label class='text-xs font-semibold text-gray-700 mb-2 block'>Customer</label>
-                                             <div class='bg-gray-50 p-3 rounded-lg border border-gray-200'>
-                                                 <input type='hidden' name='customerId' wire:model='customerId'>
-                                                 <select wire:model='customerId' class='w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'>
-                                                     <option value=''>Walk-in Customer</option>
-                                                     " . $customerOptions . "
-                                                 </select>
-                                             </div>
-                                         </div>
-                                     </div>
-                                 </div>
-                             ");
+                                <div class='grid grid-cols-12 gap-3 items-end bg-gradient-to-r from-orange-50 to-amber-50 p-4 rounded-lg border border-orange-200'>
+                                    <!-- Order Type Icon -->
+                                    <div class='col-span-1 text-center'>
+                                        <div class='text-2xl'>{$icon}</div>
+                                        <div class='text-xs font-bold text-orange-600 uppercase mt-0.5'>Type</div>
+                                    </div>
+                                    
+                                    <!-- Customer Select -->
+                                    <div class='col-span-3'>
+                                        <label class='text-xs font-bold text-gray-600 mb-1 block'>CUSTOMER</label>
+                                        <select wire:model='customerId' class='w-full px-2 py-2 border border-gray-300 rounded text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500'>
+                                            <option value=''>Walk-in</option>
+                                            {$customerOptions}
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Table Selection (if dine-in) -->
+                                    {$tableHtml}
+                                    
+                                    <!-- Notes -->
+                                    <div class='col-span-4'>
+                                        <label class='text-xs font-bold text-gray-600 mb-1 block'>NOTES</label>
+                                        <input type='text' wire:model='notes' placeholder='Special instructions...' class='w-full px-2 py-2 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-orange-500' />
+                                    </div>
+                                </div>
+                            ");
                         }),
 
                     Forms\Components\TextInput::make('customerName')
@@ -761,7 +754,7 @@ final class PosPage extends Page
                                 return new HtmlString('<div class="text-center text-gray-500 py-2">No items in cart</div>');
                             }
 
-                            $discountHtml = '<div class="space-y-3 mb-4">';
+                            $discountHtml = '<div class="overflow-x-auto"><table class="w-full text-xs"><thead class="bg-gray-100 sticky top-0"><tr><th class="text-left px-2 py-1 font-semibold">Item</th><th class="text-right px-2 py-1 font-semibold">Qty</th><th class="text-right px-2 py-1 font-semibold">Price</th><th class="px-2 py-1 font-semibold">Type</th><th class="text-right px-2 py-1 font-semibold">%</th><th class="text-right px-2 py-1 font-semibold">Total</th></tr></thead><tbody>';
 
                             foreach ($this->cartItems as $index => $item) {
                                 $formattedPrice = $this->formatCurrency((float) $item['price']);
@@ -773,52 +766,42 @@ final class PosPage extends Page
                                 $formattedFinalSubtotal = $this->formatCurrency($finalSubtotal);
 
                                 $discountOptions = DiscountType::getOptions();
-                                $discountSelectOptions = "<option value=''>No discount</option>";
+                                $discountSelectOptions = "<option value=''>None</option>";
                                 foreach ($discountOptions as $value => $label) {
                                     $selected = $currentDiscountType === $value ? 'selected' : '';
                                     $discountSelectOptions .= "<option value='{$value}' {$selected}>{$label}</option>";
                                 }
 
                                 $discountHtml .= "
-                                    <div class='bg-gray-50 border border-gray-200 rounded-lg p-3'>
-                                        <div class='flex justify-between items-start mb-2'>
-                                            <div class='flex-1'>
-                                                <h4 class='text-sm font-semibold text-gray-900'>{$item['name']}</h4>
-                                                <div class='text-xs text-gray-600'>×{$item['quantity']} @ {$formattedPrice} = {$this->formatCurrency($originalSubtotal)}</div>
-                                            </div>
-                                            <div class='text-right'>
-                                                <div class='text-sm font-bold text-orange-600'>{$formattedFinalSubtotal}</div>
-                                                ".($discountAmount > 0 ? "<div class='text-xs text-green-600'>-{$this->formatCurrency($discountAmount)} discount</div>" : '')."
-                                            </div>
-                                        </div>
-                                        <div class='grid grid-cols-2 gap-2'>
-                                            <div>
-                                                <label class='text-xs font-medium text-gray-700 mb-1 block'>Discount Type</label>
-                                                <select
-                                                    wire:model.live=\"cartItems.{$index}.discount_type\"
-                                                    class='w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
-                                                >
-                                                    {$discountSelectOptions}
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label class='text-xs font-medium text-gray-700 mb-1 block'>Discount %</label>
-                                                <input
-                                                    type='number'
-                                                    wire:model.live=\"cartItems.{$index}.discount_percentage\"
-                                                    min='0'
-                                                    max='100'
-                                                    step='1'
-                                                    placeholder='0'
-                                                    class='w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <tr class='border-b border-gray-200 hover:bg-orange-50'>
+                                        <td class='px-2 py-1.5 text-left'><span class='font-medium text-gray-900'>{$item['name']}</span></td>
+                                        <td class='text-right px-2 py-1.5'>{$item['quantity']}</td>
+                                        <td class='text-right px-2 py-1.5'>{$formattedPrice}</td>
+                                        <td class='px-2 py-1.5'>
+                                            <select
+                                                wire:model.live=\"cartItems.{$index}.discount_type\"
+                                                class='w-full px-1 py-0.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500'
+                                            >
+                                                {$discountSelectOptions}
+                                            </select>
+                                        </td>
+                                        <td class='text-right px-2 py-1.5'>
+                                            <input
+                                                type='number'
+                                                wire:model.live=\"cartItems.{$index}.discount_percentage\"
+                                                min='0'
+                                                max='100'
+                                                step='1'
+                                                placeholder='0'
+                                                class='w-12 px-1 py-0.5 text-xs text-right border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500'
+                                            />
+                                        </td>
+                                        <td class='text-right px-2 py-1.5 font-semibold text-orange-600'>{$formattedFinalSubtotal}</td>
+                                    </tr>
                                 ";
                             }
 
-                            $discountHtml .= '</div>';
+                            $discountHtml .= '</tbody></table></div>';
 
                             return new HtmlString($discountHtml);
                         })
@@ -826,55 +809,55 @@ final class PosPage extends Page
                         ->visible(fn () => ! empty($this->cartItems)),
 
                     // Forms\Components\Placeholder::make('cart_items_display')
-                        // ->label('Order Items')
-                        // ->content(function () {
-                        //     if (empty($this->cartItems)) {
-                        //         return new HtmlString('<div class="text-center text-gray-500 py-2">No items in cart</div>');
-                        //     }
+                    // ->label('Order Items')
+                    // ->content(function () {
+                    //     if (empty($this->cartItems)) {
+                    //         return new HtmlString('<div class="text-center text-gray-500 py-2">No items in cart</div>');
+                    //     }
 
-                        //     $cartHtml = '<div class="grid grid-cols-3 sm:grid-cols-4 gap-2">';
+                    //     $cartHtml = '<div class="grid grid-cols-3 sm:grid-cols-4 gap-2">';
 
-                        //     foreach ($this->cartItems as $item) {
-                        //         $formattedPrice = $this->formatCurrency((float) $item['price']);
-                        //         $originalSubtotal = (float) $item['subtotal'];
-                        //         $discountPercentage = $item['discount_percentage'] ?? 0;
-                        //         $discountAmount = $discountPercentage > 0 ? ($originalSubtotal * $discountPercentage / 100) : 0;
-                        //         $finalSubtotal = $originalSubtotal - $discountAmount;
-                        //         $formattedOriginalSubtotal = $this->formatCurrency($originalSubtotal);
-                        //         $formattedFinalSubtotal = $this->formatCurrency($finalSubtotal);
+                    //     foreach ($this->cartItems as $item) {
+                    //         $formattedPrice = $this->formatCurrency((float) $item['price']);
+                    //         $originalSubtotal = (float) $item['subtotal'];
+                    //         $discountPercentage = $item['discount_percentage'] ?? 0;
+                    //         $discountAmount = $discountPercentage > 0 ? ($originalSubtotal * $discountPercentage / 100) : 0;
+                    //         $finalSubtotal = $originalSubtotal - $discountAmount;
+                    //         $formattedOriginalSubtotal = $this->formatCurrency($originalSubtotal);
+                    //         $formattedFinalSubtotal = $this->formatCurrency($finalSubtotal);
 
-                        //         $discountDisplay = '';
-                        //         if ($discountPercentage > 0) {
-                        //             $formattedDiscountAmount = $this->formatCurrency($discountAmount);
-                        //             $discountType = $item['discount_type'] ?? 'Custom';
-                        //             $discountDisplay = "
-                        //                 <div class='text-xs text-green-600 mb-1'>
-                        //                     <span>{$discountPercentage}% off ({$discountType})</span>
-                        //                     <div class='text-gray-500 line-through'>{$formattedOriginalSubtotal}</div>
-                        //                 </div>
-                        //             ";
-                        //         }
+                    //         $discountDisplay = '';
+                    //         if ($discountPercentage > 0) {
+                    //             $formattedDiscountAmount = $this->formatCurrency($discountAmount);
+                    //             $discountType = $item['discount_type'] ?? 'Custom';
+                    //             $discountDisplay = "
+                    //                 <div class='text-xs text-green-600 mb-1'>
+                    //                     <span>{$discountPercentage}% off ({$discountType})</span>
+                    //                     <div class='text-gray-500 line-through'>{$formattedOriginalSubtotal}</div>
+                    //                 </div>
+                    //             ";
+                    //         }
 
-                        //         $cartHtml .= "
-                        //             <div class='bg-white border border-gray-200 rounded px-2 py-1.5 hover:shadow-sm transition-shadow'>
-                        //                 <h4 class='text-xs font-semibold text-gray-900 line-clamp-2 mb-0.5'>{$item['name']}</h4>
-                        //                 <div class='flex items-center justify-between mb-0.5 text-xs'>
-                        //                     <span class='text-gray-600'>×{$item['quantity']}</span>
-                        //                     <span class='font-medium text-orange-600'>{$formattedPrice}</span>
-                        //                 </div>
-                        //                 {$discountDisplay}
-                        //                 <div class='text-xs font-bold text-gray-900 border-t border-gray-100 pt-0.5'>
-                        //                     {$formattedFinalSubtotal}
-                        //                 </div>
-                        //             </div>
-                        //         ";
-                        //     }
+                    //         $cartHtml .= "
+                    //             <div class='bg-white border border-gray-200 rounded px-2 py-1.5 hover:shadow-sm transition-shadow'>
+                    //                 <h4 class='text-xs font-semibold text-gray-900 line-clamp-2 mb-0.5'>{$item['name']}</h4>
+                    //                 <div class='flex items-center justify-between mb-0.5 text-xs'>
+                    //                     <span class='text-gray-600'>×{$item['quantity']}</span>
+                    //                     <span class='font-medium text-orange-600'>{$formattedPrice}</span>
+                    //                 </div>
+                    //                 {$discountDisplay}
+                    //                 <div class='text-xs font-bold text-gray-900 border-t border-gray-100 pt-0.5'>
+                    //                     {$formattedFinalSubtotal}
+                    //                 </div>
+                    //             </div>
+                    //         ";
+                    //     }
 
-                        //     $cartHtml .= '</div>';
+                    //     $cartHtml .= '</div>';
 
-                        //     return new HtmlString($cartHtml);
-                        // })
-                        // ->columnSpanFull(),
+                    //     return new HtmlString($cartHtml);
+                    // })
+                    // ->columnSpanFull(),
 
                     Forms\Components\Textarea::make('notes')
                         ->label('Special Instructions')
@@ -945,174 +928,129 @@ final class PosPage extends Page
                         ->color('primary')
                         ->columnSpanFull(),
 
-                    Section::make('Payment Details')
-                        ->columns(2)
-                        ->schema([
-                            Forms\Components\Select::make('paymentMethod')
-                                ->label('Payment Method')
-                                ->searchable(false)
-                                ->options(function ($get) {
-                                    $orderType = $get('orderType') ?? $this->orderType;
+                    // Payment Method Select
+                    Forms\Components\Select::make('paymentMethod')
+                        ->label('Payment Method')
+                        ->options(function ($get) {
+                            $orderType = $get('orderType') ?? $this->orderType;
 
-                                    if ($orderType === 'delivery') {
-                                        // Delivery only shows delivery partners
-                                        return [
-                                            'grab' => 'Grab',
-                                            'food_panda' => 'Food Panda',
-                                        ];
-                                    }
+                            return $orderType === 'delivery'
+                                ? ['grab' => 'Grab', 'food_panda' => 'Food Panda']
+                                : ['cash' => 'Cash', 'gcash' => 'Gcash', 'maya' => 'Maya', 'bank_transfer' => 'Bank Transfer'];
+                        })
+                        ->default(function ($get) {
+                            $orderType = $get('orderType') ?? $this->orderType;
 
-                                    // Dine In / Takeaway show standard payment methods
-                                    return [
-                                        'cash' => 'Cash',
-                                        'gcash' => 'Gcash',
-                                        'maya' => 'Maya',
-                                        'bank_transfer' => 'Bank Transfer',
-                                    ];
-                                })
-                                ->default(function ($get) {
-                                    $orderType = $get('orderType') ?? $this->orderType;
-
-                                    return $orderType === 'delivery' ? 'grab' : 'cash';
-                                })
-                                ->required()
-                                ->native(false)
-                                ->reactive()
-                                ->live()
-                                ->columnSpan(1),
-
-                            Forms\Components\TextInput::make('paidAmount')
-                                ->label('Amount Paid')
-                                ->numeric()
-                                ->prefix($this->getCurrencySymbol())
-                                ->step(0.01)
-                                ->required(function ($get) {
-                                    return $get('paymentMethod') === 'cash' && ($get('orderType') ?? $this->orderType) !== 'delivery';
-                                })
-                                ->reactive()
-                                ->live()
-                                ->visible(function ($get) {
-                                    $orderType = $get('orderType') ?? $this->orderType;
-
-                                    return $get('paymentMethod') === 'cash' && $orderType !== 'delivery';
-                                })
-                                ->columnSpan(1),
-
-                            Forms\Components\Placeholder::make('payment_calculation')
-                                ->label('Order Summary')
-                                ->content(function ($get) {
-                                    $subtotal = $this->totalAmount;
-                                    $discountAmount = 0.0;
-
-                                    if ($get('discountType') && $get('discountValue')) {
-                                        $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
-                                    }
-
-                                    $addOnsTotal = 0.0;
-                                    $addOns = $get('addOns') ?? [];
-                                    foreach ($addOns as $addOn) {
-                                        if (! empty($addOn['price'])) {
-                                            $addOnsTotal += (float) $addOn['price'];
-                                        }
-                                    }
-
-                                    $total = $subtotal - $discountAmount + $addOnsTotal;
-
-                                    $subtotalFormatted = $this->formatCurrency($subtotal);
-                                    $totalFormatted = $this->formatCurrency($total);
-                                    $discountFormatted = $this->formatCurrency($discountAmount);
-                                    $addOnsTotalFormatted = $this->formatCurrency($addOnsTotal);
-
-                                    $discountHtml = $discountAmount > 0 ? "
-                                        <div class='flex justify-between text-sm text-green-600'>
-                                            <span>Discount:</span>
-                                            <span class='font-medium'>- {$discountFormatted}</span>
-                                        </div>
-                                    " : '';
-
-                                    $addOnsHtml = $addOnsTotal > 0 ? "
-                                        <div class='flex justify-between text-sm text-blue-600'>
-                                            <span>Add-ons:</span>
-                                            <span class='font-medium'>+ {$addOnsTotalFormatted}</span>
-                                        </div>
-                                    " : '';
-
-                                    return new HtmlString("
-                                        <div class='space-y-2 p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border-2 border-blue-300'>
-                                            <div class='flex justify-between text-sm'>
-                                                <span class='text-gray-700 font-medium'>Subtotal:</span>
-                                                <span class='font-semibold text-gray-900'>{$subtotalFormatted}</span>
-                                            </div>
-                                            {$discountHtml}
-                                            {$addOnsHtml}
-                                            <div class='flex justify-between text-lg font-bold border-t-2 border-blue-300 pt-2 mt-2'>
-                                                <span class='text-gray-900'>Total:</span>
-                                                <span class='text-orange-600'>{$totalFormatted}</span>
-                                            </div>
-                                        </div>
-                                    ");
-                                })
-                                ->columnSpanFull(),
-
-                            Forms\Components\Placeholder::make('changeDisplay')
-                                ->label('Change')
-                                ->content(function ($get) {
-                                    // Calculate final total with discounts and add-ons
-                                    $subtotal = $this->totalAmount;
-                                    $discountAmount = 0.0;
-
-                                    if ($get('discountType') && $get('discountValue')) {
-                                        $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
-                                    }
-
-                                    $addOnsTotal = 0.0;
-                                    $addOns = $get('addOns') ?? [];
-                                    foreach ($addOns as $addOn) {
-                                        if (! empty($addOn['price'])) {
-                                            $addOnsTotal += (float) $addOn['price'];
-                                        }
-                                    }
-
-                                    $finalTotal = $subtotal - $discountAmount + $addOnsTotal;
-                                    $paidAmount = (float) ($get('paidAmount') ?? 0);
-                                    $changeAmount = $paidAmount - $finalTotal;
-                                    $changeFormatted = $this->formatCurrency(abs($changeAmount));
-
-                                    if ($changeAmount > 0) {
-                                        return new HtmlString("
-                                            <div class='p-3 bg-green-50 border-2 border-green-300 rounded-lg'>
-                                                <span class='text-lg font-bold text-green-700'>Change: {$changeFormatted}</span>
-                                            </div>
-                                        ");
-                                    }
-                                    if ($changeAmount < 0) {
-                                        return new HtmlString("
-                                            <div class='p-3 bg-red-50 border-2 border-red-300 rounded-lg'>
-                                                <span class='text-lg font-bold text-red-700'>Insufficient: {$changeFormatted}</span>
-                                            </div>
-                                        ");
-                                    }
-
-                                    return new HtmlString("
-                                        <div class='p-3 bg-gray-50 border-2 border-gray-300 rounded-lg'>
-                                            <span class='text-lg font-bold text-gray-700'>Exact Amount</span>
-                                        </div>
-                                    ");
-                                })
-                                ->visible(function ($get) {
-                                    $orderType = $get('orderType') ?? $this->orderType;
-
-                                    return $get('paymentMethod') === 'cash' && ! empty($get('paidAmount')) && $orderType !== 'delivery';
-                                })
-                                ->columnSpan(1),
-
-                            Forms\Components\Hidden::make('changeAmount'),
-                        ])
+                            return $orderType === 'delivery' ? 'grab' : 'cash';
+                        })
+                        ->reactive()
+                        ->live()
+                        ->columnSpan(2)
                         ->visible(function ($get) {
                             return $get('paymentTiming') === 'pay_now';
                         }),
 
-                   
+                    // Amount Paid Input
+                    Forms\Components\TextInput::make('paidAmount')
+                        ->label('Amount Paid')
+                        ->numeric()
+                        ->step(0.01)
+                        ->prefix($this->getCurrencySymbol())
+                        ->placeholder('0')
+                        ->reactive()
+                        ->live()
+                        ->columnSpan(2)
+                        ->visible(function ($get) {
+                            return $get('paymentTiming') === 'pay_now' && $get('paymentMethod') === 'cash';
+                        })
+                        ->afterStateUpdated(function ($state) {
+                            $this->paidAmount = (float) ($state ?? 0);
+                            $this->calculateTotals();
+                        }),
+
+                    // Change Display
+                    Forms\Components\Placeholder::make('changeDisplay')
+                        ->label('Change')
+                        ->content(function ($get) {
+                            $subtotal = $this->totalAmount;
+                            $discountAmount = 0.0;
+
+                            if ($get('discountType') && $get('discountValue')) {
+                                $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
+                            }
+
+                            $addOnsTotal = 0.0;
+                            $addOns = $get('addOns') ?? [];
+                            foreach ($addOns as $addOn) {
+                                if (! empty($addOn['price'])) {
+                                    $addOnsTotal += (float) $addOn['price'];
+                                }
+                            }
+
+                            $finalTotal = $subtotal - $discountAmount + $addOnsTotal;
+                            $paidAmount = (float) ($get('paidAmount') ?? 0);
+                            $changeAmount = $paidAmount - $finalTotal;
+                            $changeClass = $changeAmount > 0 ? 'bg-green-100 border-green-300' : ($changeAmount < 0 ? 'bg-red-100 border-red-300' : 'bg-gray-100 border-gray-300');
+                            $changeDisplay = $changeAmount >= 0
+                                ? $this->formatCurrency($changeAmount)
+                                : 'Insufficient: '.$this->formatCurrency(abs($changeAmount));
+
+                            return new HtmlString("<div class='px-2 py-1.5 rounded text-sm font-bold {$changeClass}'>{$changeDisplay}</div>");
+                        })
+                        ->columnSpan(2)
+                        ->visible(function ($get) {
+                            return $get('paymentTiming') === 'pay_now' && $get('paymentMethod') === 'cash';
+                        }),
+
+                    // Order Summary
+                    Forms\Components\Placeholder::make('order_summary')
+                        ->label('Order Summary')
+                        ->content(function ($get) {
+                            $subtotal = $this->totalAmount;
+                            $discountAmount = 0.0;
+
+                            if ($get('discountType') && $get('discountValue')) {
+                                $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
+                            }
+
+                            $addOnsTotal = 0.0;
+                            $addOns = $get('addOns') ?? [];
+                            foreach ($addOns as $addOn) {
+                                if (! empty($addOn['price'])) {
+                                    $addOnsTotal += (float) $addOn['price'];
+                                }
+                            }
+
+                            $finalTotal = $subtotal - $discountAmount + $addOnsTotal;
+
+                            return new HtmlString("
+                                <div class='grid grid-cols-12 gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3'>
+                                    <div class='col-span-4'>
+                                        <div class='text-xs text-gray-600'>Subtotal</div>
+                                        <div class='text-lg font-bold text-gray-900'>{$this->formatCurrency($subtotal)}</div>
+                                    </div>
+                                    ".($discountAmount > 0 ? "<div class='col-span-4'>
+                                        <div class='text-xs text-green-600'>Discount</div>
+                                        <div class='text-lg font-bold text-green-600'>-{$this->formatCurrency($discountAmount)}</div>
+                                    </div>" : '').'
+                                    '.($addOnsTotal > 0 ? "<div class='col-span-4'>
+                                        <div class='text-xs text-blue-600'>Add-ons</div>
+                                        <div class='text-lg font-bold text-blue-600'>+{$this->formatCurrency($addOnsTotal)}</div>
+                                    </div>" : '')."
+                                    <div class='col-span-12 border-t border-blue-200 pt-2 flex justify-between items-center'>
+                                        <span class='text-sm font-bold text-gray-900'>TOTAL:</span>
+                                        <span class='text-2xl font-bold text-orange-600'>{$this->formatCurrency($finalTotal)}</span>
+                                    </div>
+                                </div>
+                            ");
+                        })
+                        ->columnSpanFull()
+                        ->visible(function ($get) {
+                            return $get('paymentTiming') === 'pay_now';
+                        }),
+
+                    Forms\Components\Hidden::make('changeAmount'),
+
                     Section::make('Add-Ons (Optional)')
                         ->schema([
                             Forms\Components\Repeater::make('addOns')
@@ -1139,8 +1077,8 @@ final class PosPage extends Page
                                 ->reactive()
                                 ->defaultItems(0),
                         ])
-
-                        ->collapsible(),
+                        ->collapsible()
+                        ->columnSpanFull(),
                 ])
                 ->action(function (array $data) {
                     // Update properties from form
@@ -1160,9 +1098,10 @@ final class PosPage extends Page
                     // Create the order
                     $this->createOrder();
                 })
-                ->modalWidth(Width::FiveExtraLarge)
-
-                ->modalSubmitActionLabel('Confirm & Send to Kitchen')
+                ->modalWidth('6xl')
+                ->modalHeading('Confirm & Send Order to Kitchen')
+                ->modalSubmitActionLabel('✓ Confirm')
+                ->modalCancelActionLabel('✕ Cancel')
                 ->visible(fn () => ! empty($this->cartItems)),
         ];
     }

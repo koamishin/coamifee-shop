@@ -32,20 +32,8 @@
             const order = @js($order ?? null);
             if (!order) return;
 
-            const subtotal = parseFloat(order.subtotal || order.total);
-            const existingAddOns = parseFloat(order.add_ons_total || 0);
-            let discount = 0;
-
-            const discountType = this.getFormData('discountType');
-            const discountValue = parseFloat(this.getFormData('discountValue') || 0);
-
-            if (discountType && discountValue) {
-                // All discounts are percentage-based
-                discount = subtotal * (discountValue / 100);
-            }
-
-            this.discountAmount = discount;
-            this.total = subtotal - discount + existingAddOns;
+            // Use the order's total which already has all discounts and add-ons applied
+            this.total = parseFloat(order.total || 0);
         },
 
         appendNumber(num) {

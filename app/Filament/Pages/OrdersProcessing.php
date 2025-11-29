@@ -241,7 +241,7 @@ final class OrdersProcessing extends Page
             Notification::make()
                 ->danger()
                 ->title('Error')
-                ->body('An error occurred: ' . $e->getMessage())
+                ->body('An error occurred: '.$e->getMessage())
                 ->persistent()
                 ->send();
         }
@@ -327,7 +327,7 @@ final class OrdersProcessing extends Page
     public function collectPaymentAction(): Actions\Action
     {
         return Actions\Action::make('collectPayment')
-            ->modalHeading(fn(array $arguments) => 'Collect Payment - Order #' . $arguments['orderId'])
+            ->modalHeading(fn (array $arguments) => 'Collect Payment - Order #'.$arguments['orderId'])
             ->modalWidth('lg')
             ->fillForm(function (array $arguments): array {
                 $order = Order::with('items')->find($arguments['orderId']);
@@ -552,8 +552,6 @@ final class OrdersProcessing extends Page
                             }),
                     ]),
 
-
-
                 Section::make('Payment Details')
                     ->schema([
                         // Hidden field to store the amount (always present)
@@ -571,7 +569,7 @@ final class OrdersProcessing extends Page
                                     'currency' => $this->getCurrencySymbol(),
                                 ];
                             })
-                            ->visible(fn($get) => $get('paymentMethod') === 'cash' && $this->isTabletMode),
+                            ->visible(fn ($get) => $get('paymentMethod') === 'cash' && $this->isTabletMode),
 
                         // Regular Input for Desktop Mode
                         Forms\Components\TextInput::make('paidAmountDesktop')
@@ -581,28 +579,18 @@ final class OrdersProcessing extends Page
                             ->step(0.01)
                             ->default(0)
                             ->required()
-                            ->reactive()
-                            ->live()
+                            ->live(debounce: 500)
                             ->afterStateUpdated(function ($state, $set) {
                                 $set('paidAmount', $state);
                             })
-                            ->visible(fn($get) => $get('paymentMethod') === 'cash' && ! $this->isTabletMode),
+                            ->visible(fn ($get) => $get('paymentMethod') === 'cash' && ! $this->isTabletMode),
 
                         Forms\Components\Placeholder::make('change_display')
                             ->label('Change')
                             ->content(function ($get) {
                                 $order = Order::find($get('orderId'));
-                                $subtotal = (float) $order->subtotal ?? (float) $order->total;
-                                $existingDiscount = (float) ($order->discount_amount ?? 0);
-                                $existingAddOns = (float) ($order->add_ons_total ?? 0);
-                                $discountAmount = $existingDiscount;
-
-                                if ($get('discountType') && $get('discountValue')) {
-                                    // All discounts are percentage-based
-                                    $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
-                                }
-
-                                $total = $subtotal - $discountAmount + $existingAddOns;
+                                // Use the order's total which already has all discounts and add-ons applied
+                                $total = (float) $order->total;
                                 $paidAmount = (float) ($get('paidAmount') ?? $get('paidAmountDesktop') ?? 0);
                                 $changeAmount = $paidAmount - $total;
                                 $changeFormatted = $this->formatCurrency(abs($changeAmount));
@@ -628,7 +616,7 @@ final class OrdersProcessing extends Page
                                     </div>
                                 ");
                             })
-                            ->visible(fn($get) => $get('paymentMethod') === 'cash' && ! $this->isTabletMode && (float) ($get('paidAmountDesktop') ?? 0) > 0),
+                            ->visible(fn ($get) => $get('paymentMethod') === 'cash' && ! $this->isTabletMode && (float) ($get('paidAmountDesktop') ?? 0) > 0),
                     ]),
             ])
             ->action(function (array $data) {
@@ -642,27 +630,14 @@ final class OrdersProcessing extends Page
                         'payment_method' => $data['paymentMethod'],
                     ]);
 
-                    // Calculate discount
-                    $subtotal = (float) ($order->subtotal ?? $order->total);
-                    $existingAddOns = (float) ($order->add_ons_total ?? 0);
-                    $discountAmount = 0;
+                    // Recalculate order total to ensure it's up to date with all item discounts
+                    $this->recalculateOrderTotal($order);
+                    $order = $order->fresh();
 
-                    if (! empty($data['discountType'])) {
-                        $discountType = DiscountType::from($data['discountType']);
-                        $discountPercentage = $discountType->getPercentage();
-
-                        // If discount type requires custom value, use the provided value
-                        if ($discountType->requiresCustomValue() && ! empty($data['discountValue'])) {
-                            $discountPercentage = (float) $data['discountValue'];
-                        }
-
-                        // Apply discount if we have a percentage
-                        if ($discountPercentage !== null) {
-                            $discountAmount = $subtotal * ($discountPercentage / 100);
-                        }
-                    }
-
-                    $finalTotal = $subtotal - $discountAmount + $existingAddOns;
+                    // Use the already-calculated total which includes all item-level discounts
+                    $finalTotal = (float) $order->total;
+                    $subtotal = (float) $order->subtotal;
+                    $discountAmount = (float) ($order->discount_amount ?? 0);
                     $changeAmount = 0;
                     $paidAmount = 0;
 
@@ -733,7 +708,7 @@ final class OrdersProcessing extends Page
                     Notification::make()
                         ->success()
                         ->title('Payment Collected')
-                        ->body("Order #{$order->id} completed. Total: " . $this->formatCurrency($finalTotal))
+                        ->body("Order #{$order->id} completed. Total: ".$this->formatCurrency($finalTotal))
                         ->send();
 
                     $this->dispatch('$refresh');
@@ -755,7 +730,7 @@ final class OrdersProcessing extends Page
                     Notification::make()
                         ->danger()
                         ->title('Error')
-                        ->body('An error occurred: ' . $e->getMessage())
+                        ->body('An error occurred: '.$e->getMessage())
                         ->persistent()
                         ->send();
                 }
@@ -777,7 +752,7 @@ final class OrdersProcessing extends Page
     public function addProductAction(): Actions\Action
     {
         return Actions\Action::make('addProduct')
-            ->modalHeading(fn(array $arguments) => 'Add Products - Order #' . $arguments['orderId'])
+            ->modalHeading(fn (array $arguments) => 'Add Products - Order #'.$arguments['orderId'])
             ->modalWidth('6xl')
             ->modalFooterActionsAlignment('right')
             ->fillForm(function (array $arguments): array {
@@ -819,12 +794,12 @@ final class OrdersProcessing extends Page
                                                 class='px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
                                             >
                                                 <option value=''>All Categories</option>
-                                                " . $this->getCategoryOptions() . "
+                                                ".$this->getCategoryOptions()."
                                             </select>
                                         </div>
 
                                         <div class='grid grid-cols-2 gap-2 max-h-96 overflow-y-auto pr-2'>
-                                            " . $this->getProductsHtml() . "
+                                            ".$this->getProductsHtml()."
                                         </div>
                                     </div>
                                 </div>
@@ -835,11 +810,11 @@ final class OrdersProcessing extends Page
                                         <h3 class='text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide'>Order Items</h3>
                                         
                                         <div class='flex-1 overflow-y-auto space-y-2 mb-4'>
-                                            " . ($this->getCartItemsHtml() ?: "<p class='text-xs text-gray-500 text-center py-8'>No items added</p>") . "
+                                            ".($this->getCartItemsHtml() ?: "<p class='text-xs text-gray-500 text-center py-8'>No items added</p>")."
                                         </div>
 
                                         <div class='border-t border-gray-200 pt-3'>
-                                            " . $this->getCartTotalHtml() . '
+                                            ".$this->getCartTotalHtml().'
                                         </div>
                                     </div>
                                 </div>
@@ -848,7 +823,7 @@ final class OrdersProcessing extends Page
                     }),
 
                 Forms\Components\Hidden::make('items')
-                    ->default(fn() => json_encode($this->cartItems))
+                    ->default(fn () => json_encode($this->cartItems))
                     ->reactive()
                     ->live(),
             ])
@@ -874,6 +849,8 @@ final class OrdersProcessing extends Page
                             'product_id' => (int) $item['product_id'],
                             'variant_id' => ! empty($item['variant_id']) ? (int) $item['variant_id'] : null,
                             'quantity' => (int) $item['quantity'],
+                            'discount_type' => $item['discount_type'] ?? null,
+                            'discount_percentage' => (float) ($item['discount_percentage'] ?? 0),
                         ];
                     }
                 }
@@ -920,7 +897,7 @@ final class OrdersProcessing extends Page
         $existingIndex = array_search(
             array_filter(
                 $this->cartItems,
-                fn($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
+                fn ($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
             ),
             $this->cartItems,
             true
@@ -936,6 +913,9 @@ final class OrdersProcessing extends Page
                 'variant_name' => $variantName,
                 'price' => $price,
                 'quantity' => 1,
+                'discount_type' => null,
+                'discount_percentage' => 0,
+                'discount_amount' => 0,
             ];
         }
     }
@@ -945,7 +925,7 @@ final class OrdersProcessing extends Page
         $this->cartItems = array_values(
             array_filter(
                 $this->cartItems,
-                fn($item) => ! ($item['product_id'] === $productId && $item['variant_id'] === $variantId)
+                fn ($item) => ! ($item['product_id'] === $productId && $item['variant_id'] === $variantId)
             )
         );
     }
@@ -955,7 +935,7 @@ final class OrdersProcessing extends Page
         $item = array_search(
             array_filter(
                 $this->cartItems,
-                fn($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
+                fn ($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
             ),
             $this->cartItems,
             true
@@ -963,6 +943,29 @@ final class OrdersProcessing extends Page
 
         if ($item !== false && $quantity > 0) {
             $this->cartItems[$item]['quantity'] = $quantity;
+        }
+    }
+
+    public function updateCartItemDiscount(int $index, string $discountType): void
+    {
+        if (! isset($this->cartItems[$index])) {
+            return;
+        }
+
+        $this->cartItems[$index]['discount_type'] = ! empty($discountType) ? $discountType : null;
+
+        // Auto-fill percentage if it's a predefined discount type
+        if ($discountType) {
+            $discountEnum = DiscountType::tryFrom($discountType);
+            if ($discountEnum) {
+                $percentage = $discountEnum->getPercentage();
+                if ($percentage !== null) {
+                    $this->cartItems[$index]['discount_percentage'] = $percentage;
+                }
+            }
+        } else {
+            $this->cartItems[$index]['discount_percentage'] = 0;
+            $this->cartItems[$index]['discount_amount'] = 0;
         }
     }
 
@@ -1051,7 +1054,7 @@ final class OrdersProcessing extends Page
     public function refundAction(): Actions\Action
     {
         return Actions\Action::make('refund')
-            ->modalHeading(fn(array $arguments) => 'Refund Order #' . $arguments['orderId'])
+            ->modalHeading(fn (array $arguments) => 'Refund Order #'.$arguments['orderId'])
             ->modalWidth('sm')
             ->requiresConfirmation()
             ->fillForm(function (array $arguments): array {
@@ -1100,7 +1103,7 @@ final class OrdersProcessing extends Page
                     Notification::make()
                         ->danger()
                         ->title('Error')
-                        ->body('An error occurred: ' . $e->getMessage())
+                        ->body('An error occurred: '.$e->getMessage())
                         ->send();
                 }
             })
@@ -1120,7 +1123,7 @@ final class OrdersProcessing extends Page
             Actions\Action::make('refresh')
                 ->label('Refresh')
                 ->icon('heroicon-o-arrow-path')
-                ->action(fn() => $this->dispatch('$refresh')),
+                ->action(fn () => $this->dispatch('$refresh')),
         ];
     }
 
@@ -1209,7 +1212,13 @@ final class OrdersProcessing extends Page
         }
 
         $html = '';
-        foreach ($this->cartItems as $item) {
+        $discountOptions = DiscountType::getOptions();
+        $discountSelectHtml = "<option value=''>None</option>";
+        foreach ($discountOptions as $value => $label) {
+            $discountSelectHtml .= "<option value='{$value}'>{$label}</option>";
+        }
+
+        foreach ($this->cartItems as $index => $item) {
             $quantity = (int) ($item['quantity'] ?? 1);
             $price = (float) ($item['price'] ?? 0);
             $subtotal = $quantity * $price;
@@ -1217,6 +1226,10 @@ final class OrdersProcessing extends Page
             $variantName = ! empty($item['variant_name']) ? " ({$item['variant_name']})" : '';
             $productId = (int) $item['product_id'];
             $variantId = ! empty($item['variant_id']) ? (int) $item['variant_id'] : 'null';
+            $currentDiscountType = $item['discount_type'] ?? '';
+            $currentDiscountPercentage = (int) ($item['discount_percentage'] ?? 0);
+            $discountAmount = $currentDiscountPercentage > 0 ? ($subtotal * $currentDiscountPercentage / 100) : 0;
+            $finalSubtotal = $subtotal - $discountAmount;
 
             $html .= "
                 <div class='bg-white rounded-lg p-2 border border-gray-200 text-xs'>
@@ -1225,7 +1238,17 @@ final class OrdersProcessing extends Page
                             <p class='font-semibold text-gray-900'>{$productName}{$variantName}</p>
                             <p class='text-gray-600'>{$this->formatCurrency($price)} × {$quantity}</p>
                         </div>
-                        <p class='font-bold text-gray-900'>{$this->formatCurrency($subtotal)}</p>
+                        <p class='font-bold text-gray-900'>{$this->formatCurrency($finalSubtotal)}</p>
+                    </div>
+                    <div class='mb-2'>
+                        <label class='block text-xs font-medium text-gray-700 mb-1'>Discount</label>
+                        <select
+                            wire:change=\"updateCartItemDiscount({$index}, \$event.target.value)\"
+                            class='w-full px-1.5 py-0.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500'
+                        >
+                            {$discountSelectHtml}
+                        </select>
+                        ".($currentDiscountPercentage > 0 ? "<div class='text-xs text-green-600 mt-1'>{$currentDiscountPercentage}% off (-{$this->formatCurrency($discountAmount)})</div>" : '')."
                     </div>
                     <div class='flex gap-1 items-center'>
                         <input
@@ -1251,19 +1274,46 @@ final class OrdersProcessing extends Page
 
     private function getCartTotalHtml(): string
     {
-        $total = 0;
+        $subtotal = 0;
+        $totalDiscount = 0;
+
         foreach ($this->cartItems as $item) {
             $quantity = (int) ($item['quantity'] ?? 1);
             $price = (float) ($item['price'] ?? 0);
-            $total += $quantity * $price;
+            $itemSubtotal = $quantity * $price;
+            $subtotal += $itemSubtotal;
+
+            $discountPercentage = (int) ($item['discount_percentage'] ?? 0);
+            if ($discountPercentage > 0) {
+                $discountAmount = $itemSubtotal * ($discountPercentage / 100);
+                $totalDiscount += $discountAmount;
+            }
         }
 
-        return "
-            <div class='text-sm'>
+        $finalTotal = $subtotal - $totalDiscount;
+
+        $html = "
+            <div class='text-sm space-y-1'>
                 <div class='flex justify-between items-center'>
                     <span class='font-semibold text-gray-700'>Subtotal:</span>
-                    <span class='font-bold text-gray-900'>{$this->formatCurrency($total)}</span>
+                    <span class='font-bold text-gray-900'>{$this->formatCurrency($subtotal)}</span>
+                </div>";
+
+        if ($totalDiscount > 0) {
+            $html .= "
+                <div class='flex justify-between items-center text-green-600'>
+                    <span class='font-semibold'>Discount:</span>
+                    <span class='font-bold'>-{$this->formatCurrency($totalDiscount)}</span>
+                </div>";
+        }
+
+        $html .= "
+                <div class='flex justify-between items-center border-t border-gray-200 pt-1 mt-1'>
+                    <span class='font-bold text-gray-900'>Total:</span>
+                    <span class='font-bold text-lg text-orange-600'>{$this->formatCurrency($finalTotal)}</span>
                 </div>
             </div>";
+
+        return $html;
     }
 }

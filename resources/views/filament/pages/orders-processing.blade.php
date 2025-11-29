@@ -170,7 +170,7 @@
                     </div>
 
                     {{-- Order Items --}}
-                    <div class="p-4 space-y-2 max-h-48 overflow-y-auto {{ $order->status === 'completed' ? 'pointer-events-none opacity-75' : '' }}">
+                    <div class="p-4 space-y-2 max-h-48 overflow-y-auto {{ $order->status === 'completed' ? 'opacity-75' : '' }}">
                         @foreach($order->items as $item)
                             @php
                                 // Use item-level discount if available, otherwise fallback to order-level discount calculation

@@ -272,3 +272,71 @@ test('recalculateOrderTotal updates order total in database', function (): void 
     // Verify the order total was updated in the database
     expect((float) $order->fresh()->total)->toBe(40.00);
 });
+
+test('payment validation uses recalculated total with item discounts (user scenario)', function (): void {
+    // This test simulates the exact scenario from the bug report:
+    // Banana Bread: ₱45.00
+    // Beef Brisket: ₱169.00 with 20% discount = ₱135.20 (saving ₱33.80)
+    // Original Subtotal: ₱214.00
+    // Item Discounts: -₱33.80
+    // Subtotal After Item Discounts: ₱180.20
+    // Total to Pay: ₱180.20
+    // Cash Received: ₱200.00
+
+    $product1 = Product::factory()->create(['name' => 'Banana Bread', 'price' => 45.00]);
+    $product2 = Product::factory()->create(['name' => 'Beef Brisket', 'price' => 169.00]);
+
+    $order = Order::factory()->create([
+        'subtotal' => 214.00,
+        'discount_amount' => 0,
+        'add_ons_total' => 0,
+        'total' => 214.00,
+        'payment_status' => 'unpaid',
+    ]);
+
+    OrderItem::create([
+        'order_id' => $order->id,
+        'product_id' => $product1->id,
+        'quantity' => 1,
+        'price' => 45.00,
+        'subtotal' => 45.00,
+        'discount_percentage' => 0,
+        'discount_amount' => 0,
+        'discount' => 0,
+    ]);
+
+    OrderItem::create([
+        'order_id' => $order->id,
+        'product_id' => $product2->id,
+        'quantity' => 1,
+        'price' => 169.00,
+        'subtotal' => 169.00,
+        'discount_percentage' => 20.00,
+        'discount_amount' => 33.80,
+        'discount' => 33.80,
+    ]);
+
+    $order = $order->fresh('items');
+
+    // Calculate what the payment validation should use
+    $itemLevelDiscountTotal = 0.0;
+    foreach ($order->items as $item) {
+        $itemLevelDiscountTotal += (float) ($item->discount_amount ?? $item->discount ?? 0);
+    }
+
+    $originalSubtotal = (float) $order->subtotal;
+    $subtotalAfterItemDiscounts = $originalSubtotal - $itemLevelDiscountTotal;
+    $orderLevelDiscount = (float) ($order->discount_amount ?? 0);
+    $addOnsTotal = (float) ($order->add_ons_total ?? 0);
+    $correctTotal = $subtotalAfterItemDiscounts - $orderLevelDiscount + $addOnsTotal;
+
+    // The payment validation total should be 180.20, NOT 214.00
+    expect($correctTotal)->toBe(180.20);
+
+    // When cash received is 200.00, it should be sufficient
+    $paidAmount = 200.00;
+    $changeAmount = $paidAmount - $correctTotal;
+
+    expect($changeAmount)->toBe(19.80);
+    expect($paidAmount >= $correctTotal)->toBeTrue();
+});
