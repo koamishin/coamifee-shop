@@ -59,6 +59,24 @@ final class ProductForm
                             ->helperText(
                                 'Select the category this product belongs to',
                             )
+                            ->afterStateUpdated(function ($state, callable $set) {
+                                // Update category_has_variants when category changes
+                                $categoryId = $state;
+                                $hasVariants = false;
+
+                                if ($categoryId) {
+                                    $category = \App\Models\Category::find($categoryId);
+                                    $hasVariants = $category ? $category->has_variants : false;
+                                }
+
+                                $set('category_has_variants', $hasVariants);
+
+                                // Reset has_variants toggle if category doesn't support variants
+                                if (! $hasVariants) {
+                                    $set('has_variants', false);
+                                }
+                            })
+                            ->debounce('500ms') // Add debounce to prevent excessive calls
                             ->createOptionForm(
                                 fn ($form) => $form->schema([
                                     TextInput::make('name')
@@ -70,30 +88,62 @@ final class ProductForm
                                     Toggle::make('is_active')
                                         ->label('Active')
                                         ->default(true),
-                                ]),
+                                    Toggle::make('has_variants')
+                                        ->label('Products in this category have Hot & Cold variants')
+                                        ->helperText('Enable to allow products in this category to have different prices for Hot and Cold versions')
+                                        ->default(false)
+                                        ->reactive()
+                                        ->live(),
+                                ])
+                                    ->model(\App\Models\Category::class)
+                                    ->after(function ($get, $set) {
+                                        // After creating a new category, update the category_has_variants field
+                                        $newCategoryId = $get('category_id');
+                                        if ($newCategoryId) {
+                                            $newCategory = \App\Models\Category::find($newCategoryId);
+                                            if ($newCategory) {
+                                                $set('category_has_variants', $newCategory->has_variants);
+                                            }
+                                        }
+                                    }),
                             )
                             ->columnSpanFull(),
+
+                        // Hidden field to track category's has_variants property
+                        \Filament\Forms\Components\Hidden::make('category_has_variants')
+                            ->default(function ($get) {
+                                $categoryId = $get('category_id');
+                                if ($categoryId) {
+                                    $category = \App\Models\Category::find($categoryId);
+
+                                    return $category ? $category->has_variants : false;
+                                }
+
+                                return false;
+                            })
+                            ->reactive()
+                            ->live(),
                         TextInput::make('price')
                             ->label('Product Price')
                             ->prefix(self::getCurrencyPrefix())
                             ->suffix(self::getCurrencySuffix())
                             ->numeric()
-                            ->required(fn (callable $get) => ! ((int) $get('category_id') === 1 && $get('has_variants') === true))
+                            ->required(fn (callable $get) => ! ($get('category_has_variants') === true && $get('has_variants') === true))
                             ->step(0.01)
-                            ->helperText(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true
-                                ? 'For beverages with variants, set prices for Hot and Cold variants below'
+                            ->helperText(fn (callable $get) => $get('category_has_variants') === true && $get('has_variants') === true
+                                ? 'For products with variants, set prices for Hot and Cold variants below'
                                 : 'Set the selling price for this product')
                             ->live(onBlur: true),
-                            // ->hidden(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true),
-                        // Variant toggle - only visible for Beverages category
+                        // ->hidden(fn (callable $get) => $get('category_has_variants') === true && $get('has_variants') === true),
+                        // Variant toggle - only visible for categories with variants enabled
                         Toggle::make('has_variants')
-                            ->label('This beverage has Hot & Cold variants')
+                            ->label('This product has Hot & Cold variants')
                             ->helperText('Enable to set different prices for Hot and Cold versions')
                             ->default(fn ($record) => $record ? $record->hasVariants() : false)
                             ->reactive()
                             ->live()
                             ->dehydrated(false)
-                            ->visible(fn (callable $get) => (int) $get('category_id') === 1)
+                            ->visible(fn (callable $get) => $get('category_has_variants') === true)
                             ->columnSpanFull(),
                     ]),
                 ])
@@ -133,11 +183,11 @@ final class ProductForm
                 ])
                 ->columns(2),
 
-            // Beverage Variants Section - only visible when toggle is enabled
-            Section::make('Beverage Variants (Hot & Cold)')
-                ->description('Set prices for Hot and Cold versions of this beverage.')
+            // Product Variants Section - only visible when toggle is enabled
+            Section::make('Product Variants (Hot & Cold)')
+                ->description('Set prices for Hot and Cold versions of this product.')
                 ->icon('heroicon-o-fire')
-                ->visible(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true)
+                ->visible(fn (callable $get) => $get('category_has_variants') === true && $get('has_variants') === true)
                 ->schema([
                     Repeater::make('variants')
                         ->label('Hot & Cold Prices')

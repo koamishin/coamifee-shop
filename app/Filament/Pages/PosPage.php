@@ -596,9 +596,14 @@ final class PosPage extends Page
     /**
      * Format amount with currency symbol
      */
-    public function formatCurrency(float $amount): string
+    public function formatCurrency(float|int|string|null $amount): string
     {
-        return $this->currency->formatAmount($amount);
+        // Handle null values gracefully
+        if ($amount === null) {
+            return $this->currency->formatAmount(0.0);
+        }
+
+        return $this->currency->formatAmount((float) $amount);
     }
 
     /**
@@ -790,6 +795,7 @@ final class PosPage extends Page
                                                 type='number'
                                                 wire:model.live=\"cartItems.{$index}.discount_percentage\"
                                                 min='0'
+                                                disabled
                                                 max='100'
                                                 step='1'
                                                 placeholder='0'

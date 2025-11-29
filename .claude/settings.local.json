@@ -1,15 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan pint --dirty)",
-      "Bash(vendor/bin/pint:*)",
-      "Bash(php artisan test:*)",
-      "Bash(php artisan migrate:*)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan migrate)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\":*)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan route:list:*)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan test --filter=Order --stop-on-failure)",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan test:*)",
       "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan:*)",
       "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan test --filter=\"delivery\" --stop-on-failure)",
       "Bash(dir:*)",
