@@ -59,25 +59,7 @@ final class ProductsTable
                     ->defaultImageUrl(url('/placeholder-product.png'))
                     ->alignCenter(),
 
-                TextColumn::make('sku')
-                    ->label('SKU')
-                    ->searchable()
-                    ->sortable()
-                    ->copyable()
-                    ->copyMessage('SKU copied to clipboard')
-                    ->description('Stock Keeping Unit')
-                    ->size('sm'),
-
-                TextColumn::make('preparation_time')
-                    ->label('Prep Time')
-                    ->numeric()
-                    ->sortable()
-                    ->alignCenter()
-                    ->suffix(' min')
-                    ->description('Average preparation time in minutes')
-                    ->color('warning')
-                    ->badge()
-                    ->color('info'),
+                
 
                 TextColumn::make('created_at')
                     ->label('Created')

@@ -73,16 +73,16 @@ final class OrdersTable
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('table_number')
-                    ->label('Table')
-                    ->badge()
-                    ->icon('heroicon-o-building-office-2')
-                    ->color('primary')
-                    ->placeholder('-')
-                    ->formatStateUsing(fn ($state): string => $state ? str_replace('_', ' ', ucfirst($state)) : '-')
-                    ->searchable()
-                    ->sortable()
-                    ->toggleable(),
+                // TextColumn::make('table_number')
+                //     ->label('Table')
+                //     ->badge()
+                //     ->icon('heroicon-o-building-office-2')
+                //     ->color('primary')
+                //     ->placeholder('-')
+                //     ->formatStateUsing(fn ($state): string => $state ? str_replace('_', ' ', ucfirst($state)) : '-')
+                //     ->searchable()
+                //     ->sortable()
+                //     ->toggleable(),
 
                 TextColumn::make('items_count')
                     ->label('Items')
@@ -99,18 +99,18 @@ final class OrdersTable
                     ->alignRight()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('discount_amount')
-                    ->label('Discount')
-                    ->money(self::getMoneyConfig())
-                    ->sortable()
-                    ->alignRight()
-                    ->placeholder('-')
-                    ->color('danger')
-                    ->icon('heroicon-o-tag')
-                    ->description(fn ($record) => $record->discount_amount > 0 && $record->discount_type && $record->discount_value
-                        ? ucfirst($record->discount_type).' ('.$record->discount_value.'%)'
-                        : null)
-                    ->toggleable(isToggledHiddenByDefault: false),
+                // TextColumn::make('discount_amount')
+                //     ->label('Discount')
+                //     ->money(self::getMoneyConfig())
+                //     ->sortable()
+                //     ->alignRight()
+                //     ->placeholder('-')
+                //     ->color('danger')
+                //     ->icon('heroicon-o-tag')
+                //     ->description(fn ($record) => $record->discount_amount > 0 && $record->discount_type && $record->discount_value
+                //         ? ucfirst($record->discount_type).' ('.$record->discount_value.'%)'
+                //         : null)
+                //     ->toggleable(isToggledHiddenByDefault: false),
 
                 TextColumn::make('add_ons_total')
                     ->label('Add-ons')
