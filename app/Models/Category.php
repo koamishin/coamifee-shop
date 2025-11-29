@@ -18,11 +18,13 @@ final class Category extends Model
         'description',
         'is_active',
         'sort_order',
+        'has_variants',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'sort_order' => 'integer',
+        'has_variants' => 'boolean',
     ];
 
     public function products(): HasMany

@@ -44,6 +44,12 @@ final class CategoryForm
                 ->helperText('Enable this category to be visible in the store')
                 ->default(true),
 
+            Toggle::make('has_variants')
+                ->label('Products in this category have Hot & Cold variants')
+                ->helperText('Enable to allow products in this category to have different prices for Hot and Cold versions')
+                ->default(false)
+                ->live(),
+
             TextInput::make('sort_order')
                 ->label('Sort Order')
                 ->helperText('Lower numbers appear first')
