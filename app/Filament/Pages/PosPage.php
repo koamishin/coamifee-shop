@@ -596,12 +596,9 @@ final class PosPage extends Page
     /**
      * Format amount with currency symbol
      */
-    public function formatCurrency(int|float|string $amount): string
+    public function formatCurrency(float|int|string $amount): string
     {
-        // Convert to float to ensure compatibility with currency formatter
-        $numericAmount = (float) $amount;
-
-        return $this->currency->formatAmount($numericAmount);
+        return $this->currency->formatAmount((float) $amount);
     }
 
     /**
