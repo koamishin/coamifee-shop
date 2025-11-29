@@ -49,6 +49,8 @@ final class OrdersProcessing extends Page
 
     public string $cancelOrderReason = '';
 
+    public float $cashReceived = 0.0;
+
     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     // protected static UnitEnum|string|null $navigationGroup = 'Operations';
@@ -257,6 +259,12 @@ final class OrdersProcessing extends Page
             ->title('Mode Changed')
             ->body($this->isTabletMode ? 'Switched to Tablet Mode' : 'Switched to Desktop Mode')
             ->send();
+    }
+
+    public function updatedCashReceived(): void
+    {
+        // Trigger a refresh of the form to recalculate the change display
+        $this->dispatch('refresh-change-display');
     }
 
     /**
@@ -574,7 +582,7 @@ final class OrdersProcessing extends Page
                             ->default(0)
                             ->required()
                             ->reactive()
-                            ->live(onBlur: true)
+                            ->live()
                             ->afterStateUpdated(function ($state, $set) {
                                 $set('paidAmount', $state);
                             })
@@ -596,9 +604,29 @@ final class OrdersProcessing extends Page
 
                                 $total = $subtotal - $discountAmount + $existingAddOns;
                                 $paidAmount = (float) ($get('paidAmount') ?? $get('paidAmountDesktop') ?? 0);
-                                $change = max(0.0, $paidAmount - $total);
+                                $changeAmount = $paidAmount - $total;
+                                $changeFormatted = $this->formatCurrency(abs($changeAmount));
 
-                                return new HtmlString('<div class="text-2xl font-bold text-green-600">' . $this->formatCurrency($change) . '</div>');
+                                if ($changeAmount > 0) {
+                                    return new HtmlString("
+                                        <div class='p-3 bg-green-50 border-2 border-green-300 rounded-lg'>
+                                            <span class='text-lg font-bold text-green-700'>Change: {$changeFormatted}</span>
+                                        </div>
+                                    ");
+                                }
+                                if ($changeAmount < 0) {
+                                    return new HtmlString("
+                                        <div class='p-3 bg-red-50 border-2 border-red-300 rounded-lg'>
+                                            <span class='text-lg font-bold text-red-700'>Insufficient: {$changeFormatted}</span>
+                                        </div>
+                                    ");
+                                }
+
+                                return new HtmlString("
+                                    <div class='p-3 bg-gray-50 border-2 border-gray-300 rounded-lg'>
+                                        <span class='text-lg font-bold text-gray-700'>Exact Amount</span>
+                                    </div>
+                                ");
                             })
                             ->visible(fn($get) => $get('paymentMethod') === 'cash' && ! $this->isTabletMode && (float) ($get('paidAmountDesktop') ?? 0) > 0),
                     ]),
