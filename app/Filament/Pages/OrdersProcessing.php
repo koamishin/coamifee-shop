@@ -106,8 +106,11 @@ final class OrdersProcessing extends Page
 
         $orders = $query->get();
 
-        // Log order items with discount information
+        // Log order items with discount information and recalculate totals
         foreach ($orders as $order) {
+            // Recalculate order total to ensure item discounts are reflected
+            $this->recalculateOrderTotal($order);
+
             $itemsWithDiscount = $order->items->filter(function ($item) {
                 return ($item->discount_amount ?? 0) > 0 || ($item->discount_percentage ?? 0) > 0;
             });
@@ -236,7 +239,7 @@ final class OrdersProcessing extends Page
             Notification::make()
                 ->danger()
                 ->title('Error')
-                ->body('An error occurred: '.$e->getMessage())
+                ->body('An error occurred: ' . $e->getMessage())
                 ->persistent()
                 ->send();
         }
@@ -280,13 +283,52 @@ final class OrdersProcessing extends Page
         return $this->currency->getDecimals();
     }
 
+    /**
+     * Recalculate and update order total based on item discounts
+     */
+    public function recalculateOrderTotal(Order $order): void
+    {
+        $order = $order->fresh('items');
+
+        // Calculate item-level discount total
+        $itemLevelDiscountTotal = 0.0;
+        foreach ($order->items as $item) {
+            $itemLevelDiscountTotal += (float) ($item->discount_amount ?? $item->discount ?? 0);
+        }
+
+        // Calculate order total
+        $originalSubtotal = (float) $order->subtotal;
+        $subtotalAfterItemDiscounts = $originalSubtotal - $itemLevelDiscountTotal;
+        $orderLevelDiscount = (float) ($order->discount_amount ?? 0);
+        $addOnsTotal = (float) ($order->add_ons_total ?? 0);
+        $correctTotal = $subtotalAfterItemDiscounts - $orderLevelDiscount + $addOnsTotal;
+
+        // Update the order if total has changed
+        if ((float) $order->total !== $correctTotal) {
+            $order->update(['total' => $correctTotal]);
+
+            \Illuminate\Support\Facades\Log::info('Order total recalculated', [
+                'order_id' => $order->id,
+                'original_total' => $order->getOriginal('total'),
+                'new_total' => $correctTotal,
+                'item_discounts' => $itemLevelDiscountTotal,
+            ]);
+        }
+    }
+
     public function collectPaymentAction(): Actions\Action
     {
         return Actions\Action::make('collectPayment')
-            ->modalHeading(fn (array $arguments) => 'Collect Payment - Order #'.$arguments['orderId'])
+            ->modalHeading(fn(array $arguments) => 'Collect Payment - Order #' . $arguments['orderId'])
             ->modalWidth('lg')
             ->fillForm(function (array $arguments): array {
-                $order = Order::find($arguments['orderId']);
+                $order = Order::with('items')->find($arguments['orderId']);
+
+                // Recalculate order total to ensure it's up to date with any item discounts
+                $this->recalculateOrderTotal($order);
+
+                // Refresh after update to get latest value
+                $order = $order->fresh();
 
                 return [
                     'orderId' => $arguments['orderId'],
@@ -502,7 +544,7 @@ final class OrdersProcessing extends Page
                             }),
                     ]),
 
-               
+
 
                 Section::make('Payment Details')
                     ->schema([
@@ -521,7 +563,7 @@ final class OrdersProcessing extends Page
                                     'currency' => $this->getCurrencySymbol(),
                                 ];
                             })
-                            ->visible(fn ($get) => $get('paymentMethod') === 'cash' && $this->isTabletMode),
+                            ->visible(fn($get) => $get('paymentMethod') === 'cash' && $this->isTabletMode),
 
                         // Regular Input for Desktop Mode
                         Forms\Components\TextInput::make('paidAmountDesktop')
@@ -536,7 +578,7 @@ final class OrdersProcessing extends Page
                             ->afterStateUpdated(function ($state, $set) {
                                 $set('paidAmount', $state);
                             })
-                            ->visible(fn ($get) => $get('paymentMethod') === 'cash' && ! $this->isTabletMode),
+                            ->visible(fn($get) => $get('paymentMethod') === 'cash' && ! $this->isTabletMode),
 
                         Forms\Components\Placeholder::make('change_display')
                             ->label('Change')
@@ -556,9 +598,9 @@ final class OrdersProcessing extends Page
                                 $paidAmount = (float) ($get('paidAmount') ?? $get('paidAmountDesktop') ?? 0);
                                 $change = max(0.0, $paidAmount - $total);
 
-                                return new HtmlString('<div class="text-2xl font-bold text-green-600">'.$this->formatCurrency($change).'</div>');
+                                return new HtmlString('<div class="text-2xl font-bold text-green-600">' . $this->formatCurrency($change) . '</div>');
                             })
-                            ->visible(fn ($get) => $get('paymentMethod') === 'cash' && ! $this->isTabletMode && (float) ($get('paidAmountDesktop') ?? 0) > 0),
+                            ->visible(fn($get) => $get('paymentMethod') === 'cash' && ! $this->isTabletMode && (float) ($get('paidAmountDesktop') ?? 0) > 0),
                     ]),
             ])
             ->action(function (array $data) {
@@ -663,7 +705,7 @@ final class OrdersProcessing extends Page
                     Notification::make()
                         ->success()
                         ->title('Payment Collected')
-                        ->body("Order #{$order->id} completed. Total: ".$this->formatCurrency($finalTotal))
+                        ->body("Order #{$order->id} completed. Total: " . $this->formatCurrency($finalTotal))
                         ->send();
 
                     $this->dispatch('$refresh');
@@ -685,7 +727,7 @@ final class OrdersProcessing extends Page
                     Notification::make()
                         ->danger()
                         ->title('Error')
-                        ->body('An error occurred: '.$e->getMessage())
+                        ->body('An error occurred: ' . $e->getMessage())
                         ->persistent()
                         ->send();
                 }
@@ -707,7 +749,7 @@ final class OrdersProcessing extends Page
     public function addProductAction(): Actions\Action
     {
         return Actions\Action::make('addProduct')
-            ->modalHeading(fn (array $arguments) => 'Add Products - Order #'.$arguments['orderId'])
+            ->modalHeading(fn(array $arguments) => 'Add Products - Order #' . $arguments['orderId'])
             ->modalWidth('6xl')
             ->modalFooterActionsAlignment('right')
             ->fillForm(function (array $arguments): array {
@@ -749,12 +791,12 @@ final class OrdersProcessing extends Page
                                                 class='px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
                                             >
                                                 <option value=''>All Categories</option>
-                                                ".$this->getCategoryOptions()."
+                                                " . $this->getCategoryOptions() . "
                                             </select>
                                         </div>
 
                                         <div class='grid grid-cols-2 gap-2 max-h-96 overflow-y-auto pr-2'>
-                                            ".$this->getProductsHtml()."
+                                            " . $this->getProductsHtml() . "
                                         </div>
                                     </div>
                                 </div>
@@ -765,11 +807,11 @@ final class OrdersProcessing extends Page
                                         <h3 class='text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide'>Order Items</h3>
                                         
                                         <div class='flex-1 overflow-y-auto space-y-2 mb-4'>
-                                            ".($this->getCartItemsHtml() ?: "<p class='text-xs text-gray-500 text-center py-8'>No items added</p>")."
+                                            " . ($this->getCartItemsHtml() ?: "<p class='text-xs text-gray-500 text-center py-8'>No items added</p>") . "
                                         </div>
 
                                         <div class='border-t border-gray-200 pt-3'>
-                                            ".$this->getCartTotalHtml().'
+                                            " . $this->getCartTotalHtml() . '
                                         </div>
                                     </div>
                                 </div>
@@ -778,7 +820,7 @@ final class OrdersProcessing extends Page
                     }),
 
                 Forms\Components\Hidden::make('items')
-                    ->default(fn () => json_encode($this->cartItems))
+                    ->default(fn() => json_encode($this->cartItems))
                     ->reactive()
                     ->live(),
             ])
@@ -850,7 +892,7 @@ final class OrdersProcessing extends Page
         $existingIndex = array_search(
             array_filter(
                 $this->cartItems,
-                fn ($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
+                fn($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
             ),
             $this->cartItems,
             true
@@ -875,7 +917,7 @@ final class OrdersProcessing extends Page
         $this->cartItems = array_values(
             array_filter(
                 $this->cartItems,
-                fn ($item) => ! ($item['product_id'] === $productId && $item['variant_id'] === $variantId)
+                fn($item) => ! ($item['product_id'] === $productId && $item['variant_id'] === $variantId)
             )
         );
     }
@@ -885,7 +927,7 @@ final class OrdersProcessing extends Page
         $item = array_search(
             array_filter(
                 $this->cartItems,
-                fn ($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
+                fn($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
             ),
             $this->cartItems,
             true
@@ -981,7 +1023,7 @@ final class OrdersProcessing extends Page
     public function refundAction(): Actions\Action
     {
         return Actions\Action::make('refund')
-            ->modalHeading(fn (array $arguments) => 'Refund Order #'.$arguments['orderId'])
+            ->modalHeading(fn(array $arguments) => 'Refund Order #' . $arguments['orderId'])
             ->modalWidth('sm')
             ->requiresConfirmation()
             ->fillForm(function (array $arguments): array {
@@ -1030,7 +1072,7 @@ final class OrdersProcessing extends Page
                     Notification::make()
                         ->danger()
                         ->title('Error')
-                        ->body('An error occurred: '.$e->getMessage())
+                        ->body('An error occurred: ' . $e->getMessage())
                         ->send();
                 }
             })
@@ -1042,15 +1084,15 @@ final class OrdersProcessing extends Page
     {
         return [
             // Actions\Action::make('toggleMode')
-                // ->label($this->isTabletMode ? 'Desktop Mode' : 'Tablet Mode')
-                // ->icon($this->isTabletMode ? 'heroicon-o-computer-desktop' : 'heroicon-o-device-tablet')
-                // ->color('gray')
-                // ->action(fn () => $this->toggleMode()),
+            // ->label($this->isTabletMode ? 'Desktop Mode' : 'Tablet Mode')
+            // ->icon($this->isTabletMode ? 'heroicon-o-computer-desktop' : 'heroicon-o-device-tablet')
+            // ->color('gray')
+            // ->action(fn () => $this->toggleMode()),
 
             Actions\Action::make('refresh')
                 ->label('Refresh')
                 ->icon('heroicon-o-arrow-path')
-                ->action(fn () => $this->dispatch('$refresh')),
+                ->action(fn() => $this->dispatch('$refresh')),
         ];
     }
 
