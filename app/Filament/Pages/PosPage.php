@@ -790,6 +790,7 @@ final class PosPage extends Page
                                                 type='number'
                                                 wire:model.live=\"cartItems.{$index}.discount_percentage\"
                                                 min='0'
+                                                disabled
                                                 max='100'
                                                 step='1'
                                                 placeholder='0'
