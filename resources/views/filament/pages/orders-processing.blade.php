@@ -365,8 +365,7 @@
                                      href="{{ route('orders.print-kitchen', $order) }}"
                                      target="_blank"
                                      {{ $order->status === 'cancelled' ? 'onclick=return\\ false' : '' }}
-                                     class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-sm {{ $order->status === 'cancelled' ? 'opacity-50 cursor-not-allowed pointer-events-none' : '' }}"
-                                 >
+                                     class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-sm {{ $order->status === 'cancelled' ? 'opacity-50 cursor-not-allowed pointer-events-none' : '' }}">
                                      <x-filament::icon icon="heroicon-o-printer" class="w-4 h-4" />
                                      Print
                                  </a>

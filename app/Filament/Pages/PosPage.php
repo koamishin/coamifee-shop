@@ -823,56 +823,56 @@ final class PosPage extends Page
                         ->columnSpanFull()
                         ->visible(fn () => ! empty($this->cartItems)),
 
-                    Forms\Components\Placeholder::make('cart_items_display')
-                        ->label('Order Items')
-                        ->content(function () {
-                            if (empty($this->cartItems)) {
-                                return new HtmlString('<div class="text-center text-gray-500 py-2">No items in cart</div>');
-                            }
+                    // Forms\Components\Placeholder::make('cart_items_display')
+                        // ->label('Order Items')
+                        // ->content(function () {
+                        //     if (empty($this->cartItems)) {
+                        //         return new HtmlString('<div class="text-center text-gray-500 py-2">No items in cart</div>');
+                        //     }
 
-                            $cartHtml = '<div class="grid grid-cols-3 sm:grid-cols-4 gap-2">';
+                        //     $cartHtml = '<div class="grid grid-cols-3 sm:grid-cols-4 gap-2">';
 
-                            foreach ($this->cartItems as $item) {
-                                $formattedPrice = $this->formatCurrency((float) $item['price']);
-                                $originalSubtotal = (float) $item['subtotal'];
-                                $discountPercentage = $item['discount_percentage'] ?? 0;
-                                $discountAmount = $discountPercentage > 0 ? ($originalSubtotal * $discountPercentage / 100) : 0;
-                                $finalSubtotal = $originalSubtotal - $discountAmount;
-                                $formattedOriginalSubtotal = $this->formatCurrency($originalSubtotal);
-                                $formattedFinalSubtotal = $this->formatCurrency($finalSubtotal);
+                        //     foreach ($this->cartItems as $item) {
+                        //         $formattedPrice = $this->formatCurrency((float) $item['price']);
+                        //         $originalSubtotal = (float) $item['subtotal'];
+                        //         $discountPercentage = $item['discount_percentage'] ?? 0;
+                        //         $discountAmount = $discountPercentage > 0 ? ($originalSubtotal * $discountPercentage / 100) : 0;
+                        //         $finalSubtotal = $originalSubtotal - $discountAmount;
+                        //         $formattedOriginalSubtotal = $this->formatCurrency($originalSubtotal);
+                        //         $formattedFinalSubtotal = $this->formatCurrency($finalSubtotal);
 
-                                $discountDisplay = '';
-                                if ($discountPercentage > 0) {
-                                    $formattedDiscountAmount = $this->formatCurrency($discountAmount);
-                                    $discountType = $item['discount_type'] ?? 'Custom';
-                                    $discountDisplay = "
-                                        <div class='text-xs text-green-600 mb-1'>
-                                            <span>{$discountPercentage}% off ({$discountType})</span>
-                                            <div class='text-gray-500 line-through'>{$formattedOriginalSubtotal}</div>
-                                        </div>
-                                    ";
-                                }
+                        //         $discountDisplay = '';
+                        //         if ($discountPercentage > 0) {
+                        //             $formattedDiscountAmount = $this->formatCurrency($discountAmount);
+                        //             $discountType = $item['discount_type'] ?? 'Custom';
+                        //             $discountDisplay = "
+                        //                 <div class='text-xs text-green-600 mb-1'>
+                        //                     <span>{$discountPercentage}% off ({$discountType})</span>
+                        //                     <div class='text-gray-500 line-through'>{$formattedOriginalSubtotal}</div>
+                        //                 </div>
+                        //             ";
+                        //         }
 
-                                $cartHtml .= "
-                                    <div class='bg-white border border-gray-200 rounded px-2 py-1.5 hover:shadow-sm transition-shadow'>
-                                        <h4 class='text-xs font-semibold text-gray-900 line-clamp-2 mb-0.5'>{$item['name']}</h4>
-                                        <div class='flex items-center justify-between mb-0.5 text-xs'>
-                                            <span class='text-gray-600'>×{$item['quantity']}</span>
-                                            <span class='font-medium text-orange-600'>{$formattedPrice}</span>
-                                        </div>
-                                        {$discountDisplay}
-                                        <div class='text-xs font-bold text-gray-900 border-t border-gray-100 pt-0.5'>
-                                            {$formattedFinalSubtotal}
-                                        </div>
-                                    </div>
-                                ";
-                            }
+                        //         $cartHtml .= "
+                        //             <div class='bg-white border border-gray-200 rounded px-2 py-1.5 hover:shadow-sm transition-shadow'>
+                        //                 <h4 class='text-xs font-semibold text-gray-900 line-clamp-2 mb-0.5'>{$item['name']}</h4>
+                        //                 <div class='flex items-center justify-between mb-0.5 text-xs'>
+                        //                     <span class='text-gray-600'>×{$item['quantity']}</span>
+                        //                     <span class='font-medium text-orange-600'>{$formattedPrice}</span>
+                        //                 </div>
+                        //                 {$discountDisplay}
+                        //                 <div class='text-xs font-bold text-gray-900 border-t border-gray-100 pt-0.5'>
+                        //                     {$formattedFinalSubtotal}
+                        //                 </div>
+                        //             </div>
+                        //         ";
+                        //     }
 
-                            $cartHtml .= '</div>';
+                        //     $cartHtml .= '</div>';
 
-                            return new HtmlString($cartHtml);
-                        })
-                        ->columnSpanFull(),
+                        //     return new HtmlString($cartHtml);
+                        // })
+                        // ->columnSpanFull(),
 
                     Forms\Components\Textarea::make('notes')
                         ->label('Special Instructions')
