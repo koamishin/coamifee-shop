@@ -21,7 +21,16 @@
       "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan route:clear)",
       "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan test --filter=\"OrdersProcessing\")",
       "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan tinker --execute=\"echo ''Testing OrderModificationService...'' . PHP_EOL; $service = app(App\\Services\\OrderModificationService::class); echo ''Service loaded successfully!'' . PHP_EOL;\")",
-      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" -l \"c:\\Users\\user\\Desktop\\Goodland Cafe\\coamifee-shop\\app\\Filament\\Pages\\OrdersProcessing.php\")"
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" -l \"c:\\Users\\user\\Desktop\\Goodland Cafe\\coamifee-shop\\app\\Filament\\Pages\\OrdersProcessing.php\")",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan serve)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan test --filter=\"PosPage\" --stop-on-failure)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" -l \"c:\\Users\\user\\Desktop\\Goodland Cafe\\coamifee-shop\\app\\Filament\\Pages\\PosPage.php\")",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" -r \"echo ''Testing basic PHP functionality...''; echo ''Success!'';\")",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" artisan serve:*)",
+      "Bash(\"C:\\Users\\user\\.config\\herd\\bin\\php.bat\" -r \"echo file_get_contents(''''c:\\Users\\user\\Desktop\\Goodland Cafe\\coamifee-shop\\app\\Filament\\Pages\\PosPage.php'''');\")",
+      "mcp__laravel-boost__database-query",
+      "Bash(php artisan make:test:*)",
+      "mcp__laravel-boost__read-log-entries"
     ],
     "deny": [],
     "ask": []

@@ -1,224 +1,168 @@
 <x-filament-panels::page>
-    @if($this->bestSellersData->isNotEmpty())
-        <!-- Summary Cards at Top -->
-        <div class="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-3">
-            <!-- Total Categories Card -->
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="flex items-center justify-center w-12 h-12 rounded-md bg-blue-500 text-white">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Categories</dt>
-                                <dd class="flex items-baseline">
-                                    <div class="text-2xl font-semibold text-gray-900 dark:text-white">
-                                        {{ $this->bestSellersData->count() }}
-                                    </div>
-                                </dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Total Units Card -->
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="flex items-center justify-center w-12 h-12 rounded-md bg-green-500 text-white">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Units Sold</dt>
-                                <dd class="flex items-baseline">
-                                    <div class="text-2xl font-semibold text-gray-900 dark:text-white">
-                                        {{ number_format($this->bestSellersData->sum(function($products) { return $products->sum('total_quantity'); })) }}
-                                    </div>
-                                </dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Total Revenue Card -->
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="flex items-center justify-center w-12 h-12 rounded-md bg-purple-500 text-white">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Sales</dt>
-                                <dd class="flex items-baseline">
-                                    <div class="text-2xl font-semibold text-gray-900 dark:text-white">
-                                        ₱{{ number_format($this->bestSellersData->sum(function($products) { return $products->sum('total_revenue'); }), 2) }}
-                                    </div>
-                                </dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
+    {{-- Status & Time Header --}}
+    <div class="absolute top-3 right-16 z-50 flex items-center gap-3 px-4 py-1.5">
+        {{-- Status Indicator Dot --}}
+        <div class="flex items-center gap-1.5">
+            <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+            <span class="text-xs font-semibold text-gray-700">Online</span>
+        </div>
+        {{-- Time Separator --}}
+        <span class="text-gray-300">•</span>
+        {{-- Manila Date & Time --}}
+        <div class="text-xs font-medium text-gray-600 flex items-center gap-2">
+            <span id="manila-date" x-data="{ date: '' }" x-init="
+                const updateDateTime = () => {
+                    const now = new Date();
+                    const manilaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+                    const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+                    const dateStr = manilaTime.toLocaleDateString('en-US', options);
+                    const hours = String(manilaTime.getHours()).padStart(2, '0');
+                    const minutes = String(manilaTime.getMinutes()).padStart(2, '0');
+                    const seconds = String(manilaTime.getSeconds()).padStart(2, '0');
+                    document.getElementById('manila-date').innerText = dateStr;
+                    document.getElementById('manila-clock').innerText = hours + ':' + minutes + ':' + seconds;
+                };
+                updateDateTime();
+                setInterval(updateDateTime, 1000);
+            ">--</span>
+            <span id="manila-clock">--:--:--</span>
+        </div>
+    </div>
+    <div class="space-y-4">
+        {{-- Navigation Tabs --}}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div class="flex items-center gap-2 overflow-x-auto">
+                <button
+                    wire:click="filterByPeriod('all')"
+                    class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $periodFilter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                >
+                    All Time
+                </button>
+                <button
+                    wire:click="filterByPeriod('today')"
+                    class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $periodFilter === 'today' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                >
+                    Today
+                </button>
+                <button
+                    wire:click="filterByPeriod('week')"
+                    class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $periodFilter === 'week' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                >
+                    <span class="inline-flex items-center gap-1">
+                        <span class="w-2 h-2 bg-blue-400 rounded-full"></span>
+                        This Week
+                    </span>
+                </button>
+                <button
+                    wire:click="filterByPeriod('month')"
+                    class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $periodFilter === 'month' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                >
+                    <span class="inline-flex items-center gap-1">
+                        <span class="w-2 h-2 bg-green-400 rounded-full"></span>
+                        This Month
+                    </span>
+                </button>
+                <button
+                    wire:click="filterByPeriod('year')"
+                    class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $periodFilter === 'year' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                >
+                    <span class="inline-flex items-center gap-1">
+                        <span class="w-2 h-2 bg-amber-400 rounded-full"></span>
+                        This Year
+                    </span>
+                </button>
             </div>
         </div>
 
-        <!-- Best Sellers by Category -->
-        <div class="space-y-6">
+        {{-- Best Sellers Grid --}}
+        @if($this->bestSellersData->isNotEmpty())
+        <!-- Best Sellers Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach($this->bestSellersData as $categoryName => $products)
-                <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+                <!-- Category Card -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 border-amber-300 dark:border-amber-700 overflow-hidden hover:shadow-md transition-shadow">
                     <!-- Category Header -->
-                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                            {{ $categoryName }}
-                        </h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            {{ $products->count() }} {{ Str::plural('product', $products->count()) }} · {{ $this->startDate }} to {{ $this->endDate }}
-                        </p>
+                    <div class="px-4 py-3 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-gray-900 dark:to-gray-800 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $categoryName }}</h3>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {{ $products->count() }} {{ Str::plural('product', $products->count()) }}
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-amber-700 dark:text-amber-400">
+                                    ₱{{ number_format($products->sum('total_revenue'), 0) }}
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">
+                                    {{ $products->sum('total_quantity') }} units
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Products Table -->
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead class="bg-gray-50 dark:bg-gray-900">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        Rank
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        Product
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        Units Sold
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        Sales
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        Performance
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                @foreach($products as $index => $productData)
-                                    @php
-                                        $topProductQuantity = $products->first()->total_quantity ?? 1;
-                                        $percentage = $topProductQuantity > 0 ? round(($productData->total_quantity / $topProductQuantity) * 100, 0) : 0;
-                                    @endphp
-                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                        <!-- Rank -->
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                @if($index === 0)
-                                                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 font-bold text-sm">
-                                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                                        </svg>
-                                                    </span>
-                                                @elseif($index === 1)
-                                                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold text-sm">
-                                                        2
-                                                    </span>
-                                                @elseif($index === 2)
-                                                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200 font-bold text-sm">
-                                                        3
-                                                    </span>
-                                                @else
-                                                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-semibold text-sm">
-                                                        {{ $index + 1 }}
-                                                    </span>
-                                                @endif
-                                            </div>
-                                        </td>
+                    <!-- Products List -->
+                    <div class="p-4 space-y-2 max-h-64 overflow-y-auto">
+                        @foreach($products as $index => $productData)
+                            @php
+                                $topProductQuantity = $products->first()->total_quantity ?? 1;
+                                $percentage = $topProductQuantity > 0 ? round(($productData->total_quantity / $topProductQuantity) * 100, 0) : 0;
+                            @endphp
 
-                                        <!-- Product Name -->
-                                        <td class="px-6 py-4">
-                                            <div class="flex items-center">
-                                                <div>
-                                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                                        {{ $productData->product->name }}
-                                                    </div>
-                                                    <div class="text-sm text-gray-500 dark:text-gray-400">
-                                                        SKU: {{ $productData->product->sku }}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
+                            <div class="flex items-center justify-between text-sm group hover:bg-gray-50 dark:hover:bg-gray-700 p-3 rounded transition-colors relative {{ $index === 0 ? 'bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950 dark:to-amber-950 border-l-4 border-yellow-400' : '' }}">
+                                <!-- Rank Badge -->
+                                <div class="flex-shrink-0 mr-2">
+                                    @if($index === 0)
+                                        <div class="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 text-white font-bold text-xs shadow-md">
+                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                            </svg>
+                                        </div>
+                                    @elseif($index === 1)
+                                        <div class="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-gray-300 to-gray-400 text-white font-bold text-xs shadow-md">
+                                            2
+                                        </div>
+                                    @elseif($index === 2)
+                                        <div class="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-orange-300 to-orange-400 text-white font-bold text-xs shadow-md">
+                                            3
+                                        </div>
+                                    @else
+                                        <div class="flex items-center justify-center w-7 h-7 rounded-full bg-blue-500 dark:bg-blue-600 text-white font-bold text-xs shadow-md">
+                                            {{ $index + 1 }}
+                                        </div>
+                                    @endif
+                                </div>
 
-                                        <!-- Units Sold -->
-                                        <td class="px-6 py-4 whitespace-nowrap text-right">
-                                            <div class="text-sm font-semibold text-gray-900 dark:text-white">
-                                                {{ number_format($productData->total_quantity) }}
-                                            </div>
-                                            <div class="text-xs text-gray-500 dark:text-gray-400">
-                                                units
-                                            </div>
-                                        </td>
+                                <!-- Product Info -->
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm {{ $index === 0 ? 'font-bold text-amber-900 dark:text-amber-100' : 'font-semibold text-gray-900 dark:text-white' }} truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                        {{ $productData->product->name }}
+                                    </p>
+                                    <p class="text-xs {{ $index === 0 ? 'text-amber-700 dark:text-amber-300' : 'text-gray-500 dark:text-gray-400' }} truncate">
+                                        SKU: {{ $productData->product->sku }}
+                                    </p>
+                                </div>
 
-                                        <!-- Revenue -->
-                                        <td class="px-6 py-4 whitespace-nowrap text-right">
-                                            <div class="text-sm font-semibold text-green-600 dark:text-green-400">
-                                                ₱{{ number_format($productData->total_revenue, 2) }}
-                                            </div>
-                                            <div class="text-xs text-gray-500 dark:text-gray-400">
-                                                sales
-                                            </div>
-                                        </td>
-
-                                        <!-- Performance Bar -->
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center gap-3">
-                                                <div class="flex-1 min-w-[120px]">
-                                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                                        <div
-                                                            class="h-2 rounded-full transition-all duration-300 {{ $index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' : ($index === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-600' : 'bg-gradient-to-r from-blue-400 to-blue-600') }}"
-                                                            style="width: {{ min($percentage, 100) }}%"
-                                                        ></div>
-                                                    </div>
-                                                </div>
-                                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[3rem] text-right">
-                                                    {{ $percentage }}%
-                                                </span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                <!-- Metrics -->
+                                <div class="text-right ml-2 flex-shrink-0">
+                                    <div class="text-sm {{ $index === 0 ? 'font-bold text-amber-900 dark:text-amber-100' : 'font-bold text-gray-900 dark:text-white' }}">
+                                        {{ number_format($productData->total_quantity) }}
+                                    </div>
+                                    <div class="text-xs {{ $index === 0 ? 'text-amber-700 dark:text-amber-300' : 'text-green-600 dark:text-green-400' }} font-semibold">
+                                        ₱{{ number_format($productData->total_revenue, 0) }}
+                                    </div>
+                                    <div class="text-xs {{ $index === 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400' }} mt-0.5">
+                                        {{ $percentage }}%
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             @endforeach
         </div>
 
-        <!-- Info Banner -->
-        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <div class="flex gap-3">
-                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                </svg>
-                <div class="text-sm text-blue-800 dark:text-blue-300">
-                    <p class="font-semibold">About this report</p>
-                    <p class="mt-1">
-                        Showing top 3 best-selling products per category from <strong>completed orders</strong> between <strong>{{ $this->startDate }}</strong> and <strong>{{ $this->endDate }}</strong>. Performance percentages are relative to the top-selling product in each category.
-                    </p>
-                </div>
-            </div>
-        </div>
+
     @else
         <!-- Empty State -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center">
@@ -246,5 +190,6 @@
                 Refresh Data
             </button>
         </div>
-    @endif
+        @endif
+    </div>
 </x-filament-panels::page>

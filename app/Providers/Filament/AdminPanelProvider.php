@@ -6,7 +6,6 @@ namespace App\Providers\Filament;
 
 use App\Filament\Widgets\CoffeeShopOverviewWidget;
 use App\Filament\Widgets\FinancialSummaryWidget;
-use App\Filament\Widgets\InventoryStatusWidget;
 use App\Filament\Widgets\LowStockAlertWidget;
 use App\Filament\Widgets\OrderStatusWidget;
 use App\Filament\Widgets\SalesTrendsWidget;
@@ -41,6 +40,7 @@ final class AdminPanelProvider extends PanelProvider
             ->login(\App\Filament\Pages\Auth\Login::class)
             ->topbar(false)
             ->spa(true)
+            ->sidebarCollapsibleOnDesktop()
             ->colors([
                 'primary' => Color::Amber,
             ])

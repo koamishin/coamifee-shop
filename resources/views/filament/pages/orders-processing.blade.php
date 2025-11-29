@@ -1,34 +1,81 @@
 <x-filament-panels::page>
+    {{-- Status & Time Header --}}
+    <div class="absolute top-3 right-16 z-50 flex items-center gap-3 px-4 py-1.5">
+        {{-- Status Indicator Dot --}}
+        <div class="flex items-center gap-1.5">
+            <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+            <span class="text-xs font-semibold text-gray-700">Online</span>
+        </div>
+        {{-- Time Separator --}}
+        <span class="text-gray-300">•</span>
+        {{-- Manila Date & Time --}}
+        <div class="text-xs font-medium text-gray-600 flex items-center gap-2">
+            <span id="manila-date" x-data="{ date: '' }" x-init="
+                const updateDateTime = () => {
+                    const now = new Date();
+                    const manilaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+                    const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+                    const dateStr = manilaTime.toLocaleDateString('en-US', options);
+                    const hours = String(manilaTime.getHours()).padStart(2, '0');
+                    const minutes = String(manilaTime.getMinutes()).padStart(2, '0');
+                    const seconds = String(manilaTime.getSeconds()).padStart(2, '0');
+                    document.getElementById('manila-date').innerText = dateStr;
+                    document.getElementById('manila-clock').innerText = hours + ':' + minutes + ':' + seconds;
+                };
+                updateDateTime();
+                setInterval(updateDateTime, 1000);
+            ">--</span>
+            <span id="manila-clock">--:--:--</span>
+        </div>
+    </div>
     <div class="space-y-4">
         {{-- Status Filter Tabs --}}
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <div class="flex items-center gap-2 overflow-x-auto">
-                <button
-                    wire:click="filterByStatus('all')"
-                    class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $statusFilter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
-                >
-                    All Orders
-                </button>
-                <button
-                    wire:click="filterByStatus('pending')"
-                    class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $statusFilter === 'pending' ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
-                >
-                    <span class="inline-flex items-center gap-1">
-                        <span class="w-2 h-2 bg-yellow-400 rounded-full"></span>
-                        In Progress
-                    </span>
-                </button>
-                <button
-                    wire:click="filterByStatus('completed')"
-                    class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $statusFilter === 'completed' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
-                >
-                    <span class="inline-flex items-center gap-1">
-                        <span class="w-2 h-2 bg-green-400 rounded-full"></span>
-                        Completed
-                    </span>
-                </button>
-            </div>
-        </div>
+         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+             <div class="flex items-center gap-2 overflow-x-auto">
+                 <button
+                     wire:click="filterByStatus('all')"
+                     class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $statusFilter === 'all' && $paymentStatusFilter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                 >
+                     All Orders
+                 </button>
+                 <button
+                     wire:click="filterByStatus('pending')"
+                     class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $statusFilter === 'pending' ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                 >
+                     <span class="inline-flex items-center gap-1">
+                         <span class="w-2 h-2 bg-yellow-400 rounded-full"></span>
+                         In Progress
+                     </span>
+                 </button>
+                 <button
+                     wire:click="filterByStatus('completed')"
+                     class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $statusFilter === 'completed' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                 >
+                     <span class="inline-flex items-center gap-1">
+                         <span class="w-2 h-2 bg-green-400 rounded-full"></span>
+                         Completed
+                     </span>
+                 </button>
+                 <button
+                     wire:click="filterByPaymentStatus('refunded')"
+                     class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $paymentStatusFilter === 'refunded' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                 >
+                     <span class="inline-flex items-center gap-1">
+                         <span class="w-2 h-2 bg-orange-400 rounded-full"></span>
+                         Refunded
+                     </span>
+                 </button>
+                 <button
+                     wire:click="filterByPaymentStatus('cancelled')"
+                     class="px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap {{ $paymentStatusFilter === 'cancelled' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                 >
+                     <span class="inline-flex items-center gap-1">
+                         <span class="w-2 h-2 bg-red-400 rounded-full"></span>
+                         Cancelled
+                     </span>
+                 </button>
+             </div>
+         </div>
 
         {{-- Orders Grid --}}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -152,14 +199,17 @@
                     </div>
 
                     {{-- Order Items --}}
-                    <div class="p-4 space-y-2 max-h-48 overflow-y-auto {{ $order->status === 'completed' ? 'pointer-events-none opacity-75' : '' }}">
+                    <div class="p-4 space-y-2 max-h-48 overflow-y-auto {{ $order->status === 'completed' ? 'opacity-75' : '' }}">
                         @foreach($order->items as $item)
                             @php
-                                // Calculate discount per item if order has a discount
-                                $itemDiscountAmount = 0;
-                                if ($order->discount_amount && $order->discount_amount > 0) {
+                                // Use item-level discount if available, otherwise fallback to order-level discount calculation
+                                $itemDiscountAmount = (float) ($item->discount_amount ?? $item->discount ?? 0);
+
+                                // Fallback: Calculate discount per item if order has a discount and item doesn't have its own
+                                if ($itemDiscountAmount === 0.0 && $order->discount_amount && $order->discount_amount > 0 && $order->subtotal > 0) {
                                     $itemDiscountAmount = ($item->subtotal / $order->subtotal) * $order->discount_amount;
                                 }
+
                                 $itemFinalTotal = $item->subtotal - $itemDiscountAmount;
                                 // Check if order is refunded
                                 $isRefunded = $order->payment_status === 'refunded' || $order->payment_status === 'refund_partial';
@@ -195,9 +245,16 @@
 
                                     {{-- Item Name --}}
                                     <div class="flex flex-col">
-                                        <span class="font-medium {{ $item->is_served ? 'text-gray-400 line-through' : '' }} {{ $isRefunded ? 'text-red-600 line-through' : 'text-gray-900' }}">
-                                            {{ $item->product->name }}
-                                        </span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium {{ $item->is_served ? 'text-gray-400 line-through' : '' }} {{ $isRefunded ? 'text-red-600 line-through' : 'text-gray-900' }}">
+                                                {{ $item->product->name }}
+                                            </span>
+                                            @if($itemDiscountAmount > 0 && isset($item->discount_percentage) && $item->discount_percentage > 0)
+                                                <span class="inline-flex items-center px-1.5 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">
+                                                    -{{ number_format($item->discount_percentage, 0) }}%
+                                                </span>
+                                            @endif
+                                        </div>
                                         @if($item->variant_name)
                                             <span class="text-xs {{ $item->is_served ? 'text-gray-400' : '' }} {{ $isRefunded ? 'text-red-500' : 'text-gray-500' }} flex items-center gap-1">
                                                 @if(strtolower($item->variant_name) === 'hot')
@@ -223,11 +280,38 @@
                             </div>
                         @endforeach
 
-                         {{-- Total After Discount --}}
-                         @if($order->discount_amount && $order->discount_amount > 0)
-                             <div class="mt-2 pt-2 border-t border-gray-200 flex items-center justify-between text-sm">
-                                 <span class="text-gray-600 font-medium">Total After Discount:</span>
-                                 <span class="text-green-600 font-semibold">{{ $this->formatCurrency($order->subtotal - $order->discount_amount) }}</span>
+                         {{-- Subtotal After Item Discounts --}}
+                         @php
+                             $itemDiscountTotal = $order->items->sum(function($item) {
+                                 return (float) ($item->discount_amount ?? $item->discount ?? 0);
+                             });
+                             $subtotalAfterItemDiscounts = $order->subtotal - $itemDiscountTotal;
+                         @endphp
+
+                         @if($itemDiscountTotal > 0 || ($order->discount_amount && $order->discount_amount > 0))
+                             <div class="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                                 @if($itemDiscountTotal > 0)
+                                     <div class="flex items-center justify-between text-sm">
+                                         <span class="text-gray-600">Subtotal After Item Discounts:</span>
+                                         <span class="text-gray-700 font-medium">{{ $this->formatCurrency($subtotalAfterItemDiscounts) }}</span>
+                                     </div>
+                                 @endif
+                                 @if($order->discount_amount && $order->discount_amount > 0)
+                                     <div class="flex items-center justify-between text-sm">
+                                         <span class="text-gray-600">Order Discount (-{{ $order->discount_value }}%):</span>
+                                         <span class="text-red-600 font-medium">-{{ $this->formatCurrency($order->discount_amount) }}</span>
+                                     </div>
+                                 @endif
+                                 @if($order->add_ons_total && $order->add_ons_total > 0)
+                                     <div class="flex items-center justify-between text-sm">
+                                         <span class="text-gray-600">Add-ons:</span>
+                                         <span class="text-purple-600 font-medium">+{{ $this->formatCurrency($order->add_ons_total) }}</span>
+                                     </div>
+                                 @endif
+                                 <div class="flex items-center justify-between text-sm font-semibold pt-1 border-t border-gray-300">
+                                     <span class="text-gray-700">Order Total:</span>
+                                     <span class="text-green-600">{{ $this->formatCurrency($order->total) }}</span>
+                                 </div>
                              </div>
                          @endif
 
@@ -310,8 +394,7 @@
                                      href="{{ route('orders.print-kitchen', $order) }}"
                                      target="_blank"
                                      {{ $order->status === 'cancelled' ? 'onclick=return\\ false' : '' }}
-                                     class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-sm {{ $order->status === 'cancelled' ? 'opacity-50 cursor-not-allowed pointer-events-none' : '' }}"
-                                 >
+                                     class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-sm {{ $order->status === 'cancelled' ? 'opacity-50 cursor-not-allowed pointer-events-none' : '' }}">
                                      <x-filament::icon icon="heroicon-o-printer" class="w-4 h-4" />
                                      Print
                                  </a>

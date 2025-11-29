@@ -83,8 +83,8 @@ final class ProductForm
                             ->helperText(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true
                                 ? 'For beverages with variants, set prices for Hot and Cold variants below'
                                 : 'Set the selling price for this product')
-                            ->live(onBlur: true)
-                            ->hidden(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true),
+                            ->live(onBlur: true),
+                            // ->hidden(fn (callable $get) => (int) $get('category_id') === 1 && $get('has_variants') === true),
                         // Variant toggle - only visible for Beverages category
                         Toggle::make('has_variants')
                             ->label('This beverage has Hot & Cold variants')

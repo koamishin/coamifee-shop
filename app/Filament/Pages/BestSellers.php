@@ -22,6 +22,8 @@ final class BestSellers extends Page
 
     public ?string $endDate = null;
 
+    public string $periodFilter = 'all';
+
     // protected static bool $shouldRegisterNavigation = true;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-trophy';
@@ -46,6 +48,36 @@ final class BestSellers extends Page
     public function refreshData(): void
     {
         $this->bestSellersData = $this->getBestSellersData();
+    }
+
+    public function filterByPeriod(string $period): void
+    {
+        $this->periodFilter = $period;
+
+        match ($period) {
+            'today' => [
+                $this->startDate = now()->toDateString(),
+                $this->endDate = now()->toDateString(),
+            ],
+            'week' => [
+                $this->startDate = now()->startOfWeek()->toDateString(),
+                $this->endDate = now()->endOfWeek()->toDateString(),
+            ],
+            'month' => [
+                $this->startDate = now()->startOfMonth()->toDateString(),
+                $this->endDate = now()->endOfMonth()->toDateString(),
+            ],
+            'year' => [
+                $this->startDate = now()->startOfYear()->toDateString(),
+                $this->endDate = now()->endOfYear()->toDateString(),
+            ],
+            default => [
+                $this->startDate = now()->subMonth()->toDateString(),
+                $this->endDate = now()->toDateString(),
+            ]
+        };
+
+        $this->refreshData();
     }
 
     protected function getBestSellersData(): Collection

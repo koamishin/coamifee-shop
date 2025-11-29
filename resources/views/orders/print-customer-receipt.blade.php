@@ -87,7 +87,13 @@
 
         .item-price {
             text-align: right;
-            width: 30%;
+            width: 20%;
+        }
+
+        .item-discount {
+            text-align: right;
+            width: 10%;
+            color: #008000;
         }
 
         .items-header {
@@ -253,6 +259,7 @@
                 <td class="item-name">Item</td>
                 <td class="item-qty">Qty</td>
                 <td class="item-price">Price</td>
+                <td class="item-discount">Disc</td>
             </tr>
             @foreach($order->items as $item)
                 <tr>
@@ -264,6 +271,13 @@
                     </td>
                     <td class="item-qty">{{ $item->quantity }}</td>
                     <td class="item-price">{{ number_format($item->subtotal, 2) }}</td>
+                    <td class="item-discount">
+                        @if($item->discount_amount > 0)
+                            -{{ number_format($item->discount_amount, 2) }}
+                        @else
+                            -
+                        @endif
+                    </td>
                 </tr>
             @endforeach
         </table>
@@ -318,14 +332,14 @@
                     <span class="payment-label">Payment Method:</span>
                     <span>{{ ucfirst(str_replace('_', ' ', $order->payment_method ?? 'N/A')) }}</span>
                 </div>
-                @if($order->payment_method === 'cash')
+                {{-- @if($order->payment_method === 'cash')
                     @if($order->change_amount > 0)
                         <div class="payment-row">
                             <span class="payment-label">Change:</span>
                             <span>{{ number_format($order->change_amount, 2) }}</span>
                         </div>
                     @endif
-                @endif
+                @endif --}}
                 <div class="payment-row">
                     <span class="payment-label">Status:</span>
                     <span>PAID</span>
