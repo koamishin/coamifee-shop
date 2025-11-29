@@ -1,6 +1,37 @@
 <x-filament-panels::page>
     {{-- Coffee Shop POS Layout - Optimized for Desktop & Tablet --}}
     <div class="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 -m-6 h-[calc(100vh-4rem)] overflow-hidden">
+        
+        {{-- Status & Time Header --}}
+        <div class="absolute top-3 right-16 z-50 flex items-center gap-3 px-4 py-1.5">
+            {{-- Status Indicator Dot --}}
+            <div class="flex items-center gap-1.5">
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span class="text-xs font-semibold text-gray-700">Online</span>
+            </div>
+            {{-- Time Separator --}}
+            <span class="text-gray-300">•</span>
+            {{-- Manila Date & Time --}}
+            <div class="text-xs font-medium text-gray-600 flex items-center gap-2">
+                <span id="manila-date" x-data="{ date: '' }" x-init="
+                    const updateDateTime = () => {
+                        const now = new Date();
+                        const manilaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+                        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+                        const dateStr = manilaTime.toLocaleDateString('en-US', options);
+                        const hours = String(manilaTime.getHours()).padStart(2, '0');
+                        const minutes = String(manilaTime.getMinutes()).padStart(2, '0');
+                        const seconds = String(manilaTime.getSeconds()).padStart(2, '0');
+                        document.getElementById('manila-date').innerText = dateStr;
+                        document.getElementById('manila-clock').innerText = hours + ':' + minutes + ':' + seconds;
+                    };
+                    updateDateTime();
+                    setInterval(updateDateTime, 1000);
+                ">--</span>
+                <span id="manila-clock">--:--:--</span>
+            </div>
+        </div>
+        
         <div class="h-full flex flex-col lg:flex-row gap-3 p-3 overflow-hidden">
 
             {{-- LEFT SECTION: Products & Categories --}}
