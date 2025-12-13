@@ -59,5 +59,5 @@ test('total units sold and revenue stats are calculated correctly', function ():
         ->sum('total');
 
     expect($totalUnits)->toBe(8);
-    expect($totalRevenue)->toBe(800.00);
+    expect((float) $totalRevenue)->toBe(800.00);
 });

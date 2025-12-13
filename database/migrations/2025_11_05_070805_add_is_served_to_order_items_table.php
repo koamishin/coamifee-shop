@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('order_items', function (Blueprint $table) {
+        Schema::table('order_items', function (Blueprint $table): void {
             $table->boolean('is_served')->default(false)->after('subtotal');
         });
     }
@@ -23,7 +23,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('order_items', function (Blueprint $table) {
+        Schema::table('order_items', function (Blueprint $table): void {
             $table->dropColumn('is_served');
         });
     }

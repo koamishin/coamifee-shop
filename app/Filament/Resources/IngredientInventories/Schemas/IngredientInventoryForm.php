@@ -7,6 +7,7 @@ namespace App\Filament\Resources\IngredientInventories\Schemas;
 use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
 use App\Models\Ingredient;
+use App\Models\IngredientInventory;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -38,7 +39,7 @@ final class IngredientInventoryForm
                                 ->afterStateUpdated(
                                     fn ($state, callable $set) => $set('ingredient_id', null)
                                 )
-                                ->default(fn ($record) => $record ? false : null)
+                                ->default(fn ($record): ?false => $record ? false : null)
                                 ->columnSpan(2),
 
                             // Existing ingredient selection
@@ -66,20 +67,20 @@ final class IngredientInventoryForm
                                 ->maxLength(100)
                                 ->placeholder('e.g., Arabica Coffee Beans')
                                 ->helperText('Enter the full name of the ingredient')
-                                ->hidden(fn (callable $get) => ! $get('create_new_ingredient'))
+                                ->hidden(fn (callable $get): bool => ! $get('create_new_ingredient'))
                                 ->requiredWith('create_new_ingredient')
                                 ->columnSpan(1),
 
                             Select::make('new_ingredient_unit_type')
                                 ->label('Unit of Measurement')
                                 ->required()
-                                ->options(fn () => UnitType::getOptions())
+                                ->options(fn (): array => UnitType::getOptions())
                                 ->native(false)
                                 ->searchable()
                                 ->preload()
                                 ->placeholder('Select unit type')
                                 ->helperText('How this ingredient is measured and tracked')
-                                ->hidden(fn (callable $get) => ! $get('create_new_ingredient'))
+                                ->hidden(fn (callable $get): bool => ! $get('create_new_ingredient'))
                                 ->requiredWith('create_new_ingredient')
                                 ->columnSpan(1),
 
@@ -191,7 +192,7 @@ final class IngredientInventoryForm
 
         // If ingredient has existing inventory, populate those values
         $existingInventory = $ingredient instanceof Ingredient ? $ingredient->inventory : null;
-        if ($existingInventory instanceof \App\Models\IngredientInventory) {
+        if ($existingInventory instanceof IngredientInventory) {
             $set('current_stock', (float) $existingInventory->current_stock);
             $set('min_stock_level', (float) $existingInventory->min_stock_level);
             $set('max_stock_level', (float) $existingInventory->max_stock_level);
@@ -286,49 +287,6 @@ final class IngredientInventoryForm
 
         return new HtmlString(
             "<span style='color: {$color}; font-weight: bold;'>{$percentage}%</span>",
-        );
-    }
-
-    private static function getDaysUntilReorder(
-        callable $get,
-    ): HtmlString {
-        $current = is_numeric($get('current_stock')) ? (float) $get('current_stock') : 0.0;
-        $reorder = is_numeric($get('reorder_level')) ? (float) $get('reorder_level') : 0.0;
-
-        if ($current <= $reorder) {
-            return new HtmlString(
-                '<span style="color: #dc2626; font-weight: bold;">Now</span>',
-            );
-        }
-
-        // This would typically use historical usage data
-        // For now, we'll estimate based on a simple calculation
-        $daysUntilReorder = 30; // Placeholder
-
-        return new HtmlString(
-            "<span style='color: #10b981;'>{$daysUntilReorder} days</span>",
-        );
-    }
-
-    private static function getRecommendedOrder(
-        callable $get,
-    ): HtmlString {
-        $current = is_numeric($get('current_stock')) ? (float) $get('current_stock') : 0.0;
-        $max = is_numeric($get('max_stock_level')) ? (float) $get('max_stock_level') : 1000.0;
-        $reorder = is_numeric($get('reorder_level')) ? (float) $get('reorder_level') : 100.0;
-
-        if ($current > $reorder) {
-            return new HtmlString(
-                '<span style="color: #6b7280;">Not needed</span>',
-            );
-        }
-
-        $recommended = $max - $current;
-
-        return new HtmlString(
-            "<span style='color: #3b82f6; font-weight: bold;'>".
-                number_format($recommended, 2).
-                '</span>',
         );
     }
 

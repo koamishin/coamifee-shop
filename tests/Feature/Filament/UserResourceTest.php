@@ -11,8 +11,10 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
+use Pest\Mixins\Expectation;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -21,7 +23,7 @@ use function Pest\Laravel\assertDatabaseHas;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $superAdminRole = Role::create(['name' => 'super_admin']);
 
     // Create necessary permissions for User resource
@@ -46,20 +48,20 @@ beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
 });
 
-describe('User List Page', function () {
-    it('can render list users page', function () {
+describe('User List Page', function (): void {
+    it('can render list users page', function (): void {
         Livewire::test(ListUsers::class)
             ->assertSuccessful();
     });
 
-    it('can list users', function () {
+    it('can list users', function (): void {
         $users = User::factory()->count(5)->create();
 
         Livewire::test(ListUsers::class)
             ->assertCanSeeTableRecords($users);
     });
 
-    it('can search users by name', function () {
+    it('can search users by name', function (): void {
         $users = User::factory()->count(5)->create();
         $searchUser = $users->first();
 
@@ -69,7 +71,7 @@ describe('User List Page', function () {
             ->assertCanNotSeeTableRecords($users->skip(1));
     });
 
-    it('can search users by email', function () {
+    it('can search users by email', function (): void {
         $users = User::factory()->count(5)->create();
         $searchUser = $users->last();
 
@@ -79,7 +81,7 @@ describe('User List Page', function () {
             ->assertCanNotSeeTableRecords($users->take($users->count() - 1));
     });
 
-    it('can filter users by role', function () {
+    it('can filter users by role', function (): void {
         $role = Role::create(['name' => 'manager']);
 
         $userWithRole = User::factory()->create();
@@ -93,7 +95,7 @@ describe('User List Page', function () {
             ->assertCanNotSeeTableRecords([$userWithoutRole]);
     });
 
-    it('can filter users by email verification status', function () {
+    it('can filter users by email verification status', function (): void {
         $verifiedUser = User::factory()->create(['email_verified_at' => now()]);
         $unverifiedUser = User::factory()->create(['email_verified_at' => null]);
 
@@ -103,7 +105,7 @@ describe('User List Page', function () {
             ->assertCanNotSeeTableRecords([$unverifiedUser]);
     });
 
-    it('can filter users by 2FA status', function () {
+    it('can filter users by 2FA status', function (): void {
         $userWith2FA = User::factory()->create(['two_factor_confirmed_at' => now()]);
         $userWithout2FA = User::factory()->create(['two_factor_confirmed_at' => null]);
 
@@ -113,7 +115,7 @@ describe('User List Page', function () {
             ->assertCanNotSeeTableRecords([$userWithout2FA]);
     });
 
-    it('can sort users by name', function () {
+    it('can sort users by name', function (): void {
         User::factory()->create(['name' => 'Zebra User']);
         User::factory()->create(['name' => 'Alpha User']);
 
@@ -123,13 +125,13 @@ describe('User List Page', function () {
     });
 });
 
-describe('User Create Page', function () {
-    it('can render create user page', function () {
+describe('User Create Page', function (): void {
+    it('can render create user page', function (): void {
         Livewire::test(CreateUser::class)
             ->assertSuccessful();
     });
 
-    it('can create user with basic information', function () {
+    it('can create user with basic information', function (): void {
         $userData = [
             'name' => 'Test User',
             'email' => 'test@example.com',
@@ -147,11 +149,11 @@ describe('User Create Page', function () {
             'email' => 'test@example.com',
         ]);
 
-        $user = User::where('email', 'test@example.com')->first();
+        $user = User::query()->where('email', 'test@example.com')->first();
         expect(Hash::check('password123', $user->password))->toBeTrue();
     });
 
-    it('can create user with roles', function () {
+    it('can create user with roles', function (): void {
         $role = Role::create(['name' => 'editor']);
 
         $userData = [
@@ -167,11 +169,11 @@ describe('User Create Page', function () {
             ->call('create')
             ->assertHasNoErrors();
 
-        $user = User::where('email', 'editor@example.com')->first();
+        $user = User::query()->where('email', 'editor@example.com')->first();
         expect($user->hasRole('editor'))->toBeTrue();
     });
 
-    it('can create user with direct permissions', function () {
+    it('can create user with direct permissions', function (): void {
         $permission = Permission::create(['name' => 'edit posts']);
 
         $userData = [
@@ -187,11 +189,11 @@ describe('User Create Page', function () {
             ->call('create')
             ->assertHasNoErrors();
 
-        $user = User::where('email', 'permission@example.com')->first();
+        $user = User::query()->where('email', 'permission@example.com')->first();
         expect($user->hasPermissionTo('edit posts'))->toBeTrue();
     });
 
-    it('can create user with verified email', function () {
+    it('can create user with verified email', function (): void {
         $userData = [
             'name' => 'Verified User',
             'email' => 'verified@example.com',
@@ -205,11 +207,11 @@ describe('User Create Page', function () {
             ->call('create')
             ->assertHasNoErrors();
 
-        $user = User::where('email', 'verified@example.com')->first();
+        $user = User::query()->where('email', 'verified@example.com')->first();
         expect($user->email_verified_at)->not->toBeNull();
     });
 
-    it('validates required fields', function () {
+    it('validates required fields', function (): void {
         Livewire::test(CreateUser::class)
             ->assertOk()
             ->fillForm([
@@ -221,7 +223,7 @@ describe('User Create Page', function () {
             ->assertHasFormErrors(['name' => 'required', 'email' => 'required', 'password' => 'required']);
     });
 
-    it('validates email format', function () {
+    it('validates email format', function (): void {
         Livewire::test(CreateUser::class)
             ->assertOk()
             ->fillForm([
@@ -234,7 +236,7 @@ describe('User Create Page', function () {
             ->assertHasFormErrors(['email' => 'email']);
     });
 
-    it('validates unique email', function () {
+    it('validates unique email', function (): void {
         $existingUser = User::factory()->create(['email' => 'existing@example.com']);
 
         Livewire::test(CreateUser::class)
@@ -249,7 +251,7 @@ describe('User Create Page', function () {
             ->assertHasFormErrors(['email' => 'unique']);
     });
 
-    it('validates password confirmation', function () {
+    it('validates password confirmation', function (): void {
         Livewire::test(CreateUser::class)
             ->assertOk()
             ->fillForm([
@@ -263,15 +265,15 @@ describe('User Create Page', function () {
     });
 });
 
-describe('User Edit Page', function () {
-    it('can render edit user page', function () {
+describe('User Edit Page', function (): void {
+    it('can render edit user page', function (): void {
         $user = User::factory()->create();
 
         Livewire::test(EditUser::class, ['record' => $user->id])
             ->assertSuccessful();
     });
 
-    it('can retrieve user data', function () {
+    it('can retrieve user data', function (): void {
         $user = User::factory()->create([
             'name' => 'Original Name',
             'email' => 'original@example.com',
@@ -284,7 +286,7 @@ describe('User Edit Page', function () {
             ]);
     });
 
-    it('can update user basic information', function () {
+    it('can update user basic information', function (): void {
         $user = User::factory()->create();
 
         Livewire::test(EditUser::class, ['record' => $user->id])
@@ -302,7 +304,7 @@ describe('User Edit Page', function () {
         ]);
     });
 
-    it('can update user password', function () {
+    it('can update user password', function (): void {
         $user = User::factory()->create();
 
         Livewire::test(EditUser::class, ['record' => $user->id])
@@ -317,7 +319,7 @@ describe('User Edit Page', function () {
         expect(Hash::check('newpassword123', $user->password))->toBeTrue();
     });
 
-    it('can update user roles', function () {
+    it('can update user roles', function (): void {
         $user = User::factory()->create();
         $role = Role::create(['name' => 'moderator']);
 
@@ -330,7 +332,7 @@ describe('User Edit Page', function () {
         expect($user->hasRole('moderator'))->toBeTrue();
     });
 
-    it('can update user permissions', function () {
+    it('can update user permissions', function (): void {
         $user = User::factory()->create();
         $permission = Permission::create(['name' => 'delete posts']);
 
@@ -343,7 +345,7 @@ describe('User Edit Page', function () {
         expect($user->hasPermissionTo('delete posts'))->toBeTrue();
     });
 
-    it('can verify user email', function () {
+    it('can verify user email', function (): void {
         $user = User::factory()->create(['email_verified_at' => null]);
 
         Livewire::test(EditUser::class, ['record' => $user->id])
@@ -355,7 +357,7 @@ describe('User Edit Page', function () {
         expect($user->email_verified_at)->not->toBeNull();
     });
 
-    it('can unverify user email', function () {
+    it('can unverify user email', function (): void {
         $user = User::factory()->create(['email_verified_at' => now()]);
 
         Livewire::test(EditUser::class, ['record' => $user->id])
@@ -367,7 +369,7 @@ describe('User Edit Page', function () {
         expect($user->email_verified_at)->toBeNull();
     });
 
-    it('does not change password when field is empty', function () {
+    it('does not change password when field is empty', function (): void {
         $originalPassword = 'originalpassword';
         $user = User::factory()->create(['password' => Hash::make($originalPassword)]);
 
@@ -385,15 +387,15 @@ describe('User Edit Page', function () {
     });
 });
 
-describe('User View Page', function () {
-    it('can render view user page', function () {
+describe('User View Page', function (): void {
+    it('can render view user page', function (): void {
         $user = User::factory()->create();
 
         Livewire::test(ViewUser::class, ['record' => $user->id])
             ->assertSuccessful();
     });
 
-    it('can display user information', function () {
+    it('can display user information', function (): void {
         $user = User::factory()->create([
             'name' => 'View Test User',
             'email' => 'viewtest@example.com',
@@ -405,7 +407,7 @@ describe('User View Page', function () {
             ->assertSee('viewtest@example.com');
     });
 
-    it('can display user roles', function () {
+    it('can display user roles', function (): void {
         $user = User::factory()->create();
         $role = Role::create(['name' => 'viewer']);
         $user->assignRole($role);
@@ -414,7 +416,7 @@ describe('User View Page', function () {
             ->assertSee('viewer');
     });
 
-    it('can display user permissions', function () {
+    it('can display user permissions', function (): void {
         $user = User::factory()->create();
         $permission = Permission::create(['name' => 'view reports']);
         $role = Role::create(['name' => 'report_viewer']);
@@ -426,8 +428,8 @@ describe('User View Page', function () {
     });
 });
 
-describe('User Table Actions', function () {
-    it('can verify email via table action', function () {
+describe('User Table Actions', function (): void {
+    it('can verify email via table action', function (): void {
         $user = User::factory()->create(['email_verified_at' => null]);
 
         Livewire::test(ListUsers::class)
@@ -436,7 +438,7 @@ describe('User Table Actions', function () {
         expect($user->refresh()->email_verified_at)->not->toBeNull();
     });
 
-    it('can unverify email via table action', function () {
+    it('can unverify email via table action', function (): void {
         $user = User::factory()->create(['email_verified_at' => now()]);
 
         Livewire::test(ListUsers::class)
@@ -445,7 +447,7 @@ describe('User Table Actions', function () {
         expect($user->refresh()->email_verified_at)->toBeNull();
     });
 
-    it('can reset password via table action', function () {
+    it('can reset password via table action', function (): void {
         $user = User::factory()->create();
 
         Livewire::test(ListUsers::class)
@@ -458,7 +460,7 @@ describe('User Table Actions', function () {
         expect(Hash::check('resetpassword123', $user->password))->toBeTrue();
     });
 
-    it('can disable 2FA via table action', function () {
+    it('can disable 2FA via table action', function (): void {
         $user = User::factory()->create([
             'two_factor_secret' => 'secret',
             'two_factor_recovery_codes' => 'codes',
@@ -471,24 +473,24 @@ describe('User Table Actions', function () {
         $user->refresh();
         // Disable 2FA action might set to empty string instead of null
         // Check if it's null in the database before casting
-        $rawUser = Illuminate\Support\Facades\DB::table('users')->where('id', $user->id)->first();
+        $rawUser = DB::table('users')->where('id', $user->id)->first();
         expect($rawUser->two_factor_confirmed_at)->toBeNull();
         expect($user->two_factor_secret)->toBeNull();
         expect($user->two_factor_recovery_codes)->toBeNull();
     });
 
-    it('can delete user via table action', function () {
+    it('can delete user via table action', function (): void {
         $user = User::factory()->create();
 
         Livewire::test(ListUsers::class)
             ->callAction(TestAction::make('delete')->table($user));
 
-        expect(User::find($user->id))->toBeNull();
+        expect(User::query()->find($user->id))->toBeNull();
     });
 });
 
-describe('User Bulk Actions', function () {
-    it('can bulk verify emails', function () {
+describe('User Bulk Actions', function (): void {
+    it('can bulk verify emails', function (): void {
         $users = User::factory()->count(3)->create(['email_verified_at' => null]);
 
         Livewire::test(ListUsers::class)
@@ -498,7 +500,7 @@ describe('User Bulk Actions', function () {
         $users->each(fn ($user) => expect($user->refresh()->email_verified_at)->not->toBeNull());
     });
 
-    it('can bulk assign roles', function () {
+    it('can bulk assign roles', function (): void {
         $users = User::factory()->count(3)->create();
         $role = Role::create(['name' => 'contributor']);
 
@@ -508,16 +510,16 @@ describe('User Bulk Actions', function () {
                 'role' => 'contributor',
             ]);
 
-        $users->each(fn ($user) => expect($user->refresh()->hasRole('contributor'))->toBeTrue());
+        $users->each(fn ($user): Expectation => expect($user->refresh()->hasRole('contributor'))->toBeTrue());
     });
 
-    it('can bulk delete users', function () {
+    it('can bulk delete users', function (): void {
         $users = User::factory()->count(3)->create();
 
         Livewire::test(ListUsers::class)
             ->selectTableRecords($users->pluck('id')->toArray())
             ->callAction(TestAction::make(DeleteAction::class)->table()->bulk());
 
-        $users->each(fn ($user) => expect(User::find($user->id))->toBeNull());
+        $users->each(fn ($user): Expectation => expect(User::query()->find($user->id))->toBeNull());
     });
 });

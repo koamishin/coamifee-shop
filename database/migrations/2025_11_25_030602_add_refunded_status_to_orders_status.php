@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
+        Schema::table('orders', function (Blueprint $table): void {
             // Add refunded status to status enum
             $table->enum('status', ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled', 'refunded'])
                 ->default('pending')
@@ -26,7 +26,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
+        Schema::table('orders', function (Blueprint $table): void {
             // Revert back to previous status options
             $table->enum('status', ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'])
                 ->default('pending')

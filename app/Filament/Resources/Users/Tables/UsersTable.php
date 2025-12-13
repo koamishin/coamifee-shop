@@ -7,11 +7,15 @@ namespace App\Filament\Resources\Users\Tables;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\IconPosition;
 use Filament\Tables\Columns\IconColumn;
@@ -21,7 +25,10 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
 
 final class UsersTable
@@ -65,7 +72,7 @@ final class UsersTable
                     ->sortable()
                     ->alignCenter()
                     ->tooltip(fn (User $record): string => $record->email_verified_at
-                        ? 'Verified on '.\Illuminate\Support\Carbon::parse($record->email_verified_at)->format('M d, Y')
+                        ? 'Verified on '.Date::parse($record->email_verified_at)->format('M d, Y')
                         : 'Not verified'),
 
                 IconColumn::make('two_factor_confirmed_at')
@@ -78,7 +85,7 @@ final class UsersTable
                     ->sortable()
                     ->alignCenter()
                     ->tooltip(fn (User $record): string => $record->two_factor_confirmed_at
-                        ? 'Enabled on '.\Illuminate\Support\Carbon::parse($record->two_factor_confirmed_at)->format('M d, Y')
+                        ? 'Enabled on '.Date::parse($record->two_factor_confirmed_at)->format('M d, Y')
                         : 'Not enabled')
                     ->toggleable(),
 
@@ -113,7 +120,7 @@ final class UsersTable
                     ->queries(
                         true: fn (Builder $query) => $query->whereNotNull('email_verified_at'),
                         false: fn (Builder $query) => $query->whereNull('email_verified_at'),
-                        blank: fn (Builder $query) => $query,
+                        blank: fn (Builder $query): Builder => $query,
                     ),
 
                 TernaryFilter::make('two_factor_confirmed_at')
@@ -124,27 +131,25 @@ final class UsersTable
                     ->queries(
                         true: fn (Builder $query) => $query->whereNotNull('two_factor_confirmed_at'),
                         false: fn (Builder $query) => $query->whereNull('two_factor_confirmed_at'),
-                        blank: fn (Builder $query) => $query,
+                        blank: fn (Builder $query): Builder => $query,
                     ),
 
                 Filter::make('created_at')
                     ->form([
-                        \Filament\Forms\Components\DatePicker::make('created_from')
+                        DatePicker::make('created_from')
                             ->label('Created from'),
-                        \Filament\Forms\Components\DatePicker::make('created_until')
+                        DatePicker::make('created_until')
                             ->label('Created until'),
                     ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['created_from'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
-                            )
-                            ->when(
-                                $data['created_until'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
-                            );
-                    }),
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['created_from'],
+                            fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                        )
+                        ->when(
+                            $data['created_until'],
+                            fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                        )),
             ])
             ->deferFilters()
             ->recordActions([
@@ -188,13 +193,13 @@ final class UsersTable
                         ->icon('heroicon-o-key')
                         ->color('warning')
                         ->form([
-                            \Filament\Forms\Components\TextInput::make('new_password')
+                            TextInput::make('new_password')
                                 ->label('New Password')
                                 ->password()
                                 ->required()
                                 ->revealable()
-                                ->rule(\Illuminate\Validation\Rules\Password::defaults()),
-                            \Filament\Forms\Components\TextInput::make('new_password_confirmation')
+                                ->rule(Password::defaults()),
+                            TextInput::make('new_password_confirmation')
                                 ->label('Confirm Password')
                                 ->password()
                                 ->required()
@@ -245,13 +250,13 @@ final class UsersTable
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
 
-                    \Filament\Actions\BulkAction::make('verify_email')
+                    BulkAction::make('verify_email')
                         ->label('Verify Email')
                         ->icon('heroicon-o-check-badge')
                         ->color('success')
                         ->requiresConfirmation()
                         ->deselectRecordsAfterCompletion()
-                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                        ->action(function (Collection $records): void {
                             $records->each->update(['email_verified_at' => now()]);
 
                             Notification::make()
@@ -261,19 +266,19 @@ final class UsersTable
                                 ->send();
                         }),
 
-                    \Filament\Actions\BulkAction::make('assign_role')
+                    BulkAction::make('assign_role')
                         ->label('Assign Role')
                         ->icon('heroicon-o-shield-check')
                         ->color('primary')
                         ->form([
-                            \Filament\Forms\Components\Select::make('role')
+                            Select::make('role')
                                 ->label('Role')
                                 ->options(Role::all()->pluck('name', 'name'))
                                 ->required(),
                         ])
                         ->requiresConfirmation()
                         ->deselectRecordsAfterCompletion()
-                        ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data): void {
+                        ->action(function (Collection $records, array $data): void {
                             $records->each->assignRole($data['role']);
 
                             Notification::make()

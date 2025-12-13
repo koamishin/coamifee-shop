@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Validation\ValidationException;
 
 final class IngredientInventory extends Model
 {
@@ -43,7 +44,7 @@ final class IngredientInventory extends Model
      */
     protected static function booted(): void
     {
-        self::saving(function (IngredientInventory $inventory) {
+        self::saving(function (IngredientInventory $inventory): void {
             $validator = validator()->make($inventory->getAttributes(), [
                 'ingredient_id' => 'required|exists:ingredients,id',
                 'current_stock' => 'required|numeric|min:0',
@@ -55,9 +56,7 @@ final class IngredientInventory extends Model
                 'supplier_info' => 'nullable|string|max:500',
             ]);
 
-            if ($validator->fails()) {
-                throw new \Illuminate\Validation\ValidationException($validator);
-            }
+            throw_if($validator->fails(), ValidationException::class, $validator);
         });
     }
 }

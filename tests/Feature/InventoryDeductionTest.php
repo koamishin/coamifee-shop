@@ -6,16 +6,19 @@ use App\Enums\UnitType;
 use App\Models\Category;
 use App\Models\Ingredient;
 use App\Models\IngredientInventory;
+use App\Models\IngredientUsage;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductIngredient;
+use App\Models\ProductMetric;
+use App\Models\ProductVariant;
 use App\Services\OrderProcessingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     // Create a category
     $this->category = Category::factory()->create(['name' => 'Beverages']);
 
@@ -51,22 +54,22 @@ beforeEach(function () {
     ]);
 
     // Link ingredients to product
-    ProductIngredient::create([
+    ProductIngredient::query()->create([
         'product_id' => $this->product->id,
         'ingredient_id' => $this->coffeeBean->id,
         'quantity_required' => 20.0, // 20g coffee per cappuccino
     ]);
 
-    ProductIngredient::create([
+    ProductIngredient::query()->create([
         'product_id' => $this->product->id,
         'ingredient_id' => $this->milk->id,
         'quantity_required' => 150.0, // 150ml milk per cappuccino
     ]);
 
-    $this->orderProcessingService = app(OrderProcessingService::class);
+    $this->orderProcessingService = resolve(OrderProcessingService::class);
 });
 
-test('inventory is deducted when order is processed', function () {
+test('inventory is deducted when order is processed', function (): void {
     // Create an order with 2 cappuccinos
     $order = Order::factory()->create([
         'customer_name' => 'Test Customer',
@@ -74,7 +77,7 @@ test('inventory is deducted when order is processed', function () {
         'total' => 240.00,
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $this->product->id,
         'quantity' => 2,
@@ -109,7 +112,7 @@ test('inventory is deducted when order is processed', function () {
     expect($order->inventory_processed)->toBeTrue();
 });
 
-test('inventory is not deducted twice for same order', function () {
+test('inventory is not deducted twice for same order', function (): void {
     // Create an order
     $order = Order::factory()->create([
         'customer_name' => 'Test Customer',
@@ -117,7 +120,7 @@ test('inventory is not deducted twice for same order', function () {
         'total' => 120.00,
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $this->product->id,
         'quantity' => 1,
@@ -151,7 +154,7 @@ test('inventory is not deducted twice for same order', function () {
     expect((float) $this->coffeeInventory->current_stock)->toBe($expectedStock);
 });
 
-test('order fails if insufficient inventory', function () {
+test('order fails if insufficient inventory', function (): void {
     // Set low stock
     $this->coffeeInventory->update(['current_stock' => 10.0]); // Only 10g available
 
@@ -162,7 +165,7 @@ test('order fails if insufficient inventory', function () {
         'total' => 120.00,
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $this->product->id,
         'quantity' => 1,
@@ -180,7 +183,7 @@ test('order fails if insufficient inventory', function () {
     expect($order->inventory_processed)->toBeFalse();
 });
 
-test('ingredient usage is recorded when order is processed', function () {
+test('ingredient usage is recorded when order is processed', function (): void {
     // Create an order
     $order = Order::factory()->create([
         'customer_name' => 'Test Customer',
@@ -188,7 +191,7 @@ test('ingredient usage is recorded when order is processed', function () {
         'total' => 120.00,
     ]);
 
-    $orderItem = OrderItem::create([
+    $orderItem = OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $this->product->id,
         'quantity' => 1,
@@ -200,7 +203,7 @@ test('ingredient usage is recorded when order is processed', function () {
     $this->orderProcessingService->processOrder($order);
 
     // Check ingredient usage was recorded
-    $usages = App\Models\IngredientUsage::where('order_item_id', $orderItem->id)->get();
+    $usages = IngredientUsage::query()->where('order_item_id', $orderItem->id)->get();
 
     expect($usages)->toHaveCount(2); // Coffee and milk
 
@@ -213,7 +216,7 @@ test('ingredient usage is recorded when order is processed', function () {
     expect((float) $milkUsage->quantity_used)->toBe(150.0);
 });
 
-test('product metrics are recorded when order is processed', function () {
+test('product metrics are recorded when order is processed', function (): void {
     // Create an order
     $order = Order::factory()->create([
         'customer_name' => 'Test Customer',
@@ -221,7 +224,7 @@ test('product metrics are recorded when order is processed', function () {
         'total' => 240.00,
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $this->product->id,
         'quantity' => 2,
@@ -233,12 +236,12 @@ test('product metrics are recorded when order is processed', function () {
     $this->orderProcessingService->processOrder($order);
 
     // Check product metrics were recorded
-    $metrics = App\Models\ProductMetric::where('product_id', $this->product->id)->get();
+    $metrics = ProductMetric::query()->where('product_id', $this->product->id)->get();
 
     expect($metrics)->not->toBeEmpty();
 });
 
-test('can fulfill order checks inventory correctly', function () {
+test('can fulfill order checks inventory correctly', function (): void {
     // Create an order
     $order = Order::factory()->create([
         'customer_name' => 'Test Customer',
@@ -246,7 +249,7 @@ test('can fulfill order checks inventory correctly', function () {
         'total' => 120.00,
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $this->product->id,
         'quantity' => 1,
@@ -269,7 +272,7 @@ test('can fulfill order checks inventory correctly', function () {
     expect($canFulfill)->toBeFalse();
 });
 
-test('order with variant deducts inventory correctly', function () {
+test('order with variant deducts inventory correctly', function (): void {
     // Create a beverage with variant
     $beverage = Product::factory()->create([
         'name' => 'Coffee',
@@ -277,7 +280,7 @@ test('order with variant deducts inventory correctly', function () {
         'price' => 89.00,
     ]);
 
-    $hotVariant = App\Models\ProductVariant::create([
+    $hotVariant = ProductVariant::query()->create([
         'product_id' => $beverage->id,
         'name' => 'Hot',
         'price' => 89.00,
@@ -287,7 +290,7 @@ test('order with variant deducts inventory correctly', function () {
     ]);
 
     // Link ingredient to product
-    ProductIngredient::create([
+    ProductIngredient::query()->create([
         'product_id' => $beverage->id,
         'ingredient_id' => $this->coffeeBean->id,
         'quantity_required' => 15.0,
@@ -300,7 +303,7 @@ test('order with variant deducts inventory correctly', function () {
         'total' => 89.00,
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $beverage->id,
         'product_variant_id' => $hotVariant->id,

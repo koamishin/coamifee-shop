@@ -54,7 +54,7 @@ final class ExchangeRate extends Model
         Currency $base,
         Currency $target,
     ): ?self {
-        return self::active()
+        return self::query()->active()
             ->notExpired()
             ->forPair($base, $target)
             ->latest('fetched_at')
@@ -124,7 +124,7 @@ final class ExchangeRate extends Model
      */
     public static function getStoredRates(Currency $base): array
     {
-        return self::active()
+        return self::query()->active()
             ->notExpired()
             ->where('base_currency', $base->value)
             ->latest('fetched_at')
@@ -159,7 +159,7 @@ final class ExchangeRate extends Model
         Currency $base,
         int $maxAgeHours = 6,
     ): bool {
-        return self::active()
+        return self::query()->active()
             ->where('base_currency', $base->value)
             ->where('fetched_at', '>', now()->subHours($maxAgeHours))
             ->exists();

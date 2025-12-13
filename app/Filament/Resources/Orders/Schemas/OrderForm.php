@@ -65,7 +65,7 @@ final class OrderForm
                             Select::make('payment_method')
                                 ->label('Payment Method')
                                 ->required()
-                                ->options(function ($get) {
+                                ->options(function ($get): array {
                                     $orderType = $get('order_type');
 
                                     if ($orderType === 'delivery') {
@@ -81,7 +81,7 @@ final class OrderForm
                                         'maya' => 'Maya',
                                     ];
                                 })
-                                ->default(function ($get) {
+                                ->default(function ($get): string {
                                     $orderType = $get('order_type');
 
                                     return $orderType === 'delivery' ? 'grab' : 'cash';

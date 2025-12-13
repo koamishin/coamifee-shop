@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('refund_logs', function (Blueprint $table) {
+        Schema::create('refund_logs', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
             $table->foreignId('refunded_by')->constrained('users')->onDelete('cascade');

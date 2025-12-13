@@ -99,7 +99,7 @@ it('returns rate 1.0 for same currency', function (): void {
 
 it('can convert and format with target currency', function (): void {
     // Create mock exchange rate in database
-    ExchangeRate::create([
+    ExchangeRate::query()->create([
         'base_currency' => 'USD',
         'target_currency' => 'EUR',
         'rate' => 0.92,
@@ -117,7 +117,7 @@ it('can convert and format with target currency', function (): void {
 
 it('can convert to multiple currencies', function (): void {
     // Create mock exchange rates in database
-    ExchangeRate::create([
+    ExchangeRate::query()->create([
         'base_currency' => 'USD',
         'target_currency' => 'EUR',
         'rate' => 0.92,
@@ -127,7 +127,7 @@ it('can convert to multiple currencies', function (): void {
         'is_active' => true,
     ]);
 
-    ExchangeRate::create([
+    ExchangeRate::query()->create([
         'base_currency' => 'USD',
         'target_currency' => 'GBP',
         'rate' => 0.79,
@@ -137,7 +137,7 @@ it('can convert to multiple currencies', function (): void {
         'is_active' => true,
     ]);
 
-    ExchangeRate::create([
+    ExchangeRate::query()->create([
         'base_currency' => 'USD',
         'target_currency' => 'JPY',
         'rate' => 149.50,

@@ -6,6 +6,7 @@ namespace App\Filament\Resources\ProductMetrics\Widgets;
 
 use App\Filament\Concerns\CurrencyAware;
 use App\Models\ProductMetric;
+use App\Services\GeneralSettingsService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,7 @@ final class TopPerformingProducts extends StatsOverviewWidget
     protected function getStats(): array
     {
         // Get top 3 products by sales
-        $topProducts = ProductMetric::select([
+        $topProducts = ProductMetric::query()->select([
             'product_id',
             DB::raw('SUM(total_revenue) as total_sales'),
             DB::raw('SUM(orders_count) as total_ord'),
@@ -81,7 +82,7 @@ final class TopPerformingProducts extends StatsOverviewWidget
 
     private function formatMoney(float $amount): string
     {
-        $currency = app(\App\Services\GeneralSettingsService::class)->getCurrency();
+        $currency = resolve(GeneralSettingsService::class)->getCurrency();
 
         return $currency.' '.number_format($amount, 2);
     }
@@ -91,7 +92,7 @@ final class TopPerformingProducts extends StatsOverviewWidget
         $data = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->format('Y-m-d');
-            $total = ProductMetric::where('product_id', $productId)
+            $total = ProductMetric::query()->where('product_id', $productId)
                 ->where('period_type', 'daily')
                 ->whereDate('metric_date', $date)
                 ->sum('total_revenue');

@@ -20,7 +20,7 @@ final class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         // Create super_admin role if it doesn't exist
-        Role::firstOrCreate(['name' => 'super_admin'], ['guard_name' => 'web']);
+        Role::query()->firstOrCreate(['name' => 'super_admin'], ['guard_name' => 'web']);
 
         $user = User::query()->firstOrCreate([
             'email' => 'test@example.com',

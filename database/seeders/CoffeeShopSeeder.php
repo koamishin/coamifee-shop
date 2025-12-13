@@ -287,7 +287,7 @@ final class CoffeeShopSeeder extends Seeder
                 'unit_cost' => $this->getUnitCost($ingredient->name),
                 'location' => 'Main Storage',
                 'supplier_info' => 'Primary Supplier',
-                'last_restocked_at' => now()->subDays(rand(1, 30)),
+                'last_restocked_at' => now()->subDays(random_int(1, 30)),
             ]);
         }
 
@@ -897,11 +897,9 @@ final class CoffeeShopSeeder extends Seeder
 
         // Filter out any ingredients that couldn't be found
         $validRecipe = [];
-        if (! empty($recipe)) {
-            foreach ($recipe as $ingredientId => $quantity) {
-                if ($ingredientId > 0) {
-                    $validRecipe[$ingredientId] = $quantity;
-                }
+        foreach ($recipe as $ingredientId => $quantity) {
+            if ($ingredientId > 0) {
+                $validRecipe[$ingredientId] = $quantity;
             }
         }
 
@@ -1689,10 +1687,10 @@ final class CoffeeShopSeeder extends Seeder
     private function getRandomStock(UnitType $unitType): int
     {
         return match ($unitType->value) {
-            'grams' => rand(5000, 50000), // 5kg to 50kg worth
-            'ml' => rand(1000, 20000), // 1L to 20L worth
-            'pieces' => rand(100, 1000),
-            default => rand(100, 1000),
+            'grams' => random_int(5000, 50000), // 5kg to 50kg worth
+            'ml' => random_int(1000, 20000), // 1L to 20L worth
+            'pieces' => random_int(100, 1000),
+            default => random_int(100, 1000),
         };
     }
 

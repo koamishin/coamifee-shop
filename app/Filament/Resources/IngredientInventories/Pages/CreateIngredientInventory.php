@@ -19,7 +19,7 @@ final class CreateIngredientInventory extends CreateRecord
 
         // Check if we need to create a new ingredient
         if (isset($data['create_new_ingredient']) && $data['create_new_ingredient']) {
-            $ingredient = Ingredient::create([
+            $ingredient = Ingredient::query()->create([
                 'name' => $data['new_ingredient_name'],
                 'unit_type' => $data['new_ingredient_unit_type'],
             ]);

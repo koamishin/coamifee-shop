@@ -16,13 +16,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-describe('Inventory Deduction System', function () {
-    beforeEach(function () {
-        $this->inventoryService = app(InventoryService::class);
+describe('Inventory Deduction System', function (): void {
+    beforeEach(function (): void {
+        $this->inventoryService = resolve(InventoryService::class);
     });
 
-    describe('Basic Inventory Deduction', function () {
-        it('deducts inventory when product is ordered with same units', function () {
+    describe('Basic Inventory Deduction', function (): void {
+        it('deducts inventory when product is ordered with same units', function (): void {
             // Create category
             $category = Category::factory()->create(['name' => 'Coffee']);
 
@@ -59,7 +59,7 @@ describe('Inventory Deduction System', function () {
             expect((float) $waterInventory->fresh()->current_stock)->toBe(4750.0); // 5000 - 250
         });
 
-        it('deducts inventory for multiple products ordered', function () {
+        it('deducts inventory for multiple products ordered', function (): void {
             $category = Category::factory()->create(['name' => 'Coffee']);
 
             $water = Ingredient::factory()->create([
@@ -91,8 +91,8 @@ describe('Inventory Deduction System', function () {
         });
     });
 
-    describe('Unit Conversion During Deduction', function () {
-        it('deducts ml from inventory stored in liters', function () {
+    describe('Unit Conversion During Deduction', function (): void {
+        it('deducts ml from inventory stored in liters', function (): void {
             $category = Category::factory()->create(['name' => 'Coffee']);
 
             // Inventory stored in LITERS
@@ -125,7 +125,7 @@ describe('Inventory Deduction System', function () {
             expect((float) $waterInventory->fresh()->current_stock)->toBe(5.75); // 6.0 - 0.25
         });
 
-        it('deducts grams from inventory stored in kilograms', function () {
+        it('deducts grams from inventory stored in kilograms', function (): void {
             $category = Category::factory()->create(['name' => 'Coffee']);
 
             // Inventory stored in KILOGRAMS
@@ -158,8 +158,8 @@ describe('Inventory Deduction System', function () {
         });
     });
 
-    describe('Multiple Ingredients Deduction', function () {
-        it('deducts all ingredients for a product', function () {
+    describe('Multiple Ingredients Deduction', function (): void {
+        it('deducts all ingredients for a product', function (): void {
             $category = Category::factory()->create(['name' => 'Coffee']);
 
             // Create multiple ingredients
@@ -221,8 +221,8 @@ describe('Inventory Deduction System', function () {
         });
     });
 
-    describe('Insufficient Inventory Handling', function () {
-        it('returns false when insufficient inventory', function () {
+    describe('Insufficient Inventory Handling', function (): void {
+        it('returns false when insufficient inventory', function (): void {
             $category = Category::factory()->create(['name' => 'Coffee']);
 
             $water = Ingredient::factory()->create([
@@ -251,7 +251,7 @@ describe('Inventory Deduction System', function () {
             expect($result)->toBeFalse();
         });
 
-        it('does not deduct any ingredients if one is insufficient', function () {
+        it('does not deduct any ingredients if one is insufficient', function (): void {
             $category = Category::factory()->create(['name' => 'Coffee']);
 
             $water = Ingredient::factory()->create([
@@ -297,8 +297,8 @@ describe('Inventory Deduction System', function () {
         });
     });
 
-    describe('Order Observer Integration', function () {
-        it('automatically deducts inventory when order is created', function () {
+    describe('Order Observer Integration', function (): void {
+        it('automatically deducts inventory when order is created', function (): void {
             $category = Category::factory()->create(['name' => 'Coffee']);
             $customer = Customer::factory()->create();
 

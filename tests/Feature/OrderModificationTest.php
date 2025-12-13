@@ -6,12 +6,13 @@ use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Services\OrderModificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('can add products to existing order', function () {
+it('can add products to existing order', function (): void {
     // Create test data
     $category = Category::factory()->create();
     $product = Product::factory()->create([
@@ -35,7 +36,7 @@ it('can add products to existing order', function () {
         'price' => 10.00,
     ]);
 
-    $orderModificationService = app(OrderModificationService::class);
+    $orderModificationService = resolve(OrderModificationService::class);
 
     // Add new product to order
     $result = $orderModificationService->addProductsToOrder($order, [
@@ -63,7 +64,7 @@ it('can add products to existing order', function () {
     expect((float) $order->total)->toBe(70.0);
 });
 
-it('validates inventory constraints when adding products', function () {
+it('validates inventory constraints when adding products', function (): void {
     // Create a product
     $category = Category::factory()->create();
     $product = Product::factory()->create([
@@ -73,7 +74,7 @@ it('validates inventory constraints when adding products', function () {
 
     $order = Order::factory()->create();
 
-    $orderModificationService = app(OrderModificationService::class);
+    $orderModificationService = resolve(OrderModificationService::class);
 
     // Test basic validation
     $result = $orderModificationService->addProductsToOrder($order, [
@@ -87,7 +88,7 @@ it('validates inventory constraints when adding products', function () {
     expect($result['message'])->toContain('No query results for model');
 });
 
-it('handles product variants correctly', function () {
+it('handles product variants correctly', function (): void {
     // Create test data with variants
     $category = Category::factory()->create();
     $product = Product::factory()->create([
@@ -95,7 +96,7 @@ it('handles product variants correctly', function () {
         'price' => 10.00,
     ]);
 
-    $variant = App\Models\ProductVariant::factory()->create([
+    $variant = ProductVariant::factory()->create([
         'product_id' => $product->id,
         'price' => 12.00,
         'name' => 'Large',
@@ -103,7 +104,7 @@ it('handles product variants correctly', function () {
 
     $order = Order::factory()->create();
 
-    $orderModificationService = app(OrderModificationService::class);
+    $orderModificationService = resolve(OrderModificationService::class);
 
     // Add variant to order
     $result = $orderModificationService->addProductsToOrder($order, [

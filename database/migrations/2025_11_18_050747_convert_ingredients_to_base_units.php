@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 return new class extends Migration
 {
@@ -23,7 +24,7 @@ return new class extends Migration
             ->update(['unit_type' => 'ml']);
 
         // Log the conversion
-        Illuminate\Support\Facades\Log::info('Converted ingredient unit types to base units', [
+        Log::info('Converted ingredient unit types to base units', [
             'grams_converted' => DB::table('ingredients')->where('unit_type', 'grams')->count(),
             'ml_converted' => DB::table('ingredients')->where('unit_type', 'ml')->count(),
         ]);

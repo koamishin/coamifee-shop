@@ -8,10 +8,10 @@ use App\Models\Order;
 use App\Services\InventoryService;
 use Illuminate\Support\Facades\Log;
 
-final class OrderObserver
+final readonly class OrderObserver
 {
     public function __construct(
-        private readonly InventoryService $inventoryService
+        private InventoryService $inventoryService
     ) {}
 
     /**

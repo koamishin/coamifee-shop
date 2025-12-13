@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('can add products with PWD discount', function () {
+it('can add products with PWD discount', function (): void {
     // Create test data
     $category = Category::factory()->create();
     $product = Product::factory()->create([
@@ -25,7 +25,7 @@ it('can add products with PWD discount', function () {
         'total' => 0.00,
     ]);
 
-    $orderModificationService = app(OrderModificationService::class);
+    $orderModificationService = resolve(OrderModificationService::class);
 
     // Add product with PWD discount (20%)
     $result = $orderModificationService->addProductsToOrder($order, [
@@ -55,7 +55,7 @@ it('can add products with PWD discount', function () {
     expect((float) $order->total)->toBe(80.0);
 });
 
-it('can add products with Senior citizen discount', function () {
+it('can add products with Senior citizen discount', function (): void {
     // Create test data
     $category = Category::factory()->create();
     $product = Product::factory()->create([
@@ -70,7 +70,7 @@ it('can add products with Senior citizen discount', function () {
         'total' => 0.00,
     ]);
 
-    $orderModificationService = app(OrderModificationService::class);
+    $orderModificationService = resolve(OrderModificationService::class);
 
     // Add product with Senior discount (20%)
     $result = $orderModificationService->addProductsToOrder($order, [
@@ -100,7 +100,7 @@ it('can add products with Senior citizen discount', function () {
     expect((float) $order->total)->toBe(320.0);
 });
 
-it('can add multiple products with different discounts', function () {
+it('can add multiple products with different discounts', function (): void {
     // Create test data
     $category = Category::factory()->create();
     $product1 = Product::factory()->create([
@@ -119,7 +119,7 @@ it('can add multiple products with different discounts', function () {
         'total' => 0.00,
     ]);
 
-    $orderModificationService = app(OrderModificationService::class);
+    $orderModificationService = resolve(OrderModificationService::class);
 
     // Add products with different discounts
     $result = $orderModificationService->addProductsToOrder($order, [
@@ -162,7 +162,7 @@ it('can add multiple products with different discounts', function () {
     expect((float) $order->total)->toBe(120.0);
 });
 
-it('can add products without discount', function () {
+it('can add products without discount', function (): void {
     // Create test data
     $category = Category::factory()->create();
     $product = Product::factory()->create([
@@ -177,7 +177,7 @@ it('can add products without discount', function () {
         'total' => 0.00,
     ]);
 
-    $orderModificationService = app(OrderModificationService::class);
+    $orderModificationService = resolve(OrderModificationService::class);
 
     // Add product without discount
     $result = $orderModificationService->addProductsToOrder($order, [

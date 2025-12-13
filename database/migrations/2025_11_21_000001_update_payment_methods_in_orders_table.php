@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
+        Schema::table('orders', function (Blueprint $table): void {
             // Update the enum to replace 'card' with 'gcash' and 'paypal' with 'maya'
             $table->enum('payment_method', ['cash', 'gcash', 'maya'])->default('cash')->change();
         });
@@ -24,7 +24,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
+        Schema::table('orders', function (Blueprint $table): void {
             // Revert back to original payment methods
             $table->enum('payment_method', ['cash', 'card', 'gcash', 'paypal'])->default('cash')->change();
         });

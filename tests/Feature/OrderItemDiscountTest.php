@@ -5,12 +5,13 @@ declare(strict_types=1);
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses()->group('orders');
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
-test('order item saves discount fields correctly', function () {
+test('order item saves discount fields correctly', function (): void {
     $product = Product::factory()->create(['price' => 100.00]);
 
     $order = Order::factory()->create([
@@ -19,7 +20,7 @@ test('order item saves discount fields correctly', function () {
         'status' => 'pending',
     ]);
 
-    $orderItem = OrderItem::create([
+    $orderItem = OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product->id,
         'quantity' => 1,
@@ -37,7 +38,7 @@ test('order item saves discount fields correctly', function () {
         ->and($orderItem->discount)->toBe('10.00');
 });
 
-test('order item discount is retrievable from database', function () {
+test('order item discount is retrievable from database', function (): void {
     $product = Product::factory()->create(['price' => 50.00]);
 
     $order = Order::factory()->create([
@@ -46,7 +47,7 @@ test('order item discount is retrievable from database', function () {
         'status' => 'pending',
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product->id,
         'quantity' => 1,
@@ -57,14 +58,14 @@ test('order item discount is retrievable from database', function () {
         'discount' => 12.50,
     ]);
 
-    $retrievedItem = OrderItem::where('order_id', $order->id)->first();
+    $retrievedItem = OrderItem::query()->where('order_id', $order->id)->first();
 
     expect($retrievedItem->discount_percentage)->toBe('25.00')
         ->and($retrievedItem->discount_amount)->toBe('12.50')
         ->and($retrievedItem->discount)->toBe('12.50');
 });
 
-test('multiple order items can have different discounts', function () {
+test('multiple order items can have different discounts', function (): void {
     $product1 = Product::factory()->create(['price' => 100.00]);
     $product2 = Product::factory()->create(['price' => 200.00]);
 
@@ -74,7 +75,7 @@ test('multiple order items can have different discounts', function () {
         'status' => 'pending',
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product1->id,
         'quantity' => 1,
@@ -85,7 +86,7 @@ test('multiple order items can have different discounts', function () {
         'discount' => 10.00,
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product2->id,
         'quantity' => 1,
@@ -96,14 +97,14 @@ test('multiple order items can have different discounts', function () {
         'discount' => 20.00,
     ]);
 
-    $items = OrderItem::where('order_id', $order->id)->get();
+    $items = OrderItem::query()->where('order_id', $order->id)->get();
 
     expect($items)->toHaveCount(2)
         ->and($items[0]->discount_amount)->toBe('10.00')
         ->and($items[1]->discount_amount)->toBe('20.00');
 });
 
-test('order item without discount saves with zero values', function () {
+test('order item without discount saves with zero values', function (): void {
     $product = Product::factory()->create(['price' => 100.00]);
 
     $order = Order::factory()->create([
@@ -112,7 +113,7 @@ test('order item without discount saves with zero values', function () {
         'status' => 'pending',
     ]);
 
-    $orderItem = OrderItem::create([
+    $orderItem = OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product->id,
         'quantity' => 1,

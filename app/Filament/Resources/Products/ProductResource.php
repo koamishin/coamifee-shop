@@ -62,7 +62,7 @@ final class ProductResource extends Resource
 
     public static function getNavigationBadge(): string
     {
-        return (string) self::getModel()::count();
+        return (string) self::getModel()::query()->count();
     }
 
     public static function getNavigationBadgeColor(): string

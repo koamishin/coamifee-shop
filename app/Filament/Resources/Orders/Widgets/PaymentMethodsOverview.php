@@ -18,12 +18,12 @@ final class PaymentMethodsOverview extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $settingsService = app(GeneralSettingsService::class);
+        $settingsService = resolve(GeneralSettingsService::class);
         $enabledPaymentMethods = $settingsService->getEnabledPaymentMethods();
         $stats = [];
 
         foreach ($enabledPaymentMethods as $method => $config) {
-            $orders = Order::where('payment_method', $method)
+            $orders = Order::query()->where('payment_method', $method)
                 ->where('status', 'completed')
                 ->whereNotIn('payment_status', ['refunded', 'refund_partial'])
                 ->get();
@@ -40,7 +40,7 @@ final class PaymentMethodsOverview extends StatsOverviewWidget
 
     private function formatMoney(float $amount): string
     {
-        $currency = app(GeneralSettingsService::class)->getCurrency();
+        $currency = resolve(GeneralSettingsService::class)->getCurrency();
 
         return $currency.' '.number_format($amount, 2);
     }
@@ -50,7 +50,7 @@ final class PaymentMethodsOverview extends StatsOverviewWidget
         $data = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->format('Y-m-d');
-            $total = Order::where('payment_method', $method)
+            $total = Order::query()->where('payment_method', $method)
                 ->where('status', 'completed')
                 ->whereDate('created_at', $date)
                 ->whereNotIn('payment_status', ['refunded', 'refund_partial'])

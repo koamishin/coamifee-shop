@@ -7,26 +7,27 @@ use App\Models\Ingredient;
 use App\Models\IngredientInventory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 
 use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::factory()->create();
     actingAs($this->user);
 });
 
-describe('Centralized Ingredient Inventory Management', function () {
-    it('can create a new ingredient and inventory in one form', function () {
+describe('Centralized Ingredient Inventory Management', function (): void {
+    it('can create a new ingredient and inventory in one form', function (): void {
         // Create ingredient first
-        $ingredient = Ingredient::create([
+        $ingredient = Ingredient::query()->create([
             'name' => 'Arabica Coffee Beans',
             'unit_type' => UnitType::GRAMS->value,
         ]);
 
         // Then create inventory for it
-        $inventory = IngredientInventory::create([
+        $inventory = IngredientInventory::query()->create([
             'ingredient_id' => $ingredient->id,
             'current_stock' => 5000,
             'min_stock_level' => 1000,
@@ -52,13 +53,13 @@ describe('Centralized Ingredient Inventory Management', function () {
         ]);
     });
 
-    it('can create inventory for existing ingredient', function () {
-        $ingredient = Ingredient::create([
+    it('can create inventory for existing ingredient', function (): void {
+        $ingredient = Ingredient::query()->create([
             'name' => 'Premium Sugar',
             'unit_type' => UnitType::GRAMS->value,
         ]);
 
-        $inventory = IngredientInventory::create([
+        $inventory = IngredientInventory::query()->create([
             'ingredient_id' => $ingredient->id,
             'current_stock' => 5000.50,
             'min_stock_level' => 1000,
@@ -79,8 +80,8 @@ describe('Centralized Ingredient Inventory Management', function () {
         ]);
     });
 
-    it('can still create basic ingredient without inventory', function () {
-        $ingredient = Ingredient::create([
+    it('can still create basic ingredient without inventory', function (): void {
+        $ingredient = Ingredient::query()->create([
             'name' => 'Basic Ingredient',
             'unit_type' => UnitType::MILLILITERS->value,
         ]);
@@ -91,13 +92,13 @@ describe('Centralized Ingredient Inventory Management', function () {
         ]);
     });
 
-    it('properly displays comprehensive inventory information', function () {
-        $ingredient = Ingredient::create([
+    it('properly displays comprehensive inventory information', function (): void {
+        $ingredient = Ingredient::query()->create([
             'name' => 'Test Milk',
             'unit_type' => UnitType::MILLILITERS->value,
         ]);
 
-        $inventory = IngredientInventory::create([
+        $inventory = IngredientInventory::query()->create([
             'ingredient_id' => $ingredient->id,
             'current_stock' => 2000,
             'min_stock_level' => 500,
@@ -111,13 +112,13 @@ describe('Centralized Ingredient Inventory Management', function () {
         $this->assertModelExists($inventory);
     });
 
-    it('shows simplified ingredient list with inventory status', function () {
-        $ingredient = Ingredient::create([
+    it('shows simplified ingredient list with inventory status', function (): void {
+        $ingredient = Ingredient::query()->create([
             'name' => 'Test Flour',
             'unit_type' => UnitType::GRAMS->value,
         ]);
 
-        $inventory = IngredientInventory::create([
+        $inventory = IngredientInventory::query()->create([
             'ingredient_id' => $ingredient->id,
             'current_stock' => 3000,
         ]);
@@ -126,8 +127,8 @@ describe('Centralized Ingredient Inventory Management', function () {
         $this->assertModelExists($inventory);
     });
 
-    it('properly handles ingredients without inventory in ingredient list', function () {
-        $ingredient = Ingredient::create([
+    it('properly handles ingredients without inventory in ingredient list', function (): void {
+        $ingredient = Ingredient::query()->create([
             'name' => 'Vanilla Extract',
             'unit_type' => UnitType::MILLILITERS->value,
         ]);
@@ -135,11 +136,11 @@ describe('Centralized Ingredient Inventory Management', function () {
         $this->assertModelExists($ingredient);
     });
 
-    it('validates required fields for inventory creation', function () {
-        $this->expectException(Illuminate\Validation\ValidationException::class);
+    it('validates required fields for inventory creation', function (): void {
+        $this->expectException(ValidationException::class);
 
         // Create an ingredient first to satisfy foreign key constraint
-        $ingredient = Ingredient::create();
+        $ingredient = Ingredient::query()->create();
 
         IngredientInventory::factory()->create([
             'ingredient_id' => $ingredient->id,
@@ -149,32 +150,32 @@ describe('Centralized Ingredient Inventory Management', function () {
         ]);
     });
 
-    it('validates required fields when creating new ingredient in inventory form', function () {
-        $this->expectException(Illuminate\Validation\ValidationException::class);
+    it('validates required fields when creating new ingredient in inventory form', function (): void {
+        $this->expectException(ValidationException::class);
 
-        Ingredient::create([
+        Ingredient::query()->create([
             'name' => '',
             'unit_type' => '',
             // Missing required fields
         ]);
     });
 
-    it('validates required fields for basic ingredient creation', function () {
-        $this->expectException(Illuminate\Validation\ValidationException::class);
+    it('validates required fields for basic ingredient creation', function (): void {
+        $this->expectException(ValidationException::class);
 
-        Ingredient::create([
+        Ingredient::query()->create([
             'unit_type' => UnitType::GRAMS->value,
             // Missing name
         ]);
     });
 
-    it('displays unit type with correct icon and color in tables', function () {
-        $ingredient = Ingredient::create([
+    it('displays unit type with correct icon and color in tables', function (): void {
+        $ingredient = Ingredient::query()->create([
             'name' => 'Test Weight Item',
             'unit_type' => UnitType::GRAMS->value,
         ]);
 
-        $inventory = IngredientInventory::create([
+        $inventory = IngredientInventory::query()->create([
             'ingredient_id' => $ingredient->id,
             'current_stock' => 1000,
         ]);
@@ -182,7 +183,7 @@ describe('Centralized Ingredient Inventory Management', function () {
         $this->assertModelExists($inventory);
     });
 
-    it('correctly formats unit type badges with icons', function () {
+    it('correctly formats unit type badges with icons', function (): void {
         $testCases = [
             ['type' => UnitType::GRAMS, 'label' => 'Grams', 'color' => 'warning', 'icon' => 'scale'],
             ['type' => UnitType::KILOGRAMS, 'label' => 'Kilograms', 'color' => 'danger', 'icon' => 'scale'],
@@ -192,7 +193,7 @@ describe('Centralized Ingredient Inventory Management', function () {
         ];
 
         foreach ($testCases as $testCase) {
-            $ingredient = Ingredient::create([
+            $ingredient = Ingredient::query()->create([
                 'name' => "Test {$testCase['label']} Item",
                 'unit_type' => $testCase['type']->value,
             ]);
@@ -204,7 +205,7 @@ describe('Centralized Ingredient Inventory Management', function () {
         }
     });
 
-    it('uses unit type enum in select field options', function () {
+    it('uses unit type enum in select field options', function (): void {
         $options = UnitType::getOptions();
 
         expect($options)->toBeArray();
@@ -217,14 +218,14 @@ describe('Centralized Ingredient Inventory Management', function () {
         expect($options[UnitType::GRAMS->value])->toBe('Grams');
     });
 
-    it('handles null values gracefully in form display', function () {
+    it('handles null values gracefully in form display', function (): void {
         // Test that models can be created with null values where appropriate
-        $ingredient = Ingredient::create([
+        $ingredient = Ingredient::query()->create([
             'name' => 'Test Item',
             'unit_type' => UnitType::GRAMS->value,
         ]);
 
-        $inventory = IngredientInventory::create([
+        $inventory = IngredientInventory::query()->create([
             'ingredient_id' => $ingredient->id,
             'current_stock' => 1000,
         ]);
@@ -233,9 +234,9 @@ describe('Centralized Ingredient Inventory Management', function () {
         $this->assertModelExists($inventory);
     });
 
-    it('displays proper fallback for missing unit types', function () {
+    it('displays proper fallback for missing unit types', function (): void {
         // Test when ingredient has proper unit type
-        $ingredient = Ingredient::create([
+        $ingredient = Ingredient::query()->create([
             'name' => 'Test Item',
             'unit_type' => UnitType::GRAMS->value,
         ]);

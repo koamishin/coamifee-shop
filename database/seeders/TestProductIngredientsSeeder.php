@@ -64,7 +64,7 @@ final class TestProductIngredientsSeeder extends Seeder
                     'unit_cost' => $this->getRealisticCost($ingredientData['name']),
                     'location' => $this->getStorageLocation($ingredientData['unit_type']),
                     'supplier_info' => 'Test Supplier',
-                    'last_restocked_at' => now()->subDays(rand(1, 15)),
+                    'last_restocked_at' => now()->subDays(random_int(1, 15)),
                 ]
             );
 
@@ -77,13 +77,13 @@ final class TestProductIngredientsSeeder extends Seeder
     private function createTestProducts(): array
     {
         // Ensure we have categories
-        $foodCategory = Category::firstOrCreate(['name' => 'Test Foods'], [
+        $foodCategory = Category::query()->firstOrCreate(['name' => 'Test Foods'], [
             'description' => 'Test food products',
             'is_active' => true,
             'sort_order' => 1,
         ]);
 
-        $beverageCategory = Category::firstOrCreate(['name' => 'Test Beverages'], [
+        $beverageCategory = Category::query()->firstOrCreate(['name' => 'Test Beverages'], [
             'description' => 'Test beverage products',
             'is_active' => true,
             'sort_order' => 2,
@@ -102,7 +102,7 @@ final class TestProductIngredientsSeeder extends Seeder
                 ['name' => $productData['name']],
                 array_merge($productData, [
                     'description' => "Test product for UI demonstration - {$productData['name']}",
-                    'preparation_time' => rand(5, 20),
+                    'preparation_time' => random_int(5, 20),
                     'is_active' => true,
                 ])
             );
@@ -172,10 +172,10 @@ final class TestProductIngredientsSeeder extends Seeder
     private function getRealisticStock(string $unitType): float
     {
         return match ($unitType) {
-            'grams' => rand(5000, 50000), // 5kg to 50kg worth in grams
-            'ml' => rand(1000, 20000), // 1L to 20L worth in ml
-            'pieces' => rand(20, 200),
-            default => rand(100, 1000),
+            'grams' => random_int(5000, 50000), // 5kg to 50kg worth in grams
+            'ml' => random_int(1000, 20000), // 1L to 20L worth in ml
+            'pieces' => random_int(20, 200),
+            default => random_int(100, 1000),
         };
     }
 

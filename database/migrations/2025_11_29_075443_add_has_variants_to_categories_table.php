@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('categories', function (Blueprint $table) {
+        Schema::table('categories', function (Blueprint $table): void {
             $table->boolean('has_variants')->default(false)->after('description');
         });
     }
@@ -23,7 +23,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('categories', function (Blueprint $table) {
+        Schema::table('categories', function (Blueprint $table): void {
             $table->dropColumn('has_variants');
         });
     }

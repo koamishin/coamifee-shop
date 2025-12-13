@@ -14,7 +14,7 @@ use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::factory()->create();
     actingAs($this->user);
 
@@ -27,8 +27,10 @@ beforeEach(function () {
     ]);
 });
 
-it('can place order with pay now and cash payment', function () {
+it('can place order with pay now and cash payment', function (): void {
     Livewire::test(PosPage::class)
+        ->set('isTabletMode', true)
+        ->set('paidAmount', 250.00)
         ->set('orderType', 'dine_in')
         ->set('cartItems', [
             [
@@ -44,22 +46,18 @@ it('can place order with pay now and cash payment', function () {
         ->set('totalAmount', 200.00)
         ->mountAction('placeOrder')
         ->fillForm([
-            'customerName' => 'Test Customer',
             'tableNumber' => 'table_1',
-            'notes' => 'Test order',
             'paymentTiming' => 'pay_now',
             'paymentMethod' => 'cash',
-            'paidAmount' => 250.00,
-            'changeAmount' => 50.00,
         ])
         ->callMountedAction()
         ->assertHasNoActionErrors();
 
-    expect(Order::count())->toBe(1);
+    expect(Order::query()->count())->toBe(1);
 
-    $order = Order::first();
+    $order = Order::query()->first();
     expect($order)
-        ->customer_name->toBe('Test Customer')
+        ->customer_name->toBe('Walk-in Customer')
         ->table_number->toBe('table_1')
         ->payment_status->toBe('paid')
         ->payment_method->toBe('cash')
@@ -68,7 +66,7 @@ it('can place order with pay now and cash payment', function () {
         ->change_amount->toBe('50.00');
 });
 
-it('can place order with pay now and GCash payment', function () {
+it('can place order with pay now and GCash payment', function (): void {
     Livewire::test(PosPage::class)
         ->set('orderType', 'dine_in')
         ->set('cartItems', [
@@ -85,28 +83,25 @@ it('can place order with pay now and GCash payment', function () {
         ->set('totalAmount', 100.00)
         ->mountAction('placeOrder')
         ->fillForm([
-            'customerName' => 'GCash Customer',
             'tableNumber' => 'table_2',
             'paymentTiming' => 'pay_now',
             'paymentMethod' => 'gcash',
-            'paidAmount' => 100.00,
-            'changeAmount' => 0.00,
         ])
         ->callMountedAction()
         ->assertHasNoActionErrors();
 
-    expect(Order::count())->toBe(1);
+    expect(Order::query()->count())->toBe(1);
 
-    $order = Order::first();
+    $order = Order::query()->first();
     expect($order)
-        ->customer_name->toBe('GCash Customer')
+        ->customer_name->toBe('Walk-in Customer')
         ->payment_status->toBe('paid')
         ->payment_method->toBe('gcash')
         ->paid_amount->toBe('100.00')
         ->change_amount->toBe('0.00');
 });
 
-it('can place order with pay now and Maya payment', function () {
+it('can place order with pay now and Maya payment', function (): void {
     Livewire::test(PosPage::class)
         ->set('orderType', 'dine_in')
         ->set('cartItems', [
@@ -123,28 +118,25 @@ it('can place order with pay now and Maya payment', function () {
         ->set('totalAmount', 100.00)
         ->mountAction('placeOrder')
         ->fillForm([
-            'customerName' => 'Maya Customer',
             'tableNumber' => 'table_4',
             'paymentTiming' => 'pay_now',
             'paymentMethod' => 'maya',
-            'paidAmount' => 100.00,
-            'changeAmount' => 0.00,
         ])
         ->callMountedAction()
         ->assertHasNoActionErrors();
 
-    expect(Order::count())->toBe(1);
+    expect(Order::query()->count())->toBe(1);
 
-    $order = Order::first();
+    $order = Order::query()->first();
     expect($order)
-        ->customer_name->toBe('Maya Customer')
+        ->customer_name->toBe('Walk-in Customer')
         ->payment_status->toBe('paid')
         ->payment_method->toBe('maya')
         ->paid_amount->toBe('100.00')
         ->change_amount->toBe('0.00');
 });
 
-it('can place order with pay later', function () {
+it('can place order with pay later', function (): void {
     Livewire::test(PosPage::class)
         ->set('orderType', 'dine_in')
         ->set('cartItems', [
@@ -161,7 +153,6 @@ it('can place order with pay later', function () {
         ->set('totalAmount', 100.00)
         ->mountAction('placeOrder')
         ->fillForm([
-            'customerName' => 'Pay Later Customer',
             'tableNumber' => 'table_3',
             'orderType' => 'dine_in',
             'paymentTiming' => 'pay_later',
@@ -169,19 +160,21 @@ it('can place order with pay later', function () {
         ->callMountedAction()
         ->assertHasNoActionErrors();
 
-    expect(Order::count())->toBe(1);
+    expect(Order::query()->count())->toBe(1);
 
-    $order = Order::first();
+    $order = Order::query()->first();
     expect($order)
-        ->customer_name->toBe('Pay Later Customer')
+        ->customer_name->toBe('Walk-in Customer')
         ->payment_status->toBe('unpaid')
         ->payment_method->toBeNull()
         ->paid_amount->toBeNull()
         ->change_amount->toBeNull();
 });
 
-it('can place order with discount and pay now', function () {
+it('can place order with discount and pay now', function (): void {
     Livewire::test(PosPage::class)
+        ->set('isTabletMode', true)
+        ->set('paidAmount', 200.00)
         ->set('orderType', 'dine_in')
         ->set('cartItems', [
             [
@@ -197,21 +190,18 @@ it('can place order with discount and pay now', function () {
         ->set('totalAmount', 200.00)
         ->mountAction('placeOrder')
         ->fillForm([
-            'customerName' => 'Discount Customer',
             'tableNumber' => 'table_4',
             'paymentTiming' => 'pay_now',
             'paymentMethod' => 'cash',
             'discountType' => 'senior',
             'discountValue' => 20,
-            'paidAmount' => 200.00,
-            'changeAmount' => 40.00, // 200 - (200 * 0.20) = 160, change = 200 - 160 = 40
         ])
         ->callMountedAction()
         ->assertHasNoActionErrors();
 
-    expect(Order::count())->toBe(1);
+    expect(Order::query()->count())->toBe(1);
 
-    $order = Order::first();
+    $order = Order::query()->first();
     expect($order)
         ->total->toBe('160.00') // 200 - 40 (20% discount)
         ->discount_amount->toBe('40.00')
@@ -219,7 +209,7 @@ it('can place order with discount and pay now', function () {
         ->change_amount->toBe('40.00');
 });
 
-it('can place order with delivery and Grab payment', function () {
+it('can place order with delivery and Grab payment', function (): void {
     Livewire::test(PosPage::class)
         ->set('orderType', 'delivery')
         ->set('cartItems', [
@@ -236,7 +226,6 @@ it('can place order with delivery and Grab payment', function () {
         ->set('totalAmount', 100.00)
         ->mountAction('placeOrder')
         ->fillForm([
-            'customerName' => 'Grab Customer',
             'orderType' => 'delivery',
             'paymentTiming' => 'pay_now',
             'paymentMethod' => 'grab',
@@ -245,9 +234,9 @@ it('can place order with delivery and Grab payment', function () {
         ->callMountedAction()
         ->assertHasNoActionErrors();
 
-    expect(Order::count())->toBe(1);
+    expect(Order::query()->count())->toBe(1);
 
-    $order = Order::first();
+    $order = Order::query()->first();
     expect($order)
         ->order_type->toBe('delivery')
         ->payment_status->toBe('paid')
@@ -257,7 +246,7 @@ it('can place order with delivery and Grab payment', function () {
         ->change_amount->toBe('0.00');
 });
 
-it('can place order with delivery and Food Panda payment', function () {
+it('can place order with delivery and Food Panda payment', function (): void {
     Livewire::test(PosPage::class)
         ->set('orderType', 'delivery')
         ->set('cartItems', [
@@ -274,18 +263,17 @@ it('can place order with delivery and Food Panda payment', function () {
         ->set('totalAmount', 100.00)
         ->mountAction('placeOrder')
         ->fillForm([
-            'customerName' => 'Food Panda Customer',
             'orderType' => 'delivery',
+            'deliveryProvider' => 'food_panda',
             'paymentTiming' => 'pay_now',
-            'paymentMethod' => 'food_panda',
             'notes' => 'Deliver to Oak Avenue',
         ])
         ->callMountedAction()
         ->assertHasNoActionErrors();
 
-    expect(Order::count())->toBe(1);
+    expect(Order::query()->count())->toBe(1);
 
-    $order = Order::first();
+    $order = Order::query()->first();
     expect($order)
         ->order_type->toBe('delivery')
         ->payment_status->toBe('paid')
@@ -295,8 +283,10 @@ it('can place order with delivery and Food Panda payment', function () {
         ->change_amount->toBe('0.00');
 });
 
-it('correctly calculates change with paid amount 50 and total 45', function () {
+it('correctly calculates change with paid amount 50 and total 45', function (): void {
     Livewire::test(PosPage::class)
+        ->set('isTabletMode', true)
+        ->set('paidAmount', 50.00)
         ->set('orderType', 'dine_in')
         ->set('cartItems', [
             [
@@ -312,19 +302,16 @@ it('correctly calculates change with paid amount 50 and total 45', function () {
         ->set('totalAmount', 45.00)
         ->mountAction('placeOrder')
         ->fillForm([
-            'customerName' => 'Test Customer',
             'tableNumber' => 'table_1',
             'paymentTiming' => 'pay_now',
             'paymentMethod' => 'cash',
-            'paidAmount' => 50.00,
-            'changeAmount' => 5.00,
         ])
         ->callMountedAction()
         ->assertHasNoActionErrors();
 
-    expect(Order::count())->toBe(1);
+    expect(Order::query()->count())->toBe(1);
 
-    $order = Order::first();
+    $order = Order::query()->first();
     expect($order)
         ->total->toBe('45.00')
         ->paid_amount->toBe('50.00')

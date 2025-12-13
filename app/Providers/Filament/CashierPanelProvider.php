@@ -63,7 +63,7 @@ final class CashierPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            ->when(config('app.env') === 'demo', function (Panel $panel) {
+            ->when(config('app.env') === 'demo', function (Panel $panel): void {
                 // Apply production-like restrictions for demo mode
                 $panel
                     ->renderHook(
@@ -82,6 +82,6 @@ final class CashierPanelProvider extends PanelProvider
                             DEMO MODE - This is a demonstration environment
                         </div>'
                     );
-            });;
+            });
     }
 }

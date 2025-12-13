@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Orders\Tables;
 
 use App\Filament\Concerns\CurrencyAware;
+use App\Services\GeneralSettingsService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\CreateAction;
@@ -39,7 +40,7 @@ final class OrdersTable
                     ->sortable()
                     ->weight('medium')
                     ->limit(25)
-                    ->description(fn ($record) => $record->customer_id ? 'Registered Account' : 'Guest'),
+                    ->description(fn ($record): string => $record->customer_id ? 'Registered Account' : 'Guest'),
 
                 TextColumn::make('customer.name')
                     ->label('Account')
@@ -133,9 +134,9 @@ final class OrdersTable
                 TextColumn::make('payment_method')
                     ->label('Payment')
                     ->badge()
-                    ->icon(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodIcon((string) $state))
-                    ->color(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodColor((string) $state))
-                    ->formatStateUsing(fn ($state): string => app(\App\Services\GeneralSettingsService::class)->getPaymentMethodDisplayName((string) $state))
+                    ->icon(fn ($state): string => resolve(GeneralSettingsService::class)->getPaymentMethodIcon((string) $state))
+                    ->color(fn ($state): string => resolve(GeneralSettingsService::class)->getPaymentMethodColor((string) $state))
+                    ->formatStateUsing(fn ($state): string => resolve(GeneralSettingsService::class)->getPaymentMethodDisplayName((string) $state))
                     ->searchable()
                     ->sortable(),
 
@@ -223,8 +224,8 @@ final class OrdersTable
                     ->multiple(),
                 SelectFilter::make('payment_method')
                     ->label('Payment Method')
-                    ->options(function () {
-                        $settingsService = app(\App\Services\GeneralSettingsService::class);
+                    ->options(function (): array {
+                        $settingsService = resolve(GeneralSettingsService::class);
                         $enabledMethods = $settingsService->getEnabledPaymentMethods();
                         $options = [];
 

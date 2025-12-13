@@ -200,7 +200,7 @@ final class GoodlandInventorySeeder extends Seeder
                 'unit_cost' => $this->getUnitCost($ingredient->name),
                 'location' => $this->getIngredientLocation($ingredient->name),
                 'supplier_info' => 'Goodland Supplier',
-                'last_restocked_at' => now()->subDays(rand(1, 30)),
+                'last_restocked_at' => now()->subDays(random_int(1, 30)),
             ]);
         }
     }
@@ -317,7 +317,7 @@ final class GoodlandInventorySeeder extends Seeder
 
     private function createBeverageProducts(array $ingredients): void
     {
-        $beverageCategory = Category::where('name', 'Bar Beverages')->first();
+        $beverageCategory = Category::query()->where('name', 'Bar Beverages')->first();
         if (! $beverageCategory) {
             return;
         }
@@ -456,10 +456,10 @@ final class GoodlandInventorySeeder extends Seeder
     private function getRandomStock(UnitType $unitType): int
     {
         return match ($unitType->value) {
-            'grams' => rand(5000, 50000), // 5kg to 50kg worth in grams
-            'ml' => rand(1000, 20000), // 1L to 20L worth in ml
-            'pieces' => rand(50, 500),
-            default => rand(100, 1000),
+            'grams' => random_int(5000, 50000), // 5kg to 50kg worth in grams
+            'ml' => random_int(1000, 20000), // 1L to 20L worth in ml
+            'pieces' => random_int(50, 500),
+            default => random_int(100, 1000),
         };
     }
 

@@ -10,7 +10,9 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Services\GeneralSettingsService;
 use App\Services\PosService;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Livewire\Component;
 
@@ -281,7 +283,7 @@ final class Pos extends Component
      */
     public function getEnabledPaymentMethods(): array
     {
-        return app(\App\Services\GeneralSettingsService::class)->getEnabledPaymentMethods();
+        return resolve(GeneralSettingsService::class)->getEnabledPaymentMethods();
     }
 
     public function render(): View
@@ -783,8 +785,8 @@ final class Pos extends Component
         $this->loadRecentOrders();
 
         // Optionally log the refresh for debugging
-        if (! empty($data)) {
-            \Illuminate\Support\Facades\Log::info('Sales data refreshed after payment collection', [
+        if ($data !== []) {
+            Log::info('Sales data refreshed after payment collection', [
                 'order_id' => $data['order_id'] ?? null,
                 'total' => $data['total'] ?? null,
                 'new_today_sales' => $this->todaySales,

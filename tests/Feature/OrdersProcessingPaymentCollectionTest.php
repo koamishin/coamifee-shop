@@ -28,7 +28,7 @@ test('collect payment action calculates correct total with item discounts', func
         'payment_status' => 'unpaid',
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product->id,
         'quantity' => 1,
@@ -70,7 +70,7 @@ test('collect payment with multiple items and different discounts', function ():
         'payment_status' => 'unpaid',
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product1->id,
         'quantity' => 1,
@@ -81,7 +81,7 @@ test('collect payment with multiple items and different discounts', function ():
         'discount' => 5.00,
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product2->id,
         'quantity' => 1,
@@ -120,7 +120,7 @@ test('collect payment with order-level discount applied', function (): void {
         'payment_status' => 'unpaid',
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product->id,
         'quantity' => 1,
@@ -159,7 +159,7 @@ test('collect payment with both item and order-level discounts', function (): vo
         'payment_status' => 'unpaid',
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product->id,
         'quantity' => 1,
@@ -198,7 +198,7 @@ test('collect payment with add-ons included', function (): void {
         'payment_status' => 'unpaid',
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product->id,
         'quantity' => 1,
@@ -239,7 +239,7 @@ test('recalculateOrderTotal updates order total in database', function (): void 
     ]);
 
     // Add item with 20% discount
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product->id,
         'quantity' => 1,
@@ -294,7 +294,7 @@ test('payment validation uses recalculated total with item discounts (user scena
         'payment_status' => 'unpaid',
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product1->id,
         'quantity' => 1,
@@ -305,7 +305,7 @@ test('payment validation uses recalculated total with item discounts (user scena
         'discount' => 0,
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product2->id,
         'quantity' => 1,
@@ -337,6 +337,6 @@ test('payment validation uses recalculated total with item discounts (user scena
     $paidAmount = 200.00;
     $changeAmount = $paidAmount - $correctTotal;
 
-    expect($changeAmount)->toBe(19.80);
+    expect(round($changeAmount, 2))->toBe(19.80);
     expect($paidAmount >= $correctTotal)->toBeTrue();
 });

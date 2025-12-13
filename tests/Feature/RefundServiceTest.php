@@ -2,23 +2,27 @@
 
 declare(strict_types=1);
 
+use App\Models\Ingredient;
+use App\Models\IngredientInventory;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductIngredient;
+use App\Models\RefundLog;
 use App\Models\User;
 use App\Services\RefundService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
-    $this->refundService = app(RefundService::class);
+beforeEach(function (): void {
+    $this->refundService = resolve(RefundService::class);
     $this->user = User::factory()->create(['admin_pin' => '1234']);
 });
 
-describe('RefundService', function () {
-    describe('canShowRefundButton', function () {
-        test('hides refund button for completed and fully paid orders', function () {
+describe('RefundService', function (): void {
+    describe('canShowRefundButton', function (): void {
+        test('hides refund button for completed and fully paid orders', function (): void {
             $order = Order::factory()->create([
                 'status' => 'completed',
                 'payment_status' => 'paid',
@@ -27,7 +31,7 @@ describe('RefundService', function () {
             expect($this->refundService->canShowRefundButton($order))->toBeFalse();
         });
 
-        test('shows refund button for paid orders in progress', function () {
+        test('shows refund button for paid orders in progress', function (): void {
             $order = Order::factory()->create([
                 'status' => 'pending',
                 'payment_status' => 'paid',
@@ -36,7 +40,7 @@ describe('RefundService', function () {
             expect($this->refundService->canShowRefundButton($order))->toBeTrue();
         });
 
-        test('shows refund button for partially paid orders', function () {
+        test('shows refund button for partially paid orders', function (): void {
             $order = Order::factory()->create([
                 'status' => 'completed',
                 'payment_status' => 'partially_paid',
@@ -45,7 +49,7 @@ describe('RefundService', function () {
             expect($this->refundService->canShowRefundButton($order))->toBeTrue();
         });
 
-        test('shows refund button for completed unpaid orders', function () {
+        test('shows refund button for completed unpaid orders', function (): void {
             $order = Order::factory()->create([
                 'status' => 'completed',
                 'payment_status' => 'unpaid',
@@ -54,7 +58,7 @@ describe('RefundService', function () {
             expect($this->refundService->canShowRefundButton($order))->toBeTrue();
         });
 
-        test('does not show refund button for unpaid orders', function () {
+        test('does not show refund button for unpaid orders', function (): void {
             $order = Order::factory()->create([
                 'status' => 'pending',
                 'payment_status' => 'unpaid',
@@ -64,8 +68,8 @@ describe('RefundService', function () {
         });
     });
 
-    describe('getRefundableItems', function () {
-        test('returns all items as full refund for paid pending orders', function () {
+    describe('getRefundableItems', function (): void {
+        test('returns all items as full refund for paid pending orders', function (): void {
             $product = Product::factory()->create(['price' => 100.00]);
             $order = Order::factory()->create([
                 'status' => 'pending',
@@ -85,7 +89,7 @@ describe('RefundService', function () {
             expect(count($refundData['items']))->toBe(1);
         });
 
-        test('returns items as partial refund for partially paid orders', function () {
+        test('returns items as partial refund for partially paid orders', function (): void {
             $product = Product::factory()->create(['price' => 150.00]);
             $order = Order::factory()->create([
                 'status' => 'completed',
@@ -104,7 +108,7 @@ describe('RefundService', function () {
             expect($refundData['total'])->toBe(150.0);
         });
 
-        test('calculates correct total for multiple items', function () {
+        test('calculates correct total for multiple items', function (): void {
             $product1 = Product::factory()->create(['price' => 100.00]);
             $product2 = Product::factory()->create(['price' => 50.00]);
             $order = Order::factory()->create([
@@ -131,8 +135,8 @@ describe('RefundService', function () {
         });
     });
 
-    describe('processRefund', function () {
-        test('fails with invalid pin', function () {
+    describe('processRefund', function (): void {
+        test('fails with invalid pin', function (): void {
             $order = Order::factory()->create([
                 'status' => 'pending',
                 'payment_status' => 'paid',
@@ -144,7 +148,7 @@ describe('RefundService', function () {
             expect($result['message'])->toContain('Invalid PIN');
         });
 
-        test('fails for unpaid orders', function () {
+        test('fails for unpaid orders', function (): void {
             $order = Order::factory()->create(['payment_status' => 'unpaid']);
 
             $result = $this->refundService->processRefund($order, $this->user, '1234');
@@ -153,7 +157,7 @@ describe('RefundService', function () {
             expect($result['message'])->toContain('Cannot refund an unpaid order');
         });
 
-        test('fails for already refunded orders', function () {
+        test('fails for already refunded orders', function (): void {
             $order = Order::factory()->create(['payment_status' => 'refunded']);
 
             $result = $this->refundService->processRefund($order, $this->user, '1234');
@@ -162,7 +166,7 @@ describe('RefundService', function () {
             expect($result['message'])->toContain('already been refunded');
         });
 
-        test('fails for completed paid orders', function () {
+        test('fails for completed paid orders', function (): void {
             $order = Order::factory()->create([
                 'status' => 'completed',
                 'payment_status' => 'paid',
@@ -174,7 +178,7 @@ describe('RefundService', function () {
             expect($result['message'])->toContain('Cannot refund a completed and fully paid order');
         });
 
-        test('processes full refund for paid pending orders', function () {
+        test('processes full refund for paid pending orders', function (): void {
             $product = Product::factory()->create(['price' => 100.00]);
             $order = Order::factory()->create([
                 'status' => 'pending',
@@ -197,7 +201,7 @@ describe('RefundService', function () {
             expect($order->status)->toBe('refunded');
         });
 
-        test('processes partial refund for partially paid orders', function () {
+        test('processes partial refund for partially paid orders', function (): void {
             $product = Product::factory()->create(['price' => 100.00]);
             $order = Order::factory()->create([
                 'status' => 'completed',
@@ -220,7 +224,7 @@ describe('RefundService', function () {
             expect($order->status)->toBe('completed');
         });
 
-        test('creates refund log with correct type', function () {
+        test('creates refund log with correct type', function (): void {
             $product = Product::factory()->create(['price' => 100.00]);
             $order = Order::factory()->create([
                 'status' => 'pending',
@@ -236,22 +240,22 @@ describe('RefundService', function () {
 
             $this->refundService->processRefund($order, $this->user, '1234');
 
-            $refundLog = App\Models\RefundLog::where('order_id', $order->id)->first();
+            $refundLog = RefundLog::query()->where('order_id', $order->id)->first();
             expect($refundLog)->not->toBeNull();
             expect($refundLog->refund_type)->toBe('full');
             expect((float) $refundLog->refund_amount)->toBe(100.0);
         });
 
-        test('restores ingredients when refunding an order with processed inventory', function () {
+        test('restores ingredients when refunding an order with processed inventory', function (): void {
             // Create ingredient and product with ingredient relationship
-            $ingredient = App\Models\Ingredient::factory()->create();
-            $ingredientInventory = App\Models\IngredientInventory::factory()->create([
+            $ingredient = Ingredient::factory()->create();
+            $ingredientInventory = IngredientInventory::factory()->create([
                 'ingredient_id' => $ingredient->id,
                 'current_stock' => 5,
             ]);
 
             $product = Product::factory()->create(['price' => 100.00]);
-            App\Models\ProductIngredient::factory()->create([
+            ProductIngredient::factory()->create([
                 'product_id' => $product->id,
                 'ingredient_id' => $ingredient->id,
                 'quantity_required' => 1.0,

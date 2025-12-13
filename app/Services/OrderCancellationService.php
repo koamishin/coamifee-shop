@@ -29,11 +29,7 @@ final class OrderCancellationService
     public function canCancelOrder(Order $order): bool
     {
         // Can only cancel if order is still in process and unpaid
-        if ($order->status === 'pending' && $order->payment_status === 'unpaid') {
-            return true;
-        }
-
-        return false;
+        return $order->status === 'pending' && $order->payment_status === 'unpaid';
     }
 
     /**
@@ -89,7 +85,7 @@ final class OrderCancellationService
             ]);
 
             // Log the cancellation
-            OrderCancellation::create([
+            OrderCancellation::query()->create([
                 'order_id' => $order->id,
                 'cancelled_by' => $user->id,
                 'cancellation_amount' => $cancellationAmount,

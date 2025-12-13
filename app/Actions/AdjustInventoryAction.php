@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions;
 
 use App\Models\Ingredient;
+use App\Models\IngredientInventory;
 use App\Services\InventoryService;
 
 final readonly class AdjustInventoryAction
@@ -30,7 +31,7 @@ final readonly class AdjustInventoryAction
 
         if ($this->inventoryService->adjustIngredientStock($ingredient, $newQuantity, $reason)) {
             $inventory = $ingredient->inventory;
-            $previousStock = $inventory instanceof \App\Models\IngredientInventory
+            $previousStock = $inventory instanceof IngredientInventory
                 ? (float) $inventory->current_stock
                 : 0.0;
 
@@ -67,7 +68,7 @@ final readonly class AdjustInventoryAction
 
         if ($this->inventoryService->restockIngredient($ingredient, $quantity, $reason)) {
             $inventory = $ingredient->inventory;
-            $newStock = $inventory instanceof \App\Models\IngredientInventory
+            $newStock = $inventory instanceof IngredientInventory
                 ? (float) $inventory->current_stock
                 : 0.0;
 
@@ -104,7 +105,7 @@ final readonly class AdjustInventoryAction
 
         if ($this->inventoryService->recordWaste($ingredient, $quantity, $reason)) {
             $inventory = $ingredient->inventory;
-            $remainingStock = $inventory instanceof \App\Models\IngredientInventory
+            $remainingStock = $inventory instanceof IngredientInventory
                 ? (float) $inventory->current_stock
                 : 0.0;
 

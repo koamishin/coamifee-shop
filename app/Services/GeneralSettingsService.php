@@ -9,9 +9,9 @@ use Joaopaulolndev\FilamentGeneralSettings\Models\GeneralSetting;
 
 final class GeneralSettingsService
 {
-    private const CACHE_KEY = 'general_settings';
+    private const string CACHE_KEY = 'general_settings';
 
-    private const CACHE_TTL = 3600; // 1 hour
+    private const int CACHE_TTL = 3600; // 1 hour
 
     /**
      * Clear the settings cache
@@ -261,7 +261,7 @@ final class GeneralSettingsService
      */
     public function getEnabledPaymentMethods(): array
     {
-        return array_filter($this->getPaymentMethods(), fn ($method) => $method['enabled'] ?? true);
+        return array_filter($this->getPaymentMethods(), fn (array $method) => $method['enabled'] ?? true);
     }
 
     /**

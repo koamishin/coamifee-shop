@@ -6,7 +6,6 @@ namespace App\Filament\Widgets;
 
 use App\Models\OrderItem;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
-use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Builder;
 
 final class BestSellersStats extends BaseWidget
@@ -19,7 +18,7 @@ final class BestSellersStats extends BaseWidget
 
         // Get product sales data from completed orders in the last month
         $productSales = OrderItem::query()
-            ->whereHas('order', function (Builder $query) use ($oneMonthAgo) {
+            ->whereHas('order', function (Builder $query) use ($oneMonthAgo): void {
                 $query->where('created_at', '>=', $oneMonthAgo)
                     ->where('status', 'completed'); // Only count completed orders
             })
@@ -35,13 +34,11 @@ final class BestSellersStats extends BaseWidget
         // Group by category and filter categories with 1+ products
         $categoryProducts = $productSales
             ->groupBy(fn ($item) => $item->product->category->name ?? 'Uncategorized')
-            ->filter(function ($products) {
-                return $products->count() >= 1;
-            });
+            ->filter(fn ($products): bool => $products->count() >= 1);
 
-        $totalCategories = $categoryProducts->count();
-        $totalUnitsSold = $productSales->sum('total_quantity');
-        $totalRevenue = $productSales->sum('total_revenue');
+        $categoryProducts->count();
+        $productSales->sum('total_quantity');
+        $productSales->sum('total_revenue');
 
         return [
             // Stat::make('Categories Featured', number_format($totalCategories))

@@ -64,12 +64,10 @@ final class ReportingService
 
         $ingredientsWithoutInventory = Ingredient::query()->whereDoesntHave('inventory')
             ->get()
-            ->map(function (Ingredient $ingredient): array {
-                return [
-                    'name' => $ingredient->name,
-                    'unit_type' => $ingredient->unit_type->getLabel(),
-                ];
-            });
+            ->map(fn (Ingredient $ingredient): array => [
+                'name' => $ingredient->name,
+                'unit_type' => $ingredient->unit_type->getLabel(),
+            ]);
 
         return [
             'with_inventory' => $ingredientsWithInventory,
@@ -92,9 +90,7 @@ final class ReportingService
         return IngredientUsage::with(['ingredient', 'orderItem.product', 'orderItem.order'])
             ->whereBetween('recorded_at', [$startDate, $endDate])
             ->get()
-            ->groupBy(function (IngredientUsage $usage): string {
-                return $usage->ingredient->name ?? 'Unknown';
-            })
+            ->groupBy(fn (IngredientUsage $usage): string => $usage->ingredient->name ?? 'Unknown')
             ->map(function (Collection $usages): array {
                 $firstUsage = $usages->first();
                 if ($firstUsage === null) {
@@ -152,9 +148,7 @@ final class ReportingService
         $averageOrderValue = $totalOrders > 0 ? (float) $totalRevenue / $totalOrders : 0.0;
 
         $productSales = $orders->flatMap->items
-            ->groupBy(function ($item): string {
-                return $item->product->name ?? 'Unknown';
-            })
+            ->groupBy(fn ($item): string => $item->product->name ?? 'Unknown')
             ->map(function (Collection $items): array {
                 $firstItem = $items->first();
                 if ($firstItem === null) {
@@ -177,9 +171,7 @@ final class ReportingService
                 return [
                     'product_name' => (string) $product->name,
                     'quantity_sold' => (float) $items->sum('quantity'),
-                    'revenue' => (float) $items->sum(function ($item): float {
-                        return (float) $item->price * (float) $item->quantity;
-                    }),
+                    'revenue' => (float) $items->sum(fn ($item): float => (float) $item->price * (float) $item->quantity),
                 ];
             })
             ->sortByDesc('revenue');
@@ -211,7 +203,7 @@ final class ReportingService
             ->get()
             ->flatMap->items
             ->groupBy('product_id')
-            ->map(function (Collection $items, mixed $productId) {
+            ->map(function (Collection $items, mixed $productId): TopProductDto {
                 $firstItem = $items->first();
                 /** @var OrderItem $firstItem */
                 $product = $firstItem->product;
@@ -220,7 +212,7 @@ final class ReportingService
                 return new TopProductDto(
                     product: $product,
                     quantity_sold: (float) $items->sum('quantity'),
-                    revenue: (float) $items->sum(function ($item) {
+                    revenue: (float) $items->sum(function ($item): float {
                         /** @var OrderItem $item */
                         return (float) $item->price * (float) $item->quantity;
                     })
@@ -249,9 +241,7 @@ final class ReportingService
         $ingredientCosts = IngredientUsage::with('ingredient')
             ->whereBetween('recorded_at', [$startDate, $endDate])
             ->get()
-            ->groupBy(function (IngredientUsage $usage): string {
-                return $usage->ingredient->name ?? 'Unknown';
-            })
+            ->groupBy(fn (IngredientUsage $usage): string => $usage->ingredient->name ?? 'Unknown')
             ->map(function (Collection $usages): array {
                 $firstUsage = $usages->first();
                 if ($firstUsage === null) {
@@ -331,7 +321,7 @@ final class ReportingService
 
     private function getStockStatus(?IngredientInventory $inventory): string
     {
-        if ($inventory === null) {
+        if (! $inventory instanceof IngredientInventory) {
             return 'No Inventory';
         }
 

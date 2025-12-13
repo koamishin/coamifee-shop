@@ -35,8 +35,8 @@ test('can add product to cart', function (): void {
 
 test('cannot add product with insufficient inventory', function (): void {
     // Get the coffee beans ingredient (used in the product)
-    $coffeeIngredient = Ingredient::where('name', 'Coffee Beans')->first();
-    $inventory = IngredientInventory::where('ingredient_id', $coffeeIngredient->id)->first();
+    $coffeeIngredient = Ingredient::query()->where('name', 'Coffee Beans')->first();
+    $inventory = IngredientInventory::query()->where('ingredient_id', $coffeeIngredient->id)->first();
     $inventory->update(['current_stock' => 10]); // Less than required 20g
 
     Livewire::test(Pos::class)
@@ -54,12 +54,12 @@ test('can increment cart item quantity', function (): void {
 
 test('cannot increment beyond available inventory', function (): void {
     // Get both ingredients used in the product
-    $coffeeIngredient = Ingredient::where('name', 'Coffee Beans')->first();
-    $milkIngredient = Ingredient::where('name', 'Milk')->first();
+    $coffeeIngredient = Ingredient::query()->where('name', 'Coffee Beans')->first();
+    $milkIngredient = Ingredient::query()->where('name', 'Milk')->first();
 
     // Set inventory to only allow 1 unit (20g coffee + 200ml milk)
-    IngredientInventory::where('ingredient_id', $coffeeIngredient->id)->first()->update(['current_stock' => 20]);
-    IngredientInventory::where('ingredient_id', $milkIngredient->id)->first()->update(['current_stock' => 200]);
+    IngredientInventory::query()->where('ingredient_id', $coffeeIngredient->id)->first()->update(['current_stock' => 20]);
+    IngredientInventory::query()->where('ingredient_id', $milkIngredient->id)->first()->update(['current_stock' => 200]);
 
     Livewire::test(Pos::class)
         ->call('addToCart', $this->product->id)
@@ -173,14 +173,14 @@ test('cannot duplicate order with insufficient inventory', function (): void {
     ]);
 
     // Get both ingredients used in the product
-    $coffeeIngredient = Ingredient::where('name', 'Coffee Beans')->first();
-    $milkIngredient = Ingredient::where('name', 'Milk')->first();
+    $coffeeIngredient = Ingredient::query()->where('name', 'Coffee Beans')->first();
+    $milkIngredient = Ingredient::query()->where('name', 'Milk')->first();
 
     // Set inventory to be insufficient for 3 units
     // 3 units need: 3 * 20g = 60g coffee, 3 * 200ml = 600ml milk
     // We'll set inventory to only allow 2 units: 2 * 20g = 40g coffee, 2 * 200ml = 400ml milk
-    IngredientInventory::where('ingredient_id', $coffeeIngredient->id)->first()->update(['current_stock' => 40]);
-    IngredientInventory::where('ingredient_id', $milkIngredient->id)->first()->update(['current_stock' => 400]);
+    IngredientInventory::query()->where('ingredient_id', $coffeeIngredient->id)->first()->update(['current_stock' => 40]);
+    IngredientInventory::query()->where('ingredient_id', $milkIngredient->id)->first()->update(['current_stock' => 400]);
 
     Livewire::test(Pos::class)
         ->call('duplicateOrder', $order->id)

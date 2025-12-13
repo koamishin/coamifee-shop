@@ -41,7 +41,7 @@ final class UserForm
                         TextInput::make('password')
                             ->password()
                             ->dehydrateStateUsing(fn ($state) => filled($state) ? Hash::make($state) : null)
-                            ->dehydrated(fn ($state) => filled($state))
+                            ->dehydrated(fn ($state): bool => filled($state))
                             ->required(fn (string $context): bool => $context === 'create')
                             ->rule(Password::defaults())
                             ->revealable()
@@ -95,12 +95,12 @@ final class UserForm
                             ->offColor('danger')
                             ->default(false)
                             ->dehydrated()
-                            ->afterStateHydrated(function (Toggle $component, $record) {
+                            ->afterStateHydrated(function (Toggle $component, $record): void {
                                 if ($record) {
                                     $component->state($record->email_verified_at !== null);
                                 }
                             })
-                            ->afterStateUpdated(function ($state, $set) {
+                            ->afterStateUpdated(function ($state, $set): void {
                                 if ($state) {
                                     $set('email_verified_at', now());
                                 } else {
@@ -113,7 +113,7 @@ final class UserForm
                             ->label('Email Verified At')
                             ->displayFormat('M d, Y H:i')
                             ->seconds(false)
-                            ->hidden(fn ($get) => ! $get('email_verified'))
+                            ->hidden(fn ($get): bool => ! $get('email_verified'))
                             ->dehydrated(),
 
                         Toggle::make('two_factor_enabled')
@@ -124,7 +124,7 @@ final class UserForm
                             ->offColor('gray')
                             ->disabled()
                             ->dehydrated(false)
-                            ->afterStateHydrated(function (Toggle $component, $record) {
+                            ->afterStateHydrated(function (Toggle $component, $record): void {
                                 if ($record) {
                                     $component->state($record->two_factor_confirmed_at !== null);
                                 }

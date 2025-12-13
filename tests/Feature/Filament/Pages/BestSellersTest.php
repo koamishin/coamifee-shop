@@ -15,18 +15,18 @@ use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::factory()->create();
     actingAs($this->user);
 });
 
-it('displays the best sellers page', function () {
+it('displays the best sellers page', function (): void {
     Livewire::test(BestSellers::class)
         ->assertSuccessful()
         ->assertSee('No sales data available');
 });
 
-it('shows completed order products in best sellers', function () {
+it('shows completed order products in best sellers', function (): void {
     $category = Category::factory()->create(['name' => 'Test Category']);
     $product = Product::factory()->create([
         'name' => 'Test Product',
@@ -54,7 +54,7 @@ it('shows completed order products in best sellers', function () {
         ->assertSee('500');
 });
 
-it('does not show pending order products in best sellers', function () {
+it('does not show pending order products in best sellers', function (): void {
     $category = Category::factory()->create(['name' => 'Pending Category']);
     $product = Product::factory()->create([
         'name' => 'Pending Product',
@@ -79,7 +79,7 @@ it('does not show pending order products in best sellers', function () {
         ->assertDontSee('Pending Product');
 });
 
-it('does not show orders older than 30 days', function () {
+it('does not show orders older than 30 days', function (): void {
     $category = Category::factory()->create(['name' => 'Old Category']);
     $product = Product::factory()->create([
         'name' => 'Old Product',
@@ -104,7 +104,7 @@ it('does not show orders older than 30 days', function () {
         ->assertDontSee('Old Product');
 });
 
-it('shows top 3 products per category', function () {
+it('shows top 3 products per category', function (): void {
     $category = Category::factory()->create(['name' => 'Popular Category']);
 
     $products = collect();
@@ -139,7 +139,7 @@ it('shows top 3 products per category', function () {
         ->assertDontSee('Product 5');
 });
 
-it('aggregates quantities correctly for multiple orders of same product', function () {
+it('aggregates quantities correctly for multiple orders of same product', function (): void {
     $category = Category::factory()->create(['name' => 'Test Category']);
     $product = Product::factory()->create([
         'name' => 'Multi Order Product',
@@ -169,7 +169,7 @@ it('aggregates quantities correctly for multiple orders of same product', functi
         ->assertSee('1,500'); // 15 * 100
 });
 
-it('can refresh data', function () {
+it('can refresh data', function (): void {
     Livewire::test(BestSellers::class)
         ->assertSuccessful()
         ->call('refreshData')

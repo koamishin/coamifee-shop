@@ -55,9 +55,9 @@ test('updates product availability for all products', function (): void {
 
     // Availability should not be empty
     expect($availability)->not->toBeEmpty();
-    
+
     // Check that products have the expected structure
-    foreach ($availability as $productId => $data) {
+    foreach ($availability as $data) {
         expect($data)->toHaveKeys(['can_produce', 'max_quantity', 'stock_status']);
     }
 
@@ -96,7 +96,7 @@ test('calculates max producible quantity', function (): void {
 
     $component = Livewire::test(Sidebar::class);
     $availability = $component->get('productAvailability');
-    
+
     // Find the correct product in availability array
     expect($availability)->toHaveKey($this->product->id);
     $productAvailability = $availability[$this->product->id];
@@ -116,13 +116,13 @@ test('filters products by selected category', function (): void {
     ]);
 
     $component = Livewire::test(Sidebar::class);
-    
+
     // Select the coffee category
     $component->call('selectCategory', $coffeeCategory->id);
-    
+
     // Get the filtered products
     $products = $component->viewData('products');
-    
+
     // Verify filtering works
     expect($products->contains('id', $coffeeProduct->id))->toBeTrue();
     expect($products->contains('id', $foodProduct->id))->toBeFalse();

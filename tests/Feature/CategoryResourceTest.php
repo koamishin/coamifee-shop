@@ -8,8 +8,11 @@ use App\Filament\Resources\Categories\Pages\ListCategories;
 use App\Models\Category;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Illuminate\Contracts\Cache\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\assertDatabaseHas;
@@ -17,17 +20,17 @@ use function Pest\Laravel\assertDatabaseHas;
 uses(RefreshDatabase::class);
 
 // Set up authentication for all tests
-beforeEach(function () {
+beforeEach(function (): void {
     // Create the super_admin role
-    app('cache')->clear();
-    $role = \Spatie\Permission\Models\Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
+    resolve(Factory::class)->clear();
+    $role = Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
 
     // Create the permissions
-    \Spatie\Permission\Models\Permission::create(['name' => 'ViewAny:Category', 'guard_name' => 'web']);
-    \Spatie\Permission\Models\Permission::create(['name' => 'View:Category', 'guard_name' => 'web']);
-    \Spatie\Permission\Models\Permission::create(['name' => 'Create:Category', 'guard_name' => 'web']);
-    \Spatie\Permission\Models\Permission::create(['name' => 'Update:Category', 'guard_name' => 'web']);
-    \Spatie\Permission\Models\Permission::create(['name' => 'Delete:Category', 'guard_name' => 'web']);
+    Permission::create(['name' => 'ViewAny:Category', 'guard_name' => 'web']);
+    Permission::create(['name' => 'View:Category', 'guard_name' => 'web']);
+    Permission::create(['name' => 'Create:Category', 'guard_name' => 'web']);
+    Permission::create(['name' => 'Update:Category', 'guard_name' => 'web']);
+    Permission::create(['name' => 'Delete:Category', 'guard_name' => 'web']);
 
     // Assign all permissions to super_admin role
     $role->givePermissionTo([

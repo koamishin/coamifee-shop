@@ -45,11 +45,7 @@ final class RefundService
         }
 
         // 3. Order is completed but partially paid or unpaid
-        if ($order->status === 'completed' && $order->payment_status !== 'paid') {
-            return true;
-        }
-
-        return false;
+        return $order->status === 'completed' && $order->payment_status !== 'paid';
     }
 
     /**
@@ -187,7 +183,7 @@ final class RefundService
             ]);
 
             // Log the refund with payment method details
-            RefundLog::create([
+            RefundLog::query()->create([
                 'order_id' => $order->id,
                 'refunded_by' => $user->id,
                 'refund_amount' => $refundAmount,
@@ -239,11 +235,14 @@ final class RefundService
             return;
         }
 
-        $inventoryService = app(InventoryService::class);
+        $inventoryService = resolve(InventoryService::class);
 
         foreach ($refundableItems as $item) {
             $orderItem = $order->items()->find($item['order_item_id']);
-            if (! $orderItem || ! $orderItem->product_id) {
+            if (! $orderItem) {
+                continue;
+            }
+            if (! $orderItem->product_id) {
                 continue;
             }
 

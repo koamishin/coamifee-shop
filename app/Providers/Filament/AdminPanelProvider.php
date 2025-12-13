@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\Login;
 use App\Filament\Widgets\CoffeeShopOverviewWidget;
-use App\Filament\Widgets\FinancialSummaryWidget;
 use App\Filament\Widgets\LowStockAlertWidget;
 use App\Filament\Widgets\OrderStatusWidget;
 use App\Filament\Widgets\SalesTrendsWidget;
@@ -37,7 +37,7 @@ final class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login(\App\Filament\Pages\Auth\Login::class)
+            ->login(Login::class)
             ->topbar(false)
             ->spa(true)
             ->sidebarCollapsibleOnDesktop()
@@ -92,7 +92,7 @@ final class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([Authenticate::class])
             // Configure demo mode restrictions
-            ->when(config('app.env') === 'demo', function (Panel $panel) {
+            ->when(config('app.env') === 'demo', function (Panel $panel): void {
                 // Apply production-like restrictions for demo mode
                 $panel
                     ->renderHook(

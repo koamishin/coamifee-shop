@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('products can have variants', function () {
+test('products can have variants', function (): void {
     $category = Category::factory()->create(['name' => 'Beverages']);
 
     $product = Product::factory()->create([
@@ -18,7 +18,7 @@ test('products can have variants', function () {
         'price' => 100,
     ]);
 
-    $hotVariant = ProductVariant::create([
+    $hotVariant = ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Hot',
         'price' => 100,
@@ -27,7 +27,7 @@ test('products can have variants', function () {
         'sort_order' => 0,
     ]);
 
-    $coldVariant = ProductVariant::create([
+    $coldVariant = ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Cold',
         'price' => 120,
@@ -41,12 +41,12 @@ test('products can have variants', function () {
     expect($product->activeVariants)->toHaveCount(2);
 });
 
-test('product can check if it has variants', function () {
+test('product can check if it has variants', function (): void {
     $product = Product::factory()->create();
 
     expect($product->hasVariants())->toBeFalse();
 
-    ProductVariant::create([
+    ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Large',
         'price' => 150,
@@ -58,10 +58,10 @@ test('product can check if it has variants', function () {
     expect($product->hasVariants())->toBeTrue();
 });
 
-test('variants have correct relationships', function () {
+test('variants have correct relationships', function (): void {
     $product = Product::factory()->create();
 
-    $variant = ProductVariant::create([
+    $variant = ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Medium',
         'price' => 100,

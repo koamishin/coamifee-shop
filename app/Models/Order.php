@@ -62,12 +62,12 @@ final class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-    public function getRevenueAttribute(): float
+    protected function getRevenueAttribute(): float
     {
         return (float) $this->total;
     }
 
-    public function getOrdersAttribute(): int
+    protected function getOrdersAttribute(): int
     {
         return $this->items()->count();
     }

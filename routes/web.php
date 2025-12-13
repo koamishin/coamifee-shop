@@ -10,14 +10,11 @@ use App\Livewire\Settings\Appearance;
 use App\Livewire\Settings\Password;
 use App\Livewire\Settings\Profile;
 use App\Livewire\Settings\TwoFactor;
-use Illuminate\Contracts\View\Factory;
-use Illuminate\Contracts\View\View;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
-Route::get('/', fn (): RedirectResponse => redirect()->route('filament.cashier.auth.login'));
+Route::get('/', fn (): RedirectResponse => to_route('filament.cashier.auth.login'));
 
 Route::get('dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -28,7 +25,7 @@ Route::get('pos', Pos::class)
     ->name('pos');
 
 // POS API Routes
-Route::prefix('pos/api')->middleware(['auth'])->group(function () {
+Route::prefix('pos/api')->middleware(['auth'])->group(function (): void {
     Route::get('products', [PosApiController::class, 'getProducts']);
     Route::get('categories', [PosApiController::class, 'getCategories']);
     Route::post('add-to-cart', [PosApiController::class, 'addToCart']);

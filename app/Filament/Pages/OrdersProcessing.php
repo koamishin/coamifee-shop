@@ -10,22 +10,25 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\GeneralSettingsService;
 use App\Services\OrderCancellationService;
+use App\Services\OrderModificationService;
 use App\Services\OrderProcessingService;
 use App\Services\PosService;
 use App\Services\RefundService;
 use BackedEnum;
 use Exception;
-use Filament\Actions;
-use Filament\Forms;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 use JaOcero\RadioDeck\Forms\Components\RadioDeck;
-use UnitEnum;
 
 final class OrdersProcessing extends Page
 {
@@ -88,7 +91,7 @@ final class OrdersProcessing extends Page
 
     public function getOrders()
     {
-        \Illuminate\Support\Facades\Log::info('OrdersProcessing: Loading orders', [
+        Log::info('OrdersProcessing: Loading orders', [
             'status_filter' => $this->statusFilter,
             'payment_status_filter' => $this->paymentStatusFilter,
         ]);
@@ -113,24 +116,20 @@ final class OrdersProcessing extends Page
             // Recalculate order total to ensure item discounts are reflected
             $this->recalculateOrderTotal($order);
 
-            $itemsWithDiscount = $order->items->filter(function ($item) {
-                return ($item->discount_amount ?? 0) > 0 || ($item->discount_percentage ?? 0) > 0;
-            });
+            $itemsWithDiscount = $order->items->filter(fn ($item): bool => ($item->discount_amount ?? 0) > 0 || ($item->discount_percentage ?? 0) > 0);
 
             if ($itemsWithDiscount->isNotEmpty()) {
-                \Illuminate\Support\Facades\Log::info('OrdersProcessing: Order with discounted items loaded', [
+                Log::info('OrdersProcessing: Order with discounted items loaded', [
                     'order_id' => $order->id,
-                    'items_with_discount' => $itemsWithDiscount->map(function ($item) {
-                        return [
-                            'item_id' => $item->id,
-                            'product_id' => $item->product_id,
-                            'product_name' => $item->product->name ?? 'Unknown',
-                            'subtotal' => $item->subtotal,
-                            'discount_percentage' => $item->discount_percentage,
-                            'discount_amount' => $item->discount_amount,
-                            'discount' => $item->discount,
-                        ];
-                    })->toArray(),
+                    'items_with_discount' => $itemsWithDiscount->map(fn ($item): array => [
+                        'item_id' => $item->id,
+                        'product_id' => $item->product_id,
+                        'product_name' => $item->product->name ?? 'Unknown',
+                        'subtotal' => $item->subtotal,
+                        'discount_percentage' => $item->discount_percentage,
+                        'discount_amount' => $item->discount_amount,
+                        'discount' => $item->discount,
+                    ])->toArray(),
                 ]);
             }
         }
@@ -167,7 +166,7 @@ final class OrdersProcessing extends Page
             // Update order status based on item completion
             if ($allItemsServed && $order->items()->count() > 0) {
                 // Process inventory deduction when all items are marked as served
-                \Illuminate\Support\Facades\Log::info('All items served, attempting to process inventory', [
+                Log::info('All items served, attempting to process inventory', [
                     'order_id' => $order->id,
                     'item_id' => $itemId,
                     'already_processed' => $order->inventory_processed,
@@ -178,7 +177,7 @@ final class OrdersProcessing extends Page
                 if (! $inventoryProcessed) {
                     DB::rollBack();
 
-                    \Illuminate\Support\Facades\Log::error('Inventory processing failed - insufficient stock', [
+                    Log::error('Inventory processing failed - insufficient stock', [
                         'order_id' => $order->id,
                         'item_id' => $itemId,
                     ]);
@@ -196,7 +195,7 @@ final class OrdersProcessing extends Page
                 // Update order status to completed only after successful inventory processing
                 $order->update(['status' => 'completed']);
 
-                \Illuminate\Support\Facades\Log::info('Order completed successfully', [
+                Log::info('Order completed successfully', [
                     'order_id' => $order->id,
                     'inventory_was_processed' => $order->inventory_processed,
                 ]);
@@ -213,7 +212,7 @@ final class OrdersProcessing extends Page
                 if ($order->status === 'completed') {
                     $order->update(['status' => 'pending']);
 
-                    \Illuminate\Support\Facades\Log::info('Order status reverted to pending', [
+                    Log::info('Order status reverted to pending', [
                         'order_id' => $order->id,
                         'reason' => 'Item marked as not served',
                     ]);
@@ -232,7 +231,7 @@ final class OrdersProcessing extends Page
         } catch (Exception $e) {
             DB::rollBack();
 
-            \Illuminate\Support\Facades\Log::error('Error in toggleServed', [
+            Log::error('Error in toggleServed', [
                 'item_id' => $itemId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -315,7 +314,7 @@ final class OrdersProcessing extends Page
         if ((float) $order->total !== $correctTotal) {
             $order->update(['total' => $correctTotal]);
 
-            \Illuminate\Support\Facades\Log::info('Order total recalculated', [
+            Log::info('Order total recalculated', [
                 'order_id' => $order->id,
                 'original_total' => $order->getOriginal('total'),
                 'new_total' => $correctTotal,
@@ -324,10 +323,10 @@ final class OrdersProcessing extends Page
         }
     }
 
-    public function collectPaymentAction(): Actions\Action
+    public function collectPaymentAction(): Action
     {
-        return Actions\Action::make('collectPayment')
-            ->modalHeading(fn (array $arguments) => 'Collect Payment - Order #'.$arguments['orderId'])
+        return Action::make('collectPayment')
+            ->modalHeading(fn (array $arguments): string => 'Collect Payment - Order #'.$arguments['orderId'])
             ->modalWidth('lg')
             ->fillForm(function (array $arguments): array {
                 $order = Order::with('items')->find($arguments['orderId']);
@@ -344,12 +343,12 @@ final class OrdersProcessing extends Page
                 ];
             })
             ->form([
-                Forms\Components\Hidden::make('orderId'),
+                Hidden::make('orderId'),
 
                 RadioDeck::make('paymentMethod')
                     ->label('Payment Method')
-                    ->options(function ($get) {
-                        $order = Order::find($get('orderId'));
+                    ->options(function ($get): array {
+                        $order = Order::query()->find($get('orderId'));
 
                         if ($order && $order->order_type === 'delivery') {
                             // Delivery orders show delivery partners
@@ -367,8 +366,8 @@ final class OrdersProcessing extends Page
                             'bank_transfer' => 'Bank Transfer',
                         ];
                     })
-                    ->descriptions(function ($get) {
-                        $order = Order::find($get('orderId'));
+                    ->descriptions(function ($get): array {
+                        $order = Order::query()->find($get('orderId'));
 
                         if ($order && $order->order_type === 'delivery') {
                             return [
@@ -384,8 +383,8 @@ final class OrdersProcessing extends Page
                             'bank_transfer' => 'Bank transfer',
                         ];
                     })
-                    ->icons(function ($get) {
-                        $order = Order::find($get('orderId'));
+                    ->icons(function ($get): array {
+                        $order = Order::query()->find($get('orderId'));
 
                         if ($order && $order->order_type === 'delivery') {
                             return [
@@ -401,15 +400,15 @@ final class OrdersProcessing extends Page
                             'bank_transfer' => 'heroicon-o-building-office',
                         ];
                     })
-                    ->default(function ($get) {
-                        $order = Order::find($get('orderId'));
+                    ->default(function ($get): string {
+                        $order = Order::query()->find($get('orderId'));
 
                         return ($order && $order->order_type === 'delivery') ? 'grab' : 'cash';
                     })
                     ->required()
                     ->reactive()
-                    ->columns(function ($get) {
-                        $order = Order::find($get('orderId'));
+                    ->columns(function ($get): int {
+                        $order = Order::query()->find($get('orderId'));
                         if ($order && $order->order_type === 'delivery') {
                             return 2; // Show delivery partners in 2 columns
                         }
@@ -421,9 +420,9 @@ final class OrdersProcessing extends Page
 
                 Section::make('Order Summary')
                     ->schema([
-                        Forms\Components\Placeholder::make('order_details')
+                        Placeholder::make('order_details')
                             ->label('')
-                            ->content(function ($get) {
+                            ->content(function ($get): HtmlString {
                                 $order = Order::with(['items.product', 'items.variant'])->find($get('orderId'));
 
                                 // Build items HTML
@@ -555,13 +554,13 @@ final class OrdersProcessing extends Page
                 Section::make('Payment Details')
                     ->schema([
                         // Hidden field to store the amount (always present)
-                        Forms\Components\Hidden::make('paidAmount')
+                        Hidden::make('paidAmount')
                             ->default(0),
 
                         // Slide-over Numpad for Tablet Mode
                         View::make('filament.components.numpad-slideover')
-                            ->viewData(function ($get) {
-                                $order = Order::find($get('orderId'));
+                            ->viewData(function ($get): array {
+                                $order = Order::query()->find($get('orderId'));
 
                                 return [
                                     'orderId' => $get('orderId'),
@@ -569,10 +568,10 @@ final class OrdersProcessing extends Page
                                     'currency' => $this->getCurrencySymbol(),
                                 ];
                             })
-                            ->visible(fn ($get) => $get('paymentMethod') === 'cash' && $this->isTabletMode),
+                            ->visible(fn ($get): bool => $get('paymentMethod') === 'cash' && $this->isTabletMode),
 
                         // Regular Input for Desktop Mode
-                        Forms\Components\TextInput::make('paidAmountDesktop')
+                        TextInput::make('paidAmountDesktop')
                             ->label('Cash Received')
                             ->numeric()
                             ->prefix($this->getCurrencySymbol())
@@ -580,15 +579,15 @@ final class OrdersProcessing extends Page
                             ->default(0)
                             ->required()
                             ->live(debounce: 500)
-                            ->afterStateUpdated(function ($state, $set) {
+                            ->afterStateUpdated(function ($state, $set): void {
                                 $set('paidAmount', $state);
                             })
-                            ->visible(fn ($get) => $get('paymentMethod') === 'cash' && ! $this->isTabletMode),
+                            ->visible(fn ($get): bool => $get('paymentMethod') === 'cash' && ! $this->isTabletMode),
 
-                        Forms\Components\Placeholder::make('change_display')
+                        Placeholder::make('change_display')
                             ->label('Change')
-                            ->content(function ($get) {
-                                $order = Order::find($get('orderId'));
+                            ->content(function ($get): HtmlString {
+                                $order = Order::query()->find($get('orderId'));
                                 // Use the order's total which already has all discounts and add-ons applied
                                 $total = (float) $order->total;
                                 $paidAmount = (float) ($get('paidAmount') ?? $get('paidAmountDesktop') ?? 0);
@@ -616,16 +615,16 @@ final class OrdersProcessing extends Page
                                     </div>
                                 ");
                             })
-                            ->visible(fn ($get) => $get('paymentMethod') === 'cash' && ! $this->isTabletMode && (float) ($get('paidAmountDesktop') ?? 0) > 0),
+                            ->visible(fn ($get): bool => $get('paymentMethod') === 'cash' && ! $this->isTabletMode && (float) ($get('paidAmountDesktop') ?? 0) > 0),
                     ]),
             ])
-            ->action(function (array $data) {
+            ->action(function (array $data): void {
                 try {
                     DB::beginTransaction();
 
-                    $order = Order::findOrFail($data['orderId']);
+                    $order = Order::query()->findOrFail($data['orderId']);
 
-                    \Illuminate\Support\Facades\Log::info('Processing payment collection', [
+                    Log::info('Processing payment collection', [
                         'order_id' => $order->id,
                         'payment_method' => $data['paymentMethod'],
                     ]);
@@ -645,7 +644,7 @@ final class OrdersProcessing extends Page
                     if ($data['paymentMethod'] === 'cash') {
                         $paidAmount = (float) ($data['paidAmount'] ?? 0);
                         if ($paidAmount < $finalTotal) {
-                            \Illuminate\Support\Facades\Log::warning('Insufficient cash payment', [
+                            Log::warning('Insufficient cash payment', [
                                 'order_id' => $order->id,
                                 'paid_amount' => $paidAmount,
                                 'final_total' => $finalTotal,
@@ -671,7 +670,7 @@ final class OrdersProcessing extends Page
                     if (! $inventoryProcessed) {
                         DB::rollBack();
 
-                        \Illuminate\Support\Facades\Log::error('Inventory processing failed during payment', [
+                        Log::error('Inventory processing failed during payment', [
                             'order_id' => $order->id,
                         ]);
 
@@ -700,7 +699,7 @@ final class OrdersProcessing extends Page
 
                     DB::commit();
 
-                    \Illuminate\Support\Facades\Log::info('Payment collected successfully', [
+                    Log::info('Payment collected successfully', [
                         'order_id' => $order->id,
                         'total' => $finalTotal,
                     ]);
@@ -721,7 +720,7 @@ final class OrdersProcessing extends Page
                 } catch (Exception $e) {
                     DB::rollBack();
 
-                    \Illuminate\Support\Facades\Log::error('Error during payment collection', [
+                    Log::error('Error during payment collection', [
                         'order_id' => $data['orderId'] ?? null,
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
@@ -740,7 +739,7 @@ final class OrdersProcessing extends Page
 
     public function printKitchenTicket(int $orderId): void
     {
-        $order = Order::findOrFail($orderId);
+        $order = Order::query()->findOrFail($orderId);
 
         Notification::make()
             ->success()
@@ -749,10 +748,10 @@ final class OrdersProcessing extends Page
             ->send();
     }
 
-    public function addProductAction(): Actions\Action
+    public function addProductAction(): Action
     {
-        return Actions\Action::make('addProduct')
-            ->modalHeading(fn (array $arguments) => 'Add Products - Order #'.$arguments['orderId'])
+        return Action::make('addProduct')
+            ->modalHeading(fn (array $arguments): string => 'Add Products - Order #'.$arguments['orderId'])
             ->modalWidth('6xl')
             ->modalFooterActionsAlignment('right')
             ->fillForm(function (array $arguments): array {
@@ -769,13 +768,12 @@ final class OrdersProcessing extends Page
                 ];
             })
             ->form([
-                Forms\Components\Hidden::make('orderId'),
+                Hidden::make('orderId'),
 
                 // Main content as raw HTML for two-column layout
-                Forms\Components\Placeholder::make('modal_content')
+                Placeholder::make('modal_content')
                     ->label('')
-                    ->content(function () {
-                        return new HtmlString("
+                    ->content(fn (): HtmlString => new HtmlString("
                             <div class='grid grid-cols-3 gap-6 h-full'>
                                 <!-- Left Column: Products -->
                                 <div class='col-span-2'>
@@ -819,19 +817,18 @@ final class OrdersProcessing extends Page
                                     </div>
                                 </div>
                             </div>
-                        ');
-                    }),
+                        ')),
 
-                Forms\Components\Hidden::make('items')
+                Hidden::make('items')
                     ->default(fn () => json_encode($this->cartItems))
                     ->reactive()
                     ->live(),
             ])
-            ->action(function (array $data) {
+            ->action(function (array $data): void {
                 $orderId = $data['orderId'];
                 $items = $this->cartItems;
 
-                if (empty($items)) {
+                if ($items === []) {
                     Notification::make()
                         ->warning()
                         ->title('No Items')
@@ -847,7 +844,7 @@ final class OrdersProcessing extends Page
                     if (! empty($item['product_id']) && ! empty($item['quantity'])) {
                         $itemsToAdd[] = [
                             'product_id' => (int) $item['product_id'],
-                            'variant_id' => ! empty($item['variant_id']) ? (int) $item['variant_id'] : null,
+                            'variant_id' => empty($item['variant_id']) ? null : (int) $item['variant_id'],
                             'quantity' => (int) $item['quantity'],
                             'discount_type' => $item['discount_type'] ?? null,
                             'discount_percentage' => (float) ($item['discount_percentage'] ?? 0),
@@ -855,7 +852,7 @@ final class OrdersProcessing extends Page
                     }
                 }
 
-                if (empty($itemsToAdd)) {
+                if ($itemsToAdd === []) {
                     Notification::make()
                         ->warning()
                         ->title('Invalid Items')
@@ -865,8 +862,8 @@ final class OrdersProcessing extends Page
                     return;
                 }
 
-                $order = Order::findOrFail($orderId);
-                $orderModificationService = app(\App\Services\OrderModificationService::class);
+                $order = Order::query()->findOrFail($orderId);
+                $orderModificationService = resolve(OrderModificationService::class);
 
                 $result = $orderModificationService->addProductsToOrder($order, $itemsToAdd);
 
@@ -897,7 +894,7 @@ final class OrdersProcessing extends Page
         $existingIndex = array_search(
             array_filter(
                 $this->cartItems,
-                fn ($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
+                fn (array $item): bool => $item['product_id'] === $productId && $item['variant_id'] === $variantId
             ),
             $this->cartItems,
             true
@@ -925,7 +922,7 @@ final class OrdersProcessing extends Page
         $this->cartItems = array_values(
             array_filter(
                 $this->cartItems,
-                fn ($item) => ! ($item['product_id'] === $productId && $item['variant_id'] === $variantId)
+                fn (array $item): bool => ! ($item['product_id'] === $productId && $item['variant_id'] === $variantId)
             )
         );
     }
@@ -935,7 +932,7 @@ final class OrdersProcessing extends Page
         $item = array_search(
             array_filter(
                 $this->cartItems,
-                fn ($item) => $item['product_id'] === $productId && $item['variant_id'] === $variantId
+                fn (array $item): bool => $item['product_id'] === $productId && $item['variant_id'] === $variantId
             ),
             $this->cartItems,
             true
@@ -952,10 +949,10 @@ final class OrdersProcessing extends Page
             return;
         }
 
-        $this->cartItems[$index]['discount_type'] = ! empty($discountType) ? $discountType : null;
+        $this->cartItems[$index]['discount_type'] = $discountType === '' || $discountType === '0' ? null : $discountType;
 
         // Auto-fill percentage if it's a predefined discount type
-        if ($discountType) {
+        if ($discountType !== '' && $discountType !== '0') {
             $discountEnum = DiscountType::tryFrom($discountType);
             if ($discountEnum) {
                 $percentage = $discountEnum->getPercentage();
@@ -974,7 +971,7 @@ final class OrdersProcessing extends Page
      */
     public function canShowCancel(Order $order): bool
     {
-        $cancellationService = app(OrderCancellationService::class);
+        $cancellationService = resolve(OrderCancellationService::class);
 
         return $cancellationService->canCancelOrder($order);
     }
@@ -984,7 +981,7 @@ final class OrdersProcessing extends Page
      */
     public function canShowRefund(Order $order): bool
     {
-        $refundService = app(RefundService::class);
+        $refundService = resolve(RefundService::class);
 
         return $refundService->canShowRefundButton($order);
     }
@@ -994,7 +991,7 @@ final class OrdersProcessing extends Page
      */
     public function getRefundLabel(Order $order): string
     {
-        $refundService = app(RefundService::class);
+        $refundService = resolve(RefundService::class);
         $refundData = $refundService->getRefundableItems($order);
 
         return $refundData['type'] === 'full' ? 'Refund' : 'Cancel Unpaid';
@@ -1020,14 +1017,14 @@ final class OrdersProcessing extends Page
             return;
         }
 
-        $order = Order::findOrFail($this->cancelOrderId);
-        $cancellationService = app(OrderCancellationService::class);
+        $order = Order::query()->findOrFail($this->cancelOrderId);
+        $cancellationService = resolve(OrderCancellationService::class);
 
         $result = $cancellationService->processCancellation(
             $order,
             Auth::user(),
             $this->cancelOrderPin,
-            ! empty($this->cancelOrderReason) ? $this->cancelOrderReason : null
+            $this->cancelOrderReason === '' || $this->cancelOrderReason === '0' ? null : $this->cancelOrderReason
         );
 
         if ($result['success']) {
@@ -1051,31 +1048,29 @@ final class OrdersProcessing extends Page
         }
     }
 
-    public function refundAction(): Actions\Action
+    public function refundAction(): Action
     {
-        return Actions\Action::make('refund')
-            ->modalHeading(fn (array $arguments) => 'Refund Order #'.$arguments['orderId'])
+        return Action::make('refund')
+            ->modalHeading(fn (array $arguments): string => 'Refund Order #'.$arguments['orderId'])
             ->modalWidth('sm')
             ->requiresConfirmation()
-            ->fillForm(function (array $arguments): array {
-                return [
-                    'orderId' => (int) ($arguments['orderId'] ?? 0),
-                ];
-            })
+            ->fillForm(fn (array $arguments): array => [
+                'orderId' => (int) ($arguments['orderId'] ?? 0),
+            ])
             ->form([
-                Forms\Components\Hidden::make('orderId'),
+                Hidden::make('orderId'),
 
-                Forms\Components\TextInput::make('pin')
+                TextInput::make('pin')
                     ->label('Admin PIN')
                     ->password()
                     ->placeholder('Enter your 4-6 digit PIN')
                     ->required()
-                    ->length(4, 6),
+                    ->length(4),
             ])
-            ->action(function (array $data) {
+            ->action(function (array $data): void {
                 try {
-                    $order = Order::findOrFail($data['orderId']);
-                    $refundService = app(RefundService::class);
+                    $order = Order::query()->findOrFail($data['orderId']);
+                    $refundService = resolve(RefundService::class);
 
                     $result = $refundService->processRefund($order, Auth::user(), $data['pin']);
 
@@ -1095,7 +1090,7 @@ final class OrdersProcessing extends Page
                             ->send();
                     }
                 } catch (Exception $e) {
-                    \Illuminate\Support\Facades\Log::error('Error processing refund', [
+                    Log::error('Error processing refund', [
                         'order_id' => $data['orderId'] ?? null,
                         'error' => $e->getMessage(),
                     ]);
@@ -1120,7 +1115,7 @@ final class OrdersProcessing extends Page
             // ->color('gray')
             // ->action(fn () => $this->toggleMode()),
 
-            Actions\Action::make('refresh')
+            Action::make('refresh')
                 ->label('Refresh')
                 ->icon('heroicon-o-arrow-path')
                 ->action(fn () => $this->dispatch('$refresh')),
@@ -1207,7 +1202,7 @@ final class OrdersProcessing extends Page
 
     private function getCartItemsHtml(): string
     {
-        if (empty($this->cartItems)) {
+        if ($this->cartItems === []) {
             return '';
         }
 
@@ -1223,9 +1218,9 @@ final class OrdersProcessing extends Page
             $price = (float) ($item['price'] ?? 0);
             $subtotal = $quantity * $price;
             $productName = htmlspecialchars($item['product_name'] ?? '');
-            $variantName = ! empty($item['variant_name']) ? " ({$item['variant_name']})" : '';
+            $variantName = empty($item['variant_name']) ? '' : " ({$item['variant_name']})";
             $productId = (int) $item['product_id'];
-            $variantId = ! empty($item['variant_id']) ? (int) $item['variant_id'] : 'null';
+            $variantId = empty($item['variant_id']) ? 'null' : (int) $item['variant_id'];
             $currentDiscountType = $item['discount_type'] ?? '';
             $currentDiscountPercentage = (int) ($item['discount_percentage'] ?? 0);
             $discountAmount = $currentDiscountPercentage > 0 ? ($subtotal * $currentDiscountPercentage / 100) : 0;
@@ -1307,13 +1302,11 @@ final class OrdersProcessing extends Page
                 </div>";
         }
 
-        $html .= "
+        return $html."
                 <div class='flex justify-between items-center border-t border-gray-200 pt-1 mt-1'>
                     <span class='font-bold text-gray-900'>Total:</span>
                     <span class='font-bold text-lg text-orange-600'>{$this->formatCurrency($finalTotal)}</span>
                 </div>
             </div>";
-
-        return $html;
     }
 }

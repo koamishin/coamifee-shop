@@ -14,9 +14,7 @@ enum BeverageVariant: string
      */
     public static function getOptions(): array
     {
-        return collect(self::cases())->mapWithKeys(function (BeverageVariant $variant) {
-            return [$variant->value => $variant->getLabel()];
-        })->toArray();
+        return collect(self::cases())->mapWithKeys(fn (BeverageVariant $variant): array => [$variant->value => $variant->getLabel()])->all();
     }
 
     /**

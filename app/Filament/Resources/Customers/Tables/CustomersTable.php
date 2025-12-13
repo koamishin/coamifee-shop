@@ -11,6 +11,8 @@ use Filament\Actions\EditAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
 
 final class CustomersTable
 {
@@ -43,8 +45,8 @@ final class CustomersTable
                     ->label('View Orders')
                     ->icon(Heroicon::Eye)
                     ->color('gray')
-                    ->modalHeading(fn ($record) => "Order History for {$record->name}")
-                    ->modalContent(function ($record) {
+                    ->modalHeading(fn ($record): string => "Order History for {$record->name}")
+                    ->modalContent(function ($record): Factory|View {
                         $orders = $record->orders()
                             ->with(['items.product'])
                             ->latest()

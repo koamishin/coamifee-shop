@@ -12,11 +12,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
-    $this->refundService = app(RefundService::class);
+beforeEach(function (): void {
+    $this->refundService = resolve(RefundService::class);
 });
 
-test('refund requires valid admin pin', function () {
+test('refund requires valid admin pin', function (): void {
     $user = User::factory()->create(['admin_pin' => '1234']);
     $order = Order::factory()->create(['payment_status' => 'paid']);
 
@@ -26,7 +26,7 @@ test('refund requires valid admin pin', function () {
         ->and($result['message'])->toContain('Invalid PIN');
 });
 
-test('refund cannot process unpaid orders', function () {
+test('refund cannot process unpaid orders', function (): void {
     $user = User::factory()->create(['admin_pin' => '1234']);
     $order = Order::factory()->create(['payment_status' => 'unpaid']);
 
@@ -36,7 +36,7 @@ test('refund cannot process unpaid orders', function () {
         ->and($result['message'])->toContain('unpaid');
 });
 
-test('refund cannot process already refunded orders', function () {
+test('refund cannot process already refunded orders', function (): void {
     $user = User::factory()->create(['admin_pin' => '1234']);
     $order = Order::factory()->create(['payment_status' => 'refunded']);
 
@@ -46,7 +46,7 @@ test('refund cannot process already refunded orders', function () {
         ->and($result['message'])->toContain('already been refunded');
 });
 
-test('successful refund updates order status and creates refund log', function () {
+test('successful refund updates order status and creates refund log', function (): void {
     $user = User::factory()->create(['admin_pin' => '5678']);
     $product = Product::factory()->create();
     $order = Order::factory()->create([
@@ -67,10 +67,10 @@ test('successful refund updates order status and creates refund log', function (
     expect($result['success'])->toBeTrue()
         ->and($order->refresh()->payment_status)->toBe('refunded')
         ->and($order->refresh()->status)->toBe('refunded')
-        ->and(RefundLog::where('order_id', $order->id)->count())->toBe(1);
+        ->and(RefundLog::query()->where('order_id', $order->id)->count())->toBe(1);
 });
 
-test('refund log contains payment method information', function () {
+test('refund log contains payment method information', function (): void {
     $user = User::factory()->create(['admin_pin' => '1111']);
     $product = Product::factory()->create();
     $order = Order::factory()->create([
@@ -88,14 +88,14 @@ test('refund log contains payment method information', function () {
 
     $this->refundService->processRefund($order, $user, '1111');
 
-    $refundLog = RefundLog::where('order_id', $order->id)->first();
+    $refundLog = RefundLog::query()->where('order_id', $order->id)->first();
 
     expect($refundLog->payment_method)->toBe('gcash')
         ->and((float) $refundLog->refund_amount)->toBe(150.50)
         ->and($refundLog->refunded_by)->toBe($user->id);
 });
 
-test('refund deducts from sales metrics', function () {
+test('refund deducts from sales metrics', function (): void {
     $user = User::factory()->create(['admin_pin' => '2222']);
     $product = Product::factory()->create();
 
@@ -104,7 +104,7 @@ test('refund deducts from sales metrics', function () {
         'status' => 'pending',
         'payment_method' => 'bank_transfer',
         'total' => 200.00,
-        'created_at' => now()->startOfDay(),
+        'created_at' => today(),
     ]);
 
     OrderItem::factory()->create([
@@ -115,7 +115,7 @@ test('refund deducts from sales metrics', function () {
     ]);
 
     // Initially order should be counted in metrics
-    expect(Order::where('payment_status', '!=', 'refunded')
+    expect(Order::query()->where('payment_status', '!=', 'refunded')
         ->where('id', $order->id)
         ->count())->toBe(1);
 
@@ -123,19 +123,19 @@ test('refund deducts from sales metrics', function () {
     $this->refundService->processRefund($order, $user, '2222');
 
     // After refund, order should be excluded from metrics
-    expect(Order::where('payment_status', '!=', 'refunded')
+    expect(Order::query()->where('payment_status', '!=', 'refunded')
         ->where('id', $order->id)
         ->count())->toBe(0);
 });
 
-test('pin verification works correctly', function () {
+test('pin verification works correctly', function (): void {
     $user = User::factory()->create(['admin_pin' => '4444']);
 
     expect($this->refundService->verifyPin($user, '4444'))->toBeTrue()
         ->and($this->refundService->verifyPin($user, '9999'))->toBeFalse();
 });
 
-test('refund logs track all payment methods', function () {
+test('refund logs track all payment methods', function (): void {
     $user = User::factory()->create(['admin_pin' => '3333']);
 
     $paymentMethods = ['cash', 'gcash', 'maya', 'bank_transfer'];

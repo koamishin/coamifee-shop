@@ -7,7 +7,11 @@ namespace App\Filament\Resources\Products\Schemas;
 use App\Enums\BeverageVariant;
 use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
+use App\Models\Category;
+use App\Models\Ingredient;
+use App\Models\IngredientInventory;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -59,13 +63,13 @@ final class ProductForm
                             ->helperText(
                                 'Select the category this product belongs to',
                             )
-                            ->afterStateUpdated(function ($state, callable $set) {
+                            ->afterStateUpdated(function ($state, callable $set): void {
                                 // Update category_has_variants when category changes
                                 $categoryId = $state;
                                 $hasVariants = false;
 
                                 if ($categoryId) {
-                                    $category = \App\Models\Category::find($categoryId);
+                                    $category = Category::query()->find($categoryId);
                                     $hasVariants = $category ? $category->has_variants : false;
                                 }
 
@@ -95,12 +99,12 @@ final class ProductForm
                                         ->reactive()
                                         ->live(),
                                 ])
-                                    ->model(\App\Models\Category::class)
-                                    ->after(function ($get, $set) {
+                                    ->model(Category::class)
+                                    ->after(function ($get, $set): void {
                                         // After creating a new category, update the category_has_variants field
                                         $newCategoryId = $get('category_id');
                                         if ($newCategoryId) {
-                                            $newCategory = \App\Models\Category::find($newCategoryId);
+                                            $newCategory = Category::query()->find($newCategoryId);
                                             if ($newCategory) {
                                                 $set('category_has_variants', $newCategory->has_variants);
                                             }
@@ -110,11 +114,11 @@ final class ProductForm
                             ->columnSpanFull(),
 
                         // Hidden field to track category's has_variants property
-                        \Filament\Forms\Components\Hidden::make('category_has_variants')
+                        Hidden::make('category_has_variants')
                             ->default(function ($get) {
                                 $categoryId = $get('category_id');
                                 if ($categoryId) {
-                                    $category = \App\Models\Category::find($categoryId);
+                                    $category = Category::query()->find($categoryId);
 
                                     return $category ? $category->has_variants : false;
                                 }
@@ -128,9 +132,9 @@ final class ProductForm
                             ->prefix(self::getCurrencyPrefix())
                             ->suffix(self::getCurrencySuffix())
                             ->numeric()
-                            ->required(fn (callable $get) => ! ($get('category_has_variants') === true && $get('has_variants') === true))
+                            ->required(fn (callable $get): bool => ! ($get('category_has_variants') === true && $get('has_variants') === true))
                             ->step(0.01)
-                            ->helperText(fn (callable $get) => $get('category_has_variants') === true && $get('has_variants') === true
+                            ->helperText(fn (callable $get): string => $get('category_has_variants') === true && $get('has_variants') === true
                                 ? 'For products with variants, set prices for Hot and Cold variants below'
                                 : 'Set the selling price for this product')
                             ->live(onBlur: true),
@@ -143,7 +147,7 @@ final class ProductForm
                             ->reactive()
                             ->live()
                             ->dehydrated(false)
-                            ->visible(fn (callable $get) => $get('category_has_variants') === true)
+                            ->visible(fn (callable $get): bool => $get('category_has_variants') === true)
                             ->columnSpanFull(),
                     ]),
                 ])
@@ -187,7 +191,7 @@ final class ProductForm
             Section::make('Product Variants (Hot & Cold)')
                 ->description('Set prices for Hot and Cold versions of this product.')
                 ->icon('heroicon-o-fire')
-                ->visible(fn (callable $get) => $get('category_has_variants') === true && $get('has_variants') === true)
+                ->visible(fn (callable $get): bool => $get('category_has_variants') === true && $get('has_variants') === true)
                 ->schema([
                     Repeater::make('variants')
                         ->label('Hot & Cold Prices')
@@ -258,7 +262,7 @@ final class ProductForm
                                         ->distinct()
                                         ->reactive()
                                         ->live()
-                                        ->afterStateUpdated(function (callable $set) {
+                                        ->afterStateUpdated(function (callable $set): void {
                                             // Reset quantity when ingredient changes
                                             $set('quantity_required', null);
                                         })
@@ -270,13 +274,13 @@ final class ProductForm
                                         ->required()
                                         ->minValue(0.001)
                                         ->step(0.001)
-                                        ->placeholder(function (callable $get) {
+                                        ->placeholder(function (callable $get): string {
                                             $ingredientId = $get('ingredient_id');
                                             if (! $ingredientId) {
                                                 return 'e.g., 250';
                                             }
 
-                                            $ingredient = \App\Models\Ingredient::find($ingredientId);
+                                            $ingredient = Ingredient::query()->find($ingredientId);
                                             if (! $ingredient) {
                                                 return 'e.g., 250';
                                             }
@@ -294,17 +298,17 @@ final class ProductForm
                                                 return null;
                                             }
 
-                                            $ingredient = \App\Models\Ingredient::find($ingredientId);
+                                            $ingredient = Ingredient::query()->find($ingredientId);
 
                                             return $ingredient->unit_type->getLabel();
                                         })
-                                        ->helperText(function (callable $get) {
+                                        ->helperText(function (callable $get): string {
                                             $ingredientId = $get('ingredient_id');
                                             if (! $ingredientId) {
                                                 return 'Amount needed per product';
                                             }
 
-                                            $ingredient = \App\Models\Ingredient::find($ingredientId);
+                                            $ingredient = Ingredient::query()->find($ingredientId);
                                             if (! $ingredient) {
                                                 return 'Amount needed per product';
                                             }
@@ -329,12 +333,12 @@ final class ProductForm
                                                 return null;
                                             }
 
-                                            $ingredient = \App\Models\Ingredient::with('inventory')->find($ingredientId);
+                                            $ingredient = Ingredient::with('inventory')->find($ingredientId);
                                             if (! $ingredient || ! $ingredient->inventory) {
                                                 return 'no_data';
                                             }
 
-                                            $currentStock = $ingredient->inventory instanceof \App\Models\IngredientInventory
+                                            $currentStock = $ingredient->inventory instanceof IngredientInventory
                                                 ? (float) $ingredient->inventory->getAttribute('current_stock')
                                                 : 0.0;
                                             $productsPossible = floor($currentStock / $quantity);
@@ -367,7 +371,7 @@ final class ProductForm
                         ->columns(1)
                         ->itemLabel(function (array $state): string {
                             if (isset($state['ingredient_id']) && $state['ingredient_id']) {
-                                $ingredient = \App\Models\Ingredient::find($state['ingredient_id']);
+                                $ingredient = Ingredient::query()->find($state['ingredient_id']);
                                 if ($ingredient) {
                                     $quantity = (float) ($state['quantity_required'] ?? 0);
 

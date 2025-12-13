@@ -9,6 +9,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Exception;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -16,7 +17,6 @@ final readonly class OrderModificationService
 {
     public function __construct(
         private PosService $posService,
-        private OrderProcessingService $orderProcessingService,
     ) {}
 
     /**
@@ -48,7 +48,7 @@ final readonly class OrderModificationService
             $additionalSubtotal = 0.0;
 
             foreach ($items as $item) {
-                $product = Product::findOrFail($item['product_id']);
+                $product = Product::query()->findOrFail($item['product_id']);
 
                 // Check if product can be added (inventory check)
                 if (! $this->posService->canAddToCart($product->id)) {
@@ -61,7 +61,7 @@ final readonly class OrderModificationService
                 $variantName = null;
 
                 if (! empty($item['variant_id'])) {
-                    $variant = ProductVariant::find($item['variant_id']);
+                    $variant = ProductVariant::query()->find($item['variant_id']);
                     if (! $variant || $variant->product_id !== $product->id) {
                         throw new Exception("Invalid variant for product '{$product->name}'");
                     }
@@ -105,7 +105,7 @@ final readonly class OrderModificationService
 
             // Create order items
             foreach ($newItems as $newItem) {
-                OrderItem::create([
+                OrderItem::query()->create([
                     'order_id' => $order->id,
                     'product_id' => $newItem['product_id'],
                     'product_variant_id' => $newItem['product_variant_id'],
@@ -123,7 +123,7 @@ final readonly class OrderModificationService
             $this->recalculateOrderTotals($order);
 
             // Handle order status transitions
-            $this->handleOrderStatusTransitions($order, $originalSubtotal, $originalPaymentStatus, $originalInventoryProcessed);
+            $this->handleOrderStatusTransitions($order, $originalSubtotal, $originalPaymentStatus);
 
             DB::commit();
 
@@ -159,16 +159,14 @@ final readonly class OrderModificationService
     /**
      * Get available products that can be added to orders
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public function getAvailableProducts()
     {
         return $this->posService->getActiveCategories()
             ->load('products.activeVariants')
             ->map(function ($category) {
-                $category->products = $category->products->filter(function ($product) {
-                    return $this->posService->canAddToCart($product->id);
-                });
+                $category->products = $category->products->filter(fn ($product): bool => $this->posService->canAddToCart($product->id));
 
                 return $category;
             });
@@ -177,7 +175,7 @@ final readonly class OrderModificationService
     /**
      * Check if a product can be added to an order
      */
-    public function canAddProductToOrder(int $productId, ?int $variantId = null): bool
+    public function canAddProductToOrder(int $productId): bool
     {
         return $this->posService->canAddToCart($productId);
     }
@@ -199,9 +197,7 @@ final readonly class OrderModificationService
         $order->load('items');
 
         // Calculate new subtotal from all items
-        $newSubtotal = $order->items->sum(function ($item) {
-            return $item->price * $item->quantity;
-        });
+        $newSubtotal = $order->items->sum(fn ($item): int|float => $item->price * $item->quantity);
 
         // Calculate item-level discount total
         $itemLevelDiscountTotal = 0.0;
@@ -235,8 +231,7 @@ final readonly class OrderModificationService
     private function handleOrderStatusTransitions(
         Order $order,
         float $originalSubtotal,
-        string $originalPaymentStatus,
-        bool $originalInventoryProcessed
+        string $originalPaymentStatus
     ): void {
         $newSubtotal = (float) $order->subtotal;
         $additionalAmount = $newSubtotal - $originalSubtotal;

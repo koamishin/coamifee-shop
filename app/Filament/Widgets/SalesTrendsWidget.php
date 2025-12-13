@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Widgets;
 
 use App\Models\Order;
+use App\Services\GeneralSettingsService;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Date;
 
@@ -52,7 +53,7 @@ final class SalesTrendsWidget extends ChartWidget
             $currentDate->addDay();
         }
 
-        $currency = app(\App\Services\GeneralSettingsService::class)->getCurrency();
+        $currency = resolve(GeneralSettingsService::class)->getCurrency();
 
         return [
             'labels' => $labels,

@@ -76,7 +76,7 @@ test(
         // We expect either 200 (success) or 403 (forbidden due to permissions)
         // But definitely not a 500 (server error from TypeError)
         $response = $this->actingAs($user)->get(
-            '/admin/product-ingredients/create',
+            "/admin/products/{$product->id}/edit",
         );
 
         // Should not throw TypeError (which would result in 500)

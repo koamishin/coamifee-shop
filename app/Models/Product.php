@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 final class Product extends Model
 {
@@ -53,7 +54,7 @@ final class Product extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-    public function inventory(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function inventory(): HasOne
     {
         return $this->hasOne(ProductInventory::class);
     }

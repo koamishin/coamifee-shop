@@ -7,26 +7,28 @@ namespace App\Filament\Pages;
 use App\Enums\Currency;
 use App\Enums\DiscountType;
 use App\Enums\TableNumber;
-// use App\Models\Category; // Not used directly, using PosService instead
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\GeneralSettingsService;
 use App\Services\PosService;
+// use App\Models\Category; // Not used directly, using PosService instead
 use BackedEnum;
 use Exception;
-use Filament\Actions;
-use Filament\Forms;
-use Filament\Forms\Components\Repeater\TableColumn;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\HtmlString;
-use JaOcero\RadioDeck\Forms\Components\RadioDeck;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Locked;
-use Storage;
 
 final class PosPage extends Page
 {
@@ -91,9 +93,9 @@ final class PosPage extends Page
 
     protected static ?string $title = 'Point of Sale';
 
-    protected static ?string $model = Order::class;
-
     protected string $view = 'filament.pages.pos-page';
+
+    private static ?string $model = Order::class;
 
     private PosService $posService;
 
@@ -103,8 +105,12 @@ final class PosPage extends Page
     {
         $this->loadData();
 
-        // Load tablet mode preference from session
-        $this->isTabletMode = session('pos_tablet_mode', false);
+        // Load tablet mode preference from session (tablet-first default)
+        $this->isTabletMode = session('pos_tablet_mode', true);
+
+        if (! session()->has('pos_tablet_mode')) {
+            session(['pos_tablet_mode' => $this->isTabletMode]);
+        }
     }
 
     public function boot(PosService $posService, GeneralSettingsService $settingsService): void
@@ -120,7 +126,11 @@ final class PosPage extends Page
     public function loadData(): void
     {
         $this->categories = $this->posService->getActiveCategories();
-        $this->customers = Customer::orderBy('name')->get();
+        $this->customers = Customer::query()
+            ->withCount('orders')
+            ->orderByDesc('orders_count')
+            ->orderBy('name')
+            ->get();
         $this->refreshProducts();
     }
 
@@ -129,7 +139,7 @@ final class PosPage extends Page
         $this->products = $this->posService->getFilteredProducts(
             $this->selectedCategoryId,
             $this->search
-        )->load('activeVariants');
+        );
 
         // Update product availability
         $this->productAvailability = $this->posService->updateProductAvailability($this->products);
@@ -139,6 +149,30 @@ final class PosPage extends Page
     {
         $this->selectedCategoryId = $categoryId;
         $this->refreshProducts();
+    }
+
+    public function setOrderType(string $orderType): void
+    {
+        $this->orderType = $orderType;
+
+        if ($this->orderType !== 'dine_in') {
+            $this->tableNumber = null;
+        }
+
+        if ($this->orderType !== 'dine_in') {
+            $this->paymentTiming = 'pay_now';
+        }
+
+        if ($this->orderType === 'delivery') {
+            if (! in_array($this->paymentMethod, ['grab', 'food_panda'], true)) {
+                $this->paymentMethod = 'grab';
+            }
+        }
+    }
+
+    public function selectTable(string $tableNumber): void
+    {
+        $this->tableNumber = $tableNumber;
     }
 
     public function addToCart(int $productId, ?int $variantId = null): void
@@ -185,15 +219,7 @@ final class PosPage extends Page
                 $productPrice = $variant->price;
             }
         }
-
-        // Check for existing item with same product AND variant
-        $existingItemKey = null;
-        foreach ($this->cartItems as $key => $item) {
-            if ($item['product_id'] === $productId && ($item['variant_id'] ?? null) === $variantId) {
-                $existingItemKey = $key;
-                break;
-            }
-        }
+        $existingItemKey = array_find_key($this->cartItems, fn ($item): bool => $item['product_id'] === $productId && ($item['variant_id'] ?? null) === $variantId);
 
         if ($existingItemKey !== null) {
             $existingItem = $this->cartItems[$existingItemKey];
@@ -234,13 +260,16 @@ final class PosPage extends Page
         }
 
         $this->calculateTotals();
-        $this->refreshProducts(); // Refresh availability
 
-        $notificationBody = $displayName ?? $product->name;
+        $notificationProductName = $product->name;
+        if ($variantName !== null) {
+            $notificationProductName .= " ({$variantName})";
+        }
+
         Notification::make()
             ->success()
             ->title('Added to cart')
-            ->body("{$notificationBody} added to cart")
+            ->body("{$notificationProductName} added to cart")
             ->send();
 
         // Clear variant selection
@@ -253,7 +282,6 @@ final class PosPage extends Page
         unset($this->cartItems[$index]);
         $this->cartItems = array_values($this->cartItems);
         $this->calculateTotals();
-        $this->refreshProducts(); // Refresh availability
     }
 
     public function updateQuantity(int $index, int $quantity): void
@@ -288,19 +316,18 @@ final class PosPage extends Page
             $this->cartItems[$index]['discount_amount'] = $discountAmount;
 
             $this->calculateTotals();
-            $this->refreshProducts(); // Refresh availability
         }
     }
 
     public function updatedPaidAmount(?float $value): void
     {
         if ($value !== null) {
-            $this->paidAmount = (float) $value;
+            $this->paidAmount = $value;
         }
         $this->calculateTotals();
     }
 
-    public function updatedCartItems($value, $key): void
+    public function updatedCartItems(mixed $value, mixed $key): void
     {
         // Handle live updates to cart items
         if (! is_string($key)) {
@@ -308,9 +335,13 @@ final class PosPage extends Page
         }
 
         if (mb_strpos($key, '.discount_type') !== false) {
-            $this->updatedCartItemDiscountType($key, $value);
-        } elseif (mb_strpos($key, '.discount_percentage') !== false) {
-            $this->updatedCartItemDiscountPercentage($key, $value);
+            $this->updatedCartItemDiscountType($key, (string) $value);
+
+            return;
+        }
+
+        if (mb_strpos($key, '.discount_percentage') !== false) {
+            $this->updatedCartItemDiscountPercentage($key, (float) $value);
         }
     }
 
@@ -322,7 +353,7 @@ final class PosPage extends Page
             $this->cartItems[$index]['discount_type'] = $value ?: null;
 
             // Auto-fill percentage if it's a predefined discount type
-            if ($value) {
+            if ($value !== '' && $value !== '0') {
                 $discountType = DiscountType::tryFrom($value);
                 if ($discountType) {
                     $percentage = $discountType->getPercentage();
@@ -403,11 +434,21 @@ final class PosPage extends Page
 
     public function createOrder(): void
     {
-        if (empty($this->cartItems)) {
+        if ($this->cartItems === []) {
             Notification::make()
                 ->warning()
                 ->title('Cart is empty')
                 ->body('Please add items to the cart before creating the order')
+                ->send();
+
+            return;
+        }
+
+        if ($this->orderType === 'dine_in' && blank($this->tableNumber)) {
+            Notification::make()
+                ->warning()
+                ->title('Table is required')
+                ->body('Please select a table number for dine-in orders')
                 ->send();
 
             return;
@@ -435,7 +476,7 @@ final class PosPage extends Page
 
             // Calculate order-level discount (applied to original subtotal, NOT after item discounts)
             $orderLevelDiscountAmount = 0.0;
-            if (! empty($this->discountType) && ! empty($this->discountValue)) {
+            if (! in_array($this->discountType, [null, '', '0'], true) && ! empty($this->discountValue)) {
                 // Order-level discount applies to original subtotal
                 $orderLevelDiscountAmount = $originalSubtotal * ($this->discountValue / 100);
             }
@@ -453,7 +494,7 @@ final class PosPage extends Page
 
             // Determine payment status and method based on payment timing
             $paymentStatus = $this->paymentTiming === 'pay_now' ? 'paid' : 'unpaid';
-            $paymentMethod = $this->paymentTiming === 'pay_now' ? $this->paymentMethod : 'cash';
+            $paymentMethod = $this->paymentTiming === 'pay_now' ? $this->paymentMethod : null;
 
             // Prepare order data
             $orderData = [
@@ -466,7 +507,7 @@ final class PosPage extends Page
                 'discount_type' => $this->discountType,
                 'discount_value' => $this->discountValue,
                 'discount_amount' => $orderLevelDiscountAmount,  // Only order-level discount (item discounts are stored per-item)
-                'add_ons' => ! empty($this->addOns) ? $this->addOns : null,
+                'add_ons' => $this->addOns === [] ? null : $this->addOns,
                 'add_ons_total' => $addOnsTotal,
                 'total' => $finalTotal,  // Final total after all discounts and add-ons
                 'status' => 'pending',
@@ -491,9 +532,9 @@ final class PosPage extends Page
                 }
             }
 
-            $order = Order::create($orderData);
+            $order = Order::query()->create($orderData);
 
-            \Illuminate\Support\Facades\Log::info('POS Order Created', [
+            Log::info('POS Order Created', [
                 'order_id' => $order->id,
                 'order_type' => $orderData['order_type'],
                 'payment_timing' => $this->paymentTiming,
@@ -524,7 +565,7 @@ final class PosPage extends Page
                     'discount' => $discountAmount, // Using the same value for legacy compatibility
                 ];
 
-                \Illuminate\Support\Facades\Log::info('Creating Order Item with Discount', [
+                Log::info('Creating Order Item with Discount', [
                     'order_id' => $order->id,
                     'product_id' => $item['product_id'],
                     'product_name' => $item['product_name'] ?? 'Unknown',
@@ -535,9 +576,9 @@ final class PosPage extends Page
                     'data_to_save' => $orderItemData,
                 ]);
 
-                $createdItem = OrderItem::create($orderItemData);
+                $createdItem = OrderItem::query()->create($orderItemData);
 
-                \Illuminate\Support\Facades\Log::info('Order Item Created - Verification', [
+                Log::info('Order Item Created - Verification', [
                     'item_id' => $createdItem->id,
                     'saved_discount_percentage' => $createdItem->discount_percentage,
                     'saved_discount_amount' => $createdItem->discount_amount,
@@ -560,6 +601,7 @@ final class PosPage extends Page
                 ->send();
 
             $this->resetOrder();
+            $this->refreshProducts();
         } catch (Exception $e) {
             DB::rollBack();
 
@@ -655,460 +697,555 @@ final class PosPage extends Page
             return null;
         }
 
-        return Storage::disk('r2')->url($imagePath);
+        if (str_starts_with($imagePath, 'http://') || str_starts_with($imagePath, 'https://')) {
+            return $imagePath;
+        }
+
+        $baseUrl = (string) config('filesystems.disks.r2.url', '');
+        if ($baseUrl === '') {
+            return null;
+        }
+
+        return mb_rtrim($baseUrl, '/').'/'.mb_ltrim($imagePath, '/');
     }
 
     protected function getActions(): array
     {
         return [
-            Actions\Action::make('newOrder')
+            Action::make('newOrder')
                 ->label('New Order')
                 ->icon('heroicon-o-plus')
                 ->color('primary')
                 ->action(fn () => $this->resetOrder()),
 
-            Actions\Action::make('clearCart')
+            Action::make('clearCart')
                 ->label('Clear Cart')
                 ->icon('heroicon-o-trash')
                 ->color('danger')
                 ->action(fn () => $this->clearCart())
-                ->hidden(fn () => empty($this->cartItems)),
+                ->hidden(fn (): bool => $this->cartItems === []),
 
-            Actions\Action::make('placeOrder')
-                ->label('Place Order')
-                ->icon('heroicon-o-shopping-bag')
+            Action::make('placeOrder')
+                ->label('Send Order')
+                ->icon('heroicon-o-paper-airplane')
                 ->color('success')
-                ->form([
-                    // Hidden fields to track state
-                    Forms\Components\Hidden::make('tableNumber'),
-                    Forms\Components\Hidden::make('orderType')->default(fn () => $this->orderType),
-                    Forms\Components\Hidden::make('paymentTiming')->default(fn () => $this->paymentTiming),
-
-                    // COMPACT HEADER ROW
-                    Forms\Components\Placeholder::make('header_row')
-                        ->label('')
-                        ->content(function ($get) {
-                            $icon = match ($this->orderType) {
-                                'dine_in' => '🍽️',
-                                'takeaway' => '🛍️',
-                                'delivery' => '🚚',
-                                default => '📋',
-                            };
-
-                            $customerOptions = collect($this->customers)->map(fn ($customer) => "<option value='{$customer->id}'>{$customer->name}</option>")->implode('');
-
-                            // Table selection for dine-in
-                            $tableHtml = '';
-                            if ($this->orderType === 'dine_in') {
-                                $tables = TableNumber::getOptions();
-                                $selectedTable = $get('tableNumber') ?? $this->tableNumber;
-                                $tableSelectHtml = '<option value="">Select Table</option>';
-                                foreach ($tables as $value => $tableLabel) {
-                                    $selected = $selectedTable === $value ? 'selected' : '';
-                                    $tableSelectHtml .= "<option value='{$value}' {$selected}>{$tableLabel}</option>";
-                                }
-                                $tableHtml = "
-                                    <div class='col-span-2'>
-                                        <label class='text-xs font-bold text-gray-600 mb-1 block'>TABLE</label>
-                                        <select wire:model='tableNumber' class='w-full px-2 py-2 border border-gray-300 rounded text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500'>
-                                            {$tableSelectHtml}
-                                        </select>
-                                    </div>
-                                ";
-                            }
-
-                            return new HtmlString("
-                                <div class='grid grid-cols-12 gap-3 items-end bg-gradient-to-r from-orange-50 to-amber-50 p-4 rounded-lg border border-orange-200'>
-                                    <!-- Order Type Icon -->
-                                    <div class='col-span-1 text-center'>
-                                        <div class='text-2xl'>{$icon}</div>
-                                        <div class='text-xs font-bold text-orange-600 uppercase mt-0.5'>Type</div>
-                                    </div>
-                                    
-                                    <!-- Customer Select -->
-                                    <div class='col-span-3'>
-                                        <label class='text-xs font-bold text-gray-600 mb-1 block'>CUSTOMER</label>
-                                        <select wire:model='customerId' class='w-full px-2 py-2 border border-gray-300 rounded text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500'>
-                                            <option value=''>Walk-in</option>
-                                            {$customerOptions}
-                                        </select>
-                                    </div>
-                                    
-                                    <!-- Table Selection (if dine-in) -->
-                                    {$tableHtml}
-                                    
-                                    <!-- Notes -->
-                                    <div class='col-span-4'>
-                                        <label class='text-xs font-bold text-gray-600 mb-1 block'>NOTES</label>
-                                        <input type='text' wire:model='notes' placeholder='Special instructions...' class='w-full px-2 py-2 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-orange-500' />
-                                    </div>
-                                </div>
-                            ");
-                        }),
-
-                    Forms\Components\TextInput::make('customerName')
-                        ->label('Customer Name')
-                        ->placeholder('Optional - Enter name for walk-in customer')
-                        ->visible(fn ($get) => ! filled($get('customerId')))
-                        ->nullable(),
-
-                    Forms\Components\Placeholder::make('item_discounts')
-                        ->label('Item Discounts')
-                        ->content(function () {
-                            if (empty($this->cartItems)) {
-                                return new HtmlString('<div class="text-center text-gray-500 py-2">No items in cart</div>');
-                            }
-
-                            $discountHtml = '<div class="overflow-x-auto"><table class="w-full text-xs"><thead class="bg-gray-100 sticky top-0"><tr><th class="text-left px-2 py-1 font-semibold">Item</th><th class="text-right px-2 py-1 font-semibold">Qty</th><th class="text-right px-2 py-1 font-semibold">Price</th><th class="px-2 py-1 font-semibold">Type</th><th class="text-right px-2 py-1 font-semibold">%</th><th class="text-right px-2 py-1 font-semibold">Total</th></tr></thead><tbody>';
-
-                            foreach ($this->cartItems as $index => $item) {
-                                $formattedPrice = $this->formatCurrency((float) $item['price']);
-                                $originalSubtotal = (float) $item['subtotal'];
-                                $currentDiscountType = $item['discount_type'] ?? '';
-                                $currentDiscountPercentage = $item['discount_percentage'] ?? 0;
-                                $discountAmount = $currentDiscountPercentage > 0 ? ($originalSubtotal * $currentDiscountPercentage / 100) : 0;
-                                $finalSubtotal = $originalSubtotal - $discountAmount;
-                                $formattedFinalSubtotal = $this->formatCurrency($finalSubtotal);
-
-                                $discountOptions = DiscountType::getOptions();
-                                $discountSelectOptions = "<option value=''>None</option>";
-                                foreach ($discountOptions as $value => $label) {
-                                    $selected = $currentDiscountType === $value ? 'selected' : '';
-                                    $discountSelectOptions .= "<option value='{$value}' {$selected}>{$label}</option>";
-                                }
-
-                                $discountHtml .= "
-                                    <tr class='border-b border-gray-200 hover:bg-orange-50'>
-                                        <td class='px-2 py-1.5 text-left'><span class='font-medium text-gray-900'>{$item['name']}</span></td>
-                                        <td class='text-right px-2 py-1.5'>{$item['quantity']}</td>
-                                        <td class='text-right px-2 py-1.5'>{$formattedPrice}</td>
-                                        <td class='px-2 py-1.5'>
-                                            <select
-                                                wire:model.live=\"cartItems.{$index}.discount_type\"
-                                                class='w-full px-1 py-0.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500'
-                                            >
-                                                {$discountSelectOptions}
-                                            </select>
-                                        </td>
-                                        <td class='text-right px-2 py-1.5'>
-                                            <input
-                                                type='number'
-                                                wire:model.live=\"cartItems.{$index}.discount_percentage\"
-                                                min='0'
-                                                disabled
-                                                max='100'
-                                                step='1'
-                                                placeholder='0'
-                                                class='w-12 px-1 py-0.5 text-xs text-right border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500'
-                                            />
-                                        </td>
-                                        <td class='text-right px-2 py-1.5 font-semibold text-orange-600'>{$formattedFinalSubtotal}</td>
-                                    </tr>
-                                ";
-                            }
-
-                            $discountHtml .= '</tbody></table></div>';
-
-                            return new HtmlString($discountHtml);
-                        })
-                        ->columnSpanFull()
-                        ->visible(fn () => ! empty($this->cartItems)),
-
-                    // Forms\Components\Placeholder::make('cart_items_display')
-                    // ->label('Order Items')
-                    // ->content(function () {
-                    //     if (empty($this->cartItems)) {
-                    //         return new HtmlString('<div class="text-center text-gray-500 py-2">No items in cart</div>');
-                    //     }
-
-                    //     $cartHtml = '<div class="grid grid-cols-3 sm:grid-cols-4 gap-2">';
-
-                    //     foreach ($this->cartItems as $item) {
-                    //         $formattedPrice = $this->formatCurrency((float) $item['price']);
-                    //         $originalSubtotal = (float) $item['subtotal'];
-                    //         $discountPercentage = $item['discount_percentage'] ?? 0;
-                    //         $discountAmount = $discountPercentage > 0 ? ($originalSubtotal * $discountPercentage / 100) : 0;
-                    //         $finalSubtotal = $originalSubtotal - $discountAmount;
-                    //         $formattedOriginalSubtotal = $this->formatCurrency($originalSubtotal);
-                    //         $formattedFinalSubtotal = $this->formatCurrency($finalSubtotal);
-
-                    //         $discountDisplay = '';
-                    //         if ($discountPercentage > 0) {
-                    //             $formattedDiscountAmount = $this->formatCurrency($discountAmount);
-                    //             $discountType = $item['discount_type'] ?? 'Custom';
-                    //             $discountDisplay = "
-                    //                 <div class='text-xs text-green-600 mb-1'>
-                    //                     <span>{$discountPercentage}% off ({$discountType})</span>
-                    //                     <div class='text-gray-500 line-through'>{$formattedOriginalSubtotal}</div>
-                    //                 </div>
-                    //             ";
-                    //         }
-
-                    //         $cartHtml .= "
-                    //             <div class='bg-white border border-gray-200 rounded px-2 py-1.5 hover:shadow-sm transition-shadow'>
-                    //                 <h4 class='text-xs font-semibold text-gray-900 line-clamp-2 mb-0.5'>{$item['name']}</h4>
-                    //                 <div class='flex items-center justify-between mb-0.5 text-xs'>
-                    //                     <span class='text-gray-600'>×{$item['quantity']}</span>
-                    //                     <span class='font-medium text-orange-600'>{$formattedPrice}</span>
-                    //                 </div>
-                    //                 {$discountDisplay}
-                    //                 <div class='text-xs font-bold text-gray-900 border-t border-gray-100 pt-0.5'>
-                    //                     {$formattedFinalSubtotal}
-                    //                 </div>
-                    //             </div>
-                    //         ";
-                    //     }
-
-                    //     $cartHtml .= '</div>';
-
-                    //     return new HtmlString($cartHtml);
-                    // })
-                    // ->columnSpanFull(),
-
-                    Forms\Components\Textarea::make('notes')
-                        ->label('Special Instructions')
-                        ->placeholder('e.g., Extra hot, no sugar, allergies...')
-                        ->rows(2)
-                        ->columnSpanFull(),
-
-                    RadioDeck::make('paymentTiming')
-                        ->label('Payment Timing')
-                        ->options(function ($get) {
-                            $orderType = $get('orderType') ?? $this->orderType;
-
-                            if ($orderType === 'dine_in') {
-                                return [
-                                    'pay_later' => 'Pay Later',
-                                    'pay_now' => 'Pay Now',
-                                ];
-                            }
-
-                            return [
-                                'pay_now' => 'Pay Now',
-                            ];
-                        })
-                        ->descriptions(function ($get) {
-                            $orderType = $get('orderType') ?? $this->orderType;
-
-                            if ($orderType === 'dine_in') {
-                                return [
-                                    'pay_later' => 'After meal',
-                                    'pay_now' => 'Immediate',
-                                ];
-                            }
-
-                            return [
-                                'pay_now' => 'Before prep',
-                            ];
-                        })
-                        ->icons(function ($get) {
-                            $orderType = $get('orderType') ?? $this->orderType;
-
-                            if ($orderType === 'dine_in') {
-                                return [
-                                    'pay_later' => 'heroicon-o-clock',
-                                    'pay_now' => 'heroicon-o-banknotes',
-                                ];
-                            }
-
-                            return [
-                                'pay_now' => 'heroicon-o-banknotes',
-                            ];
-                        })
-                        ->default(function ($get) {
-                            $orderType = $get('orderType') ?? $this->orderType;
-
-                            return $orderType === 'dine_in' ? 'pay_later' : 'pay_now';
-                        })
-                        ->required()
-                        ->reactive()
-                        ->live()
-                        ->afterStateUpdated(function ($state, $set) {
-                            $this->paymentTiming = $state;
-                        })
-                        ->columns(function ($get) {
-                            $orderType = $get('orderType') ?? $this->orderType;
-
-                            return $orderType === 'dine_in' ? 2 : 1;
-                        })
-                        ->color('primary')
-                        ->columnSpanFull(),
-
-                    // Payment Method Select
-                    Forms\Components\Select::make('paymentMethod')
-                        ->label('Payment Method')
-                        ->options(function ($get) {
-                            $orderType = $get('orderType') ?? $this->orderType;
-
-                            return $orderType === 'delivery'
-                                ? ['grab' => 'Grab', 'food_panda' => 'Food Panda']
-                                : ['cash' => 'Cash', 'gcash' => 'Gcash', 'maya' => 'Maya', 'bank_transfer' => 'Bank Transfer'];
-                        })
-                        ->default(function ($get) {
-                            $orderType = $get('orderType') ?? $this->orderType;
-
-                            return $orderType === 'delivery' ? 'grab' : 'cash';
-                        })
-                        ->reactive()
-                        ->live()
-                        ->columnSpan(2)
-                        ->visible(function ($get) {
-                            return $get('paymentTiming') === 'pay_now';
-                        }),
-
-                    // Amount Paid Input
-                    Forms\Components\TextInput::make('paidAmount')
-                        ->label('Amount Paid')
-                        ->numeric()
-                        ->step(0.01)
-                        ->prefix($this->getCurrencySymbol())
-                        ->placeholder('0')
-                        ->reactive()
-                        ->live()
-                        ->columnSpan(2)
-                        ->visible(function ($get) {
-                            return $get('paymentTiming') === 'pay_now' && $get('paymentMethod') === 'cash';
-                        })
-                        ->afterStateUpdated(function ($state) {
-                            $this->paidAmount = (float) ($state ?? 0);
-                            $this->calculateTotals();
-                        }),
-
-                    // Change Display
-                    Forms\Components\Placeholder::make('changeDisplay')
-                        ->label('Change')
-                        ->content(function ($get) {
-                            $subtotal = $this->totalAmount;
-                            $discountAmount = 0.0;
-
-                            if ($get('discountType') && $get('discountValue')) {
-                                $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
-                            }
-
-                            $addOnsTotal = 0.0;
-                            $addOns = $get('addOns') ?? [];
-                            foreach ($addOns as $addOn) {
-                                if (! empty($addOn['price'])) {
-                                    $addOnsTotal += (float) $addOn['price'];
-                                }
-                            }
-
-                            $finalTotal = $subtotal - $discountAmount + $addOnsTotal;
-                            $paidAmount = (float) ($get('paidAmount') ?? 0);
-                            $changeAmount = $paidAmount - $finalTotal;
-                            $changeClass = $changeAmount > 0 ? 'bg-green-100 border-green-300' : ($changeAmount < 0 ? 'bg-red-100 border-red-300' : 'bg-gray-100 border-gray-300');
-                            $changeDisplay = $changeAmount >= 0
-                                ? $this->formatCurrency($changeAmount)
-                                : 'Insufficient: '.$this->formatCurrency(abs($changeAmount));
-
-                            return new HtmlString("<div class='px-2 py-1.5 rounded text-sm font-bold {$changeClass}'>{$changeDisplay}</div>");
-                        })
-                        ->columnSpan(2)
-                        ->visible(function ($get) {
-                            return $get('paymentTiming') === 'pay_now' && $get('paymentMethod') === 'cash';
-                        }),
-
-                    // Order Summary
-                    Forms\Components\Placeholder::make('order_summary')
-                        ->label('Order Summary')
-                        ->content(function ($get) {
-                            $subtotal = $this->totalAmount;
-                            $discountAmount = 0.0;
-
-                            if ($get('discountType') && $get('discountValue')) {
-                                $discountAmount = $subtotal * ((float) $get('discountValue') / 100);
-                            }
-
-                            $addOnsTotal = 0.0;
-                            $addOns = $get('addOns') ?? [];
-                            foreach ($addOns as $addOn) {
-                                if (! empty($addOn['price'])) {
-                                    $addOnsTotal += (float) $addOn['price'];
-                                }
-                            }
-
-                            $finalTotal = $subtotal - $discountAmount + $addOnsTotal;
-
-                            return new HtmlString("
-                                <div class='grid grid-cols-12 gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3'>
-                                    <div class='col-span-4'>
-                                        <div class='text-xs text-gray-600'>Subtotal</div>
-                                        <div class='text-lg font-bold text-gray-900'>{$this->formatCurrency($subtotal)}</div>
-                                    </div>
-                                    ".($discountAmount > 0 ? "<div class='col-span-4'>
-                                        <div class='text-xs text-green-600'>Discount</div>
-                                        <div class='text-lg font-bold text-green-600'>-{$this->formatCurrency($discountAmount)}</div>
-                                    </div>" : '').'
-                                    '.($addOnsTotal > 0 ? "<div class='col-span-4'>
-                                        <div class='text-xs text-blue-600'>Add-ons</div>
-                                        <div class='text-lg font-bold text-blue-600'>+{$this->formatCurrency($addOnsTotal)}</div>
-                                    </div>" : '')."
-                                    <div class='col-span-12 border-t border-blue-200 pt-2 flex justify-between items-center'>
-                                        <span class='text-sm font-bold text-gray-900'>TOTAL:</span>
-                                        <span class='text-2xl font-bold text-orange-600'>{$this->formatCurrency($finalTotal)}</span>
-                                    </div>
-                                </div>
-                            ");
-                        })
-                        ->columnSpanFull()
-                        ->visible(function ($get) {
-                            return $get('paymentTiming') === 'pay_now';
-                        }),
-
-                    Forms\Components\Hidden::make('changeAmount'),
-
-                    Section::make('Add-Ons (Optional)')
+                ->fillForm(fn (): array => [
+                    'orderType' => $this->orderType,
+                    'tableNumber' => $this->tableNumber,
+                    'customerId' => $this->customerId,
+                    'customerName' => $this->customerName,
+                    'customerQuick' => $this->customerId !== null
+                        && $this->customers->take(8)->pluck('id')->contains($this->customerId)
+                            ? (string) $this->customerId
+                            : 'walk_in',
+                    'notes' => $this->notes,
+                    'paymentTiming' => $this->paymentTiming,
+                    'deliveryProvider' => in_array($this->paymentMethod, ['grab', 'food_panda'], true)
+                        ? $this->paymentMethod
+                        : 'grab',
+                    'paymentMethod' => $this->paymentMethod,
+                    'paidAmount' => $this->paidAmount,
+                    'changeAmount' => $this->changeAmount,
+                    'discountType' => $this->discountType,
+                    'discountValue' => $this->discountValue,
+                    'addOns' => $this->addOns,
+                ])
+                ->schema([
+                    Grid::make(2)
                         ->schema([
-                            Forms\Components\Repeater::make('addOns')
-                                ->label('')
-                                ->table([
-                                    TableColumn::make('Add-on Name'),
-                                    TableColumn::make('Price'),
-                                ])
+                            Section::make('Order')
                                 ->schema([
-                                    Forms\Components\TextInput::make('name')
-                                        ->placeholder('e.g., Extra shot, Whipped cream')
+                                    ToggleButtons::make('orderType')
+                                        ->label('Order type')
+                                        ->options([
+                                            'dine_in' => 'Dine In',
+                                            'takeaway' => 'Takeaway',
+                                            'delivery' => 'Delivery',
+                                        ])
+                                        ->grouped()
+                                        ->required()
+                                        ->live()
+                                        ->afterStateUpdated(function (?string $state, callable $set, $get): void {
+                                            if ($state === null) {
+                                                return;
+                                            }
+
+                                            $this->setOrderType($state);
+
+                                            if ($state !== 'dine_in') {
+                                                $set('tableNumber', null);
+                                                $set('paymentTiming', 'pay_now');
+                                            }
+
+                                            if ($state === 'delivery') {
+                                                $selectedProvider = $get('deliveryProvider');
+                                                $selectedPaymentMethod = $get('paymentMethod');
+
+                                                $provider = in_array($selectedProvider, ['grab', 'food_panda'], true)
+                                                    ? $selectedProvider
+                                                    : (in_array($selectedPaymentMethod, ['grab', 'food_panda'], true)
+                                                        ? $selectedPaymentMethod
+                                                        : (in_array($this->paymentMethod, ['grab', 'food_panda'], true) ? $this->paymentMethod : 'grab'));
+
+                                                $this->paymentTiming = 'pay_now';
+                                                $this->paymentMethod = $provider;
+
+                                                $set('deliveryProvider', $provider);
+                                                $set('paymentMethod', $provider);
+
+                                                return;
+                                            }
+
+                                            if (in_array($this->paymentMethod, ['grab', 'food_panda'], true)) {
+                                                $this->paymentMethod = 'cash';
+                                                $set('paymentMethod', 'cash');
+                                            }
+                                        })
+                                        ->columnSpanFull(),
+
+                                    ToggleButtons::make('tableNumber')
+                                        ->label('Table (dine-in)')
+                                        ->options(TableNumber::getOptions())
+                                        ->columns(5)
+                                        ->required(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine_in')
+                                        ->visible(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine_in')
+                                        ->live()
+                                        ->afterStateUpdated(function (?string $state): void {
+                                            if ($state === null) {
+                                                return;
+                                            }
+
+                                            $this->selectTable($state);
+                                        })
+                                        ->columnSpanFull(),
+
+                                    ToggleButtons::make('deliveryProvider')
+                                        ->label('Delivery provider')
+                                        ->options([
+                                            'grab' => 'Grab',
+                                            'food_panda' => 'Food Panda',
+                                        ])
+                                        ->grouped()
+                                        ->columns(2)
+                                        ->required(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'delivery')
+                                        ->visible(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'delivery')
+                                        ->default(fn (): string => in_array($this->paymentMethod, ['grab', 'food_panda'], true) ? $this->paymentMethod : 'grab')
+                                        ->live()
+                                        ->afterStateUpdated(function (?string $state, callable $set): void {
+                                            if ($state === null) {
+                                                return;
+                                            }
+
+                                            $this->paymentTiming = 'pay_now';
+                                            $this->paymentMethod = $state;
+
+                                            $set('paymentTiming', 'pay_now');
+                                            $set('paymentMethod', $state);
+                                        })
+                                        ->columnSpanFull(),
+
+                                    Hidden::make('customerId'),
+                                    Hidden::make('customerName'),
+
+                                    ToggleButtons::make('customerQuick')
+                                        ->label('Customer')
+                                        ->options(function (): array {
+                                            $options = ['walk_in' => 'Walk-in'];
+
+                                            foreach ($this->customers->take(8) as $customer) {
+                                                $options[(string) $customer->id] = $customer->name;
+                                            }
+
+                                            return $options;
+                                        })
+                                        ->columns(3)
+                                        ->required()
+                                        ->live()
+                                        ->afterStateUpdated(function (?string $state, callable $set): void {
+                                            if (blank($state) || $state === 'walk_in') {
+                                                $this->customerId = null;
+                                                $this->customerName = '';
+
+                                                $set('customerId', null);
+                                                $set('customerName', '');
+
+                                                return;
+                                            }
+
+                                            $customerId = (int) $state;
+                                            $customer = $this->customers->firstWhere('id', $customerId);
+
+                                            $this->customerId = $customerId;
+                                            $this->customerName = $customer?->name ?? '';
+
+                                            $set('customerId', $customerId);
+                                            $set('customerName', $this->customerName);
+                                        })
+                                        ->columnSpanFull(),
+
+                                    Hidden::make('notes'),
+
+                                    ToggleButtons::make('notesPresets')
+                                        ->label('Notes')
+                                        ->options(function ($get): array {
+                                            $orderType = $get('orderType') ?? $this->orderType;
+
+                                            if ($orderType === 'delivery') {
+                                                return [
+                                                    'call_on_arrival' => 'Call on arrival',
+                                                    'leave_at_door' => 'Leave at door',
+                                                    'no_contact' => 'No contact',
+                                                    'gate_guard' => 'Gate/guard',
+                                                    'fragile' => 'Handle with care',
+                                                    'deliver_asap' => 'Deliver ASAP',
+                                                ];
+                                            }
+
+                                            return [
+                                                'no_sugar' => 'No sugar',
+                                                'less_sugar' => 'Less sugar',
+                                                'extra_hot' => 'Extra hot',
+                                                'less_ice' => 'Less ice',
+                                                'no_ice' => 'No ice',
+                                                'extra_ice' => 'Extra ice',
+                                                'no_whip' => 'No whip',
+                                                'extra_shot' => 'Extra shot',
+                                            ];
+                                        })
+                                        ->multiple()
+                                        ->columns(3)
+                                        ->live()
+                                        ->dehydrated(false)
+                                        ->afterStateUpdated(function (?array $state, callable $set, $get): void {
+                                            $presets = $state ?? [];
+
+                                            $orderType = $get('orderType') ?? $this->orderType;
+
+                                            $map = $orderType === 'delivery'
+                                                ? [
+                                                    'call_on_arrival' => 'Call on arrival',
+                                                    'leave_at_door' => 'Leave at door',
+                                                    'no_contact' => 'No contact',
+                                                    'gate_guard' => 'Gate/guard',
+                                                    'fragile' => 'Handle with care',
+                                                    'deliver_asap' => 'Deliver ASAP',
+                                                ]
+                                                : [
+                                                    'no_sugar' => 'No sugar',
+                                                    'less_sugar' => 'Less sugar',
+                                                    'extra_hot' => 'Extra hot',
+                                                    'less_ice' => 'Less ice',
+                                                    'no_ice' => 'No ice',
+                                                    'extra_ice' => 'Extra ice',
+                                                    'no_whip' => 'No whip',
+                                                    'extra_shot' => 'Extra shot',
+                                                ];
+
+                                            $notes = collect($presets)
+                                                ->map(fn (string $key): ?string => $map[$key] ?? null)
+                                                ->filter()
+                                                ->values()
+                                                ->implode(', ');
+
+                                            $this->notes = $notes;
+                                            $set('notes', $notes);
+                                        })
+                                        ->columnSpanFull(),
+                                ])
+                                ->columns(1),
+
+                            Section::make('Payment')
+                                ->schema([
+                                    ToggleButtons::make('paymentTiming')
+                                        ->label('Payment timing')
+                                        ->options([
+                                            'pay_later' => 'Pay later',
+                                            'pay_now' => 'Pay now',
+                                        ])
+                                        ->grouped()
+                                        ->required(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine_in')
+                                        ->default(fn ($get): string => ($get('orderType') ?? $this->orderType) === 'dine_in' ? 'pay_later' : 'pay_now')
+                                        ->visible(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine_in')
+                                        ->live()
+                                        ->afterStateUpdated(function (?string $state): void {
+                                            if ($state === null) {
+                                                return;
+                                            }
+
+                                            $this->paymentTiming = $state;
+                                        })
+                                        ->columnSpanFull(),
+
+                                    ToggleButtons::make('paymentMethod')
+                                        ->label('Payment method')
+                                        ->options([
+                                            'cash' => 'Cash',
+                                            'gcash' => 'GCash',
+                                            'maya' => 'Maya',
+                                            'bank_transfer' => 'Bank',
+                                        ])
+                                        ->grouped()
+                                        ->default('cash')
+                                        ->visible(fn ($get): bool => ($get('paymentTiming') ?? $this->paymentTiming) === 'pay_now'
+                                            && ($get('orderType') ?? $this->orderType) !== 'delivery')
+                                        ->live()
+                                        ->afterStateUpdated(function (?string $state): void {
+                                            if ($state === null) {
+                                                return;
+                                            }
+
+                                            $this->paymentMethod = $state;
+                                        })
+                                        ->columnSpanFull(),
+
+                                    ToggleButtons::make('cashTender')
+                                        ->label('Quick cash')
+                                        ->options([
+                                            'exact' => 'Exact',
+                                            'next_50' => 'Next 50',
+                                            'next_100' => 'Next 100',
+                                            'next_500' => 'Next 500',
+                                        ])
+                                        ->grouped()
+                                        ->dehydrated(false)
+                                        ->visible(fn ($get): bool => ($get('paymentTiming') ?? $this->paymentTiming) === 'pay_now'
+                                            && ($get('paymentMethod') ?? $this->paymentMethod) === 'cash'
+                                            && ! $this->isTabletMode)
+                                        ->live()
+                                        ->afterStateUpdated(function (?string $state, callable $set, $get): void {
+                                            if ($state === null) {
+                                                return;
+                                            }
+
+                                            $originalSubtotal = collect($this->cartItems)->sum(fn (array $item): float => (float) ($item['subtotal'] ?? 0));
+                                            $itemDiscountTotal = collect($this->cartItems)->sum(function (array $item): float {
+                                                $subtotal = (float) ($item['subtotal'] ?? 0);
+                                                $percentage = (float) ($item['discount_percentage'] ?? 0);
+
+                                                return $percentage > 0 ? $subtotal * ($percentage / 100) : 0.0;
+                                            });
+
+                                            $orderDiscountAmount = 0.0;
+                                            if (filled($get('discountValue'))) {
+                                                $orderDiscountAmount = $originalSubtotal * ((float) $get('discountValue') / 100);
+                                            }
+
+                                            $addOnsTotal = 0.0;
+                                            foreach (($get('addOns') ?? []) as $addOn) {
+                                                if (! empty($addOn['price'])) {
+                                                    $addOnsTotal += (float) $addOn['price'];
+                                                }
+                                            }
+
+                                            $finalTotal = $originalSubtotal - $itemDiscountTotal - $orderDiscountAmount + $addOnsTotal;
+
+                                            $tendered = match ($state) {
+                                                'exact' => $finalTotal,
+                                                'next_50' => ceil($finalTotal / 50) * 50,
+                                                'next_100' => ceil($finalTotal / 100) * 100,
+                                                'next_500' => ceil($finalTotal / 500) * 500,
+                                                default => $finalTotal,
+                                            };
+
+                                            $set('paidAmount', $tendered);
+                                            $this->paidAmount = $tendered;
+                                            $this->calculateTotals();
+                                        })
+                                        ->columnSpanFull(),
+
+                                    TextInput::make('paidAmount')
+                                        ->label('Cash received')
+                                        ->numeric()
+                                        ->step(0.01)
+                                        ->prefix($this->getCurrencySymbol())
+                                        ->default(0)
+                                        ->dehydrated(fn (): bool => ! $this->isTabletMode)
+                                        ->required(fn ($get): bool => ($get('paymentTiming') ?? $this->paymentTiming) === 'pay_now'
+                                            && ($get('paymentMethod') ?? $this->paymentMethod) === 'cash'
+                                            && ! $this->isTabletMode)
+                                        ->visible(fn ($get): bool => ($get('paymentTiming') ?? $this->paymentTiming) === 'pay_now'
+                                            && ($get('paymentMethod') ?? $this->paymentMethod) === 'cash'
+                                            && ! $this->isTabletMode)
+                                        ->live()
+                                        ->afterStateUpdated(function ($state): void {
+                                            $this->paidAmount = (float) ($state ?? 0);
+                                            $this->calculateTotals();
+                                        })
+                                        ->columnSpanFull(),
+
+                                    View::make('filament.pages.pos.modals.cash-numpad-sheet')
+                                        ->viewData(function ($get): array {
+                                            $originalSubtotal = collect($this->cartItems)->sum(fn (array $item): float => (float) ($item['subtotal'] ?? 0));
+                                            $itemDiscountTotal = collect($this->cartItems)->sum(function (array $item): float {
+                                                $subtotal = (float) ($item['subtotal'] ?? 0);
+                                                $percentage = (float) ($item['discount_percentage'] ?? 0);
+
+                                                return $percentage > 0 ? $subtotal * ($percentage / 100) : 0.0;
+                                            });
+
+                                            $discountAmount = 0.0;
+                                            if (filled($get('discountValue'))) {
+                                                $discountAmount = $originalSubtotal * ((float) $get('discountValue') / 100);
+                                            }
+
+                                            $addOnsTotal = 0.0;
+                                            foreach (($get('addOns') ?? []) as $addOn) {
+                                                if (! empty($addOn['price'])) {
+                                                    $addOnsTotal += (float) $addOn['price'];
+                                                }
+                                            }
+
+                                            $finalTotal = $originalSubtotal - $itemDiscountTotal - $discountAmount + $addOnsTotal;
+
+                                            return [
+                                                'currency' => $this->getCurrencySymbol(),
+                                                'initial' => (string) $this->paidAmount,
+                                                'total' => $finalTotal,
+                                            ];
+                                        })
+                                        ->visible(fn ($get): bool => ($get('paymentTiming') ?? $this->paymentTiming) === 'pay_now'
+                                            && ($get('paymentMethod') ?? $this->paymentMethod) === 'cash'
+                                            && $this->isTabletMode)
+                                        ->columnSpanFull(),
+
+                                    View::make('filament.pages.pos.modals.place-order-totals')
+                                        ->viewData(function ($get): array {
+                                            $originalSubtotal = collect($this->cartItems)->sum(fn (array $item): float => (float) ($item['subtotal'] ?? 0));
+                                            $itemDiscountTotal = collect($this->cartItems)->sum(function (array $item): float {
+                                                $subtotal = (float) ($item['subtotal'] ?? 0);
+                                                $percentage = (float) ($item['discount_percentage'] ?? 0);
+
+                                                return $percentage > 0 ? $subtotal * ($percentage / 100) : 0.0;
+                                            });
+
+                                            $discountAmount = 0.0;
+                                            if (filled($get('discountValue'))) {
+                                                $discountAmount = $originalSubtotal * ((float) $get('discountValue') / 100);
+                                            }
+
+                                            $addOnsTotal = 0.0;
+                                            foreach (($get('addOns') ?? []) as $addOn) {
+                                                if (! empty($addOn['price'])) {
+                                                    $addOnsTotal += (float) $addOn['price'];
+                                                }
+                                            }
+
+                                            $finalTotal = $originalSubtotal - $itemDiscountTotal - $discountAmount + $addOnsTotal;
+
+                                            $paidAmount = $this->isTabletMode
+                                                ? $this->paidAmount
+                                                : (float) ($get('paidAmount') ?? 0);
+
+                                            $changeAmount = $paidAmount - $finalTotal;
+
+                                            return [
+                                                'subtotal' => $originalSubtotal - $itemDiscountTotal,
+                                                'discountAmount' => $discountAmount,
+                                                'addOnsTotal' => $addOnsTotal,
+                                                'finalTotal' => $finalTotal,
+                                                'paidAmount' => $paidAmount,
+                                                'changeAmount' => $changeAmount,
+                                                'paymentTiming' => (string) ($get('paymentTiming') ?? $this->paymentTiming),
+                                                'paymentMethod' => (string) ($get('paymentMethod') ?? $this->paymentMethod),
+                                                'formatCurrency' => $this->formatCurrency(...),
+                                            ];
+                                        })
+                                        ->columnSpanFull(),
+
+                                    Hidden::make('changeAmount')
+                                        ->default(0),
+                                ]),
+                        ])
+                        ->columnSpanFull(),
+
+                    Section::make('Extras')
+                        ->schema([
+                            ToggleButtons::make('discountType')
+                                ->label('Discount type')
+                                ->options(['' => 'None'] + DiscountType::getOptions())
+                                ->grouped()
+                                ->live()
+                                ->afterStateUpdated(function (?string $state, callable $set): void {
+                                    if (blank($state)) {
+                                        $set('discountValue', null);
+
+                                        return;
+                                    }
+
+                                    $discountType = DiscountType::from($state);
+                                    $set('discountValue', $discountType->getPercentage());
+                                })
+                                ->columnSpanFull(),
+
+                            TextInput::make('discountValue')
+                                ->label('Discount %')
+                                ->numeric()
+                                ->disabled()
+                                ->dehydrated()
+                                ->visible(fn ($get): bool => filled($get('discountType')))
+                                ->columnSpanFull(),
+
+                            Repeater::make('addOns')
+                                ->label('Add-ons')
+                                ->schema([
+                                    TextInput::make('name')
+                                        ->label('Add-on')
                                         ->required(),
 
-                                    Forms\Components\TextInput::make('price')
+                                    TextInput::make('price')
+                                        ->label('Price')
                                         ->numeric()
                                         ->prefix($this->getCurrencySymbol())
                                         ->step(0.01)
                                         ->default(0)
-                                        ->required()
-                                        ->reactive(),
+                                        ->required(),
                                 ])
-                                ->addActionLabel('Add another item')
+                                ->addActionLabel('Add add-on')
                                 ->reorderable(false)
-                                ->reactive()
-                                ->defaultItems(0),
+                                ->defaultItems(0)
+                                ->columns(2),
                         ])
-                        ->collapsible()
+                        ->collapsed()
                         ->columnSpanFull(),
                 ])
-                ->action(function (array $data) {
-                    // Update properties from form
-                    $this->orderType = $data['orderType'] ?? $this->orderType;
-                    $this->customerId = $data['customerId'] ?? null;
-                    $this->customerName = $data['customerName'] ?? '';
-                    $this->tableNumber = $data['tableNumber'] ?? null;
-                    $this->notes = $data['notes'] ?? '';
-                    $this->paymentTiming = $data['paymentTiming'] ?? 'pay_later';
-                    $this->paymentMethod = $data['paymentMethod'] ?? 'cash';
-                    $this->discountType = $data['discountType'] ?? null;
-                    $this->discountValue = ! empty($data['discountValue']) ? (float) $data['discountValue'] : null;
-                    $this->addOns = $data['addOns'] ?? [];
-                    $this->paidAmount = ! empty($data['paidAmount']) ? (float) $data['paidAmount'] : 0.0;
-                    $this->changeAmount = ! empty($data['changeAmount']) ? (float) $data['changeAmount'] : 0.0;
+                ->action(function (array $data): void {
+                    $this->orderType = (string) ($data['orderType'] ?? $this->orderType);
 
-                    // Create the order
+                    $this->customerId = filled($data['customerId'] ?? null) ? (int) $data['customerId'] : null;
+                    $this->customerName = (string) ($data['customerName'] ?? '');
+
+                    $this->tableNumber = $data['tableNumber'] ?? null;
+                    $this->notes = (string) ($data['notes'] ?? '');
+
+                    $this->paymentTiming = match ($this->orderType) {
+                        'dine_in' => (string) ($data['paymentTiming'] ?? $this->paymentTiming ?? 'pay_later'),
+                        default => 'pay_now',
+                    };
+
+                    $this->paymentMethod = match ($this->orderType) {
+                        'delivery' => (string) ($data['deliveryProvider'] ?? $data['paymentMethod'] ?? $this->paymentMethod ?? 'grab'),
+                        default => (string) ($data['paymentMethod'] ?? $this->paymentMethod ?? 'cash'),
+                    };
+
+                    $this->discountType = filled($data['discountType'] ?? null) ? (string) $data['discountType'] : null;
+                    $this->discountValue = filled($data['discountValue'] ?? null) ? (float) $data['discountValue'] : null;
+                    $this->addOns = $data['addOns'] ?? [];
+
+                    if ($this->paymentTiming !== 'pay_now' || $this->paymentMethod !== 'cash') {
+                        $this->paidAmount = 0.0;
+                    } elseif (! $this->isTabletMode) {
+                        $this->paidAmount = filled($data['paidAmount'] ?? null) ? (float) $data['paidAmount'] : 0.0;
+                    }
+
+                    $this->calculateTotals();
+
                     $this->createOrder();
                 })
-                ->modalWidth('6xl')
+                ->modalWidth('7xl')
                 ->modalHeading('Confirm & Send Order to Kitchen')
-                ->modalSubmitActionLabel('✓ Confirm')
-                ->modalCancelActionLabel('✕ Cancel')
-                ->visible(fn () => ! empty($this->cartItems)),
+                ->modalSubmitActionLabel('Confirm & Send')
+                ->modalCancelActionLabel('Back')
+                ->visible(fn (): bool => $this->cartItems !== []),
         ];
     }
 
@@ -1150,8 +1287,8 @@ final class PosPage extends Page
 
         // Calculate final total with order-level discounts and add-ons
         $orderDiscountAmount = 0.0;
-        if (! empty($this->discountType) && ! empty($this->discountValue)) {
-            $orderDiscountAmount = $this->totalAmount * ($this->discountValue / 100);
+        if (! in_array($this->discountType, [null, '', '0'], true) && ! empty($this->discountValue)) {
+            $orderDiscountAmount = $originalSubtotal * ($this->discountValue / 100);
         }
 
         $addOnsTotal = 0.0;
@@ -1161,7 +1298,7 @@ final class PosPage extends Page
             }
         }
 
-        $finalTotal = $this->totalAmount - $orderDiscountAmount + $addOnsTotal;
+        $finalTotal = $originalSubtotal - $itemDiscountTotal - $orderDiscountAmount + $addOnsTotal;
 
         // Calculate change based on final total
         $this->changeAmount = $this->paidAmount - $finalTotal;

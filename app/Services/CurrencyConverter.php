@@ -15,13 +15,13 @@ use Illuminate\Support\Facades\Log;
 
 final class CurrencyConverter
 {
-    private const EXCHANGE_RATE_CACHE_KEY = 'exchange_rates';
+    private const string EXCHANGE_RATE_CACHE_KEY = 'exchange_rates';
 
-    private const CACHE_TTL = 3600; // 1 hour
+    private const int CACHE_TTL = 3600; // 1 hour
 
-    private const BACKUP_CACHE_TTL = 86400; // 24 hours for offline cache
+    private const int BACKUP_CACHE_TTL = 86400; // 24 hours for offline cache
 
-    private const MAX_AGE_HOURS = 6;
+    private const int MAX_AGE_HOURS = 6;
 
     private readonly string $apiUrl;
 
@@ -386,7 +386,7 @@ final class CurrencyConverter
         Currency $to,
     ): float {
         // Try to get the most recent stored rate
-        $rate = ExchangeRate::forPair($from, $to)
+        $rate = ExchangeRate::query()->forPair($from, $to)
             ->latest('fetched_at')
             ->first();
 

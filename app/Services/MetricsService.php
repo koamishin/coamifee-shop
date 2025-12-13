@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductMetric;
 use Carbon\Carbon;
@@ -36,7 +37,7 @@ final class MetricsService
             $orderItems = $order->items()->where('product_id', $productId)->get();
 
             foreach ($orderItems as $item) {
-                assert($item instanceof \App\Models\OrderItem);
+                assert($item instanceof OrderItem);
                 $totalOrders += $item->quantity;
                 $totalRevenue += $item->price * $item->quantity;
             }
@@ -52,7 +53,7 @@ final class MetricsService
             ->delete();
 
         // Create new metric
-        ProductMetric::create([
+        ProductMetric::query()->create([
             'product_id' => $productId,
             'metric_date' => $dateStr,
             'period_type' => 'daily',
@@ -146,7 +147,7 @@ final class MetricsService
             ->delete();
 
         // Create new metric
-        ProductMetric::create([
+        ProductMetric::query()->create([
             'product_id' => $productId,
             'metric_date' => $weekStart,
             'period_type' => 'weekly',
@@ -176,7 +177,7 @@ final class MetricsService
             ->delete();
 
         // Create new metric
-        ProductMetric::create([
+        ProductMetric::query()->create([
             'product_id' => $productId,
             'metric_date' => $monthStart,
             'period_type' => 'monthly',

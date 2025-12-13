@@ -14,10 +14,6 @@ use Illuminate\Support\Collection;
 
 final class InventoryService
 {
-    public function __construct(
-        private readonly UnitConversionService $unitConversionService
-    ) {}
-
     public function decreaseIngredientStock(Ingredient $ingredient, float $quantity, ?OrderItem $orderItem = null, ?string $reason = null): bool
     {
         /** @var IngredientInventory|null $inventory */
@@ -147,7 +143,7 @@ final class InventoryService
 
     public function getProductIngredients(int $productId): Collection
     {
-        return ProductIngredient::with('ingredient')
+        return ProductIngredient::with(['ingredient.inventory'])
             ->where('product_id', $productId)
             ->get();
     }
@@ -158,11 +154,11 @@ final class InventoryService
 
         foreach ($productIngredients as $productIngredient) {
             $ingredient = $productIngredient->ingredient;
-            /** @var IngredientInventory|null $inventory */
-            $inventory = $ingredient->inventory()->first();
-            $requiredQuantity = $productIngredient->quantity_required * $quantity;
+            $inventory = $ingredient?->inventory;
 
-            if (! $inventory || $inventory->current_stock < $requiredQuantity) {
+            $requiredQuantity = (float) $productIngredient->quantity_required * $quantity;
+
+            if (! $inventory || (float) $inventory->current_stock < $requiredQuantity) {
                 return false;
             }
         }

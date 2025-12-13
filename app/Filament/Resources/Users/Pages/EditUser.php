@@ -9,6 +9,7 @@ use Exception;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Facades\Date;
 
 final class EditUser extends EditRecord
 {
@@ -31,8 +32,8 @@ final class EditUser extends EditRecord
                 $data['email_verified_at'] = now();
             } elseif (is_string($data['email_verified_at'])) {
                 try {
-                    $data['email_verified_at'] = \Illuminate\Support\Carbon::parse($data['email_verified_at']);
-                } catch (Exception $e) {
+                    $data['email_verified_at'] = Date::parse($data['email_verified_at']);
+                } catch (Exception) {
                     $data['email_verified_at'] = now();
                 }
             }

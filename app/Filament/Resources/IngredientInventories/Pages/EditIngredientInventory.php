@@ -6,6 +6,7 @@ namespace App\Filament\Resources\IngredientInventories\Pages;
 
 use App\Filament\Resources\IngredientInventories\IngredientInventoryResource;
 use App\Models\Ingredient;
+use App\Models\IngredientInventory;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
@@ -28,12 +29,12 @@ final class EditIngredientInventory extends EditRecord
         // Check if we need to update the associated ingredient
         if (isset($data['create_new_ingredient']) && $data['create_new_ingredient']) {
             // This shouldn't happen in edit mode, but handle it just in case
-            $ingredient = Ingredient::create([
+            $ingredient = Ingredient::query()->create([
                 'name' => $data['new_ingredient_name'],
                 'unit_type' => $data['new_ingredient_unit_type'],
             ]);
             $data['ingredient_id'] = $ingredient->id;
-        } elseif (isset($data['ingredient_id']) && $record instanceof \App\Models\IngredientInventory && $record->ingredient_id !== $data['ingredient_id']) {
+        } elseif (isset($data['ingredient_id']) && $record instanceof IngredientInventory && $record->ingredient_id !== $data['ingredient_id']) {
             // Ingredient was changed
             // No assignment needed as data already contains the ingredient_id
         }

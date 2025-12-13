@@ -7,12 +7,12 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Livewire\Livewire;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses()->group('integration', 'pos', 'orders');
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::factory()->create();
     $this->actingAs($this->user);
 
@@ -20,7 +20,7 @@ beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
 });
 
-test('POS creates order with item-level discounts that display in OrdersProcessing', function () {
+test('POS creates order with item-level discounts that display in OrdersProcessing', function (): void {
     // Create test products
     $product1 = Product::factory()->create([
         'name' => 'Discounted Coffee',
@@ -57,7 +57,7 @@ test('POS creates order with item-level discounts that display in OrdersProcessi
     ];
 
     // Create order similar to how PosPage does it
-    $order = Order::create([
+    $order = Order::query()->create([
         'customer_name' => 'Test Customer',
         'order_type' => 'dine_in',
         'payment_method' => 'cash',
@@ -73,7 +73,7 @@ test('POS creates order with item-level discounts that display in OrdersProcessi
         $discountPercentage = $item['discount_percentage'] ?? 0;
         $discountAmount = $discountPercentage > 0 ? ($item['subtotal'] * $discountPercentage / 100) : 0;
 
-        OrderItem::create([
+        OrderItem::query()->create([
             'order_id' => $order->id,
             'product_id' => $item['product_id'],
             'quantity' => $item['quantity'],
@@ -92,7 +92,7 @@ test('POS creates order with item-level discounts that display in OrdersProcessi
         ->status->toBe('pending');
 
     // Verify order items have correct discount data
-    $orderItems = OrderItem::where('order_id', $order->id)->get();
+    $orderItems = OrderItem::query()->where('order_id', $order->id)->get();
 
     expect($orderItems)->toHaveCount(2);
 
@@ -121,7 +121,7 @@ test('POS creates order with item-level discounts that display in OrdersProcessi
         ->discount_amount->toBe('40.00');
 });
 
-test('order without item discounts still works correctly', function () {
+test('order without item discounts still works correctly', function (): void {
     $product = Product::factory()->create(['price' => 100.00]);
 
     $order = Order::factory()->create([
@@ -130,7 +130,7 @@ test('order without item discounts still works correctly', function () {
         'status' => 'pending',
     ]);
 
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product->id,
         'quantity' => 1,
@@ -148,7 +148,7 @@ test('order without item discounts still works correctly', function () {
         ->and($item->discount_amount)->toBe('0.00');
 });
 
-test('multiple items can have different discount percentages', function () {
+test('multiple items can have different discount percentages', function (): void {
     $products = Product::factory()->count(3)->create(['price' => 100.00]);
 
     $order = Order::factory()->create([
@@ -158,7 +158,7 @@ test('multiple items can have different discount percentages', function () {
     ]);
 
     // Item 1: 20% discount
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $products[0]->id,
         'quantity' => 1,
@@ -170,7 +170,7 @@ test('multiple items can have different discount percentages', function () {
     ]);
 
     // Item 2: 30% discount
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $products[1]->id,
         'quantity' => 1,
@@ -182,7 +182,7 @@ test('multiple items can have different discount percentages', function () {
     ]);
 
     // Item 3: 10% discount
-    OrderItem::create([
+    OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $products[2]->id,
         'quantity' => 1,

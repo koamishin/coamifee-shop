@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Orders\Widgets;
 
 use App\Filament\Concerns\CurrencyAware;
 use App\Models\Order;
+use App\Services\GeneralSettingsService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -17,7 +18,7 @@ final class CashOrdersOverview extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $orders = Order::where('payment_method', 'cash')
+        $orders = Order::query()->where('payment_method', 'cash')
             ->where('status', 'completed')
             ->where('payment_status', '!=', 'refunded')
             ->where('payment_status', '!=', 'refund_partial')
@@ -34,7 +35,7 @@ final class CashOrdersOverview extends StatsOverviewWidget
 
     private function formatMoney(float $amount): string
     {
-        $currency = app(\App\Services\GeneralSettingsService::class)->getCurrency();
+        $currency = resolve(GeneralSettingsService::class)->getCurrency();
 
         return $currency.' '.number_format($amount, 2);
     }
@@ -44,7 +45,7 @@ final class CashOrdersOverview extends StatsOverviewWidget
         $data = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->format('Y-m-d');
-            $total = Order::where('payment_method', 'cash')
+            $total = Order::query()->where('payment_method', 'cash')
                 ->where('status', 'completed')
                 ->where('payment_status', '!=', 'refunded')
                 ->where('payment_status', '!=', 'refund_partial')

@@ -6,6 +6,7 @@ namespace App\Filament\Resources\IngredientInventories\Tables;
 
 use App\Enums\UnitType;
 use App\Filament\Concerns\CurrencyAware;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -60,7 +61,6 @@ final class IngredientInventoriesTable
                     ->color('danger')
                     ->icon('heroicon-o-arrow-down'),
 
-                
             ])
             ->filters([
                 SelectFilter::make('ingredient.unit_type')
@@ -85,7 +85,7 @@ final class IngredientInventoriesTable
                 'Create your first ingredient inventory to start managing stock levels and tracking supplies',
             )
             ->emptyStateActions([
-                \Filament\Actions\Action::make('create')
+                Action::make('create')
                     ->label('Create Inventory')
                     ->icon('heroicon-o-plus')
                     ->url(route('filament.admin.resources.ingredient-inventories.create')),

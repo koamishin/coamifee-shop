@@ -15,7 +15,7 @@ trait CurrencyAware
      */
     protected static function getCurrentCurrency(): Currency
     {
-        $currencyCode = app(GeneralSettingsService::class)->getCurrency();
+        $currencyCode = resolve(GeneralSettingsService::class)->getCurrency();
 
         return Currency::isValid($currencyCode)
             ? Currency::from($currencyCode)

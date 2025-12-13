@@ -10,14 +10,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
+        Schema::table('orders', function (Blueprint $table): void {
             $table->boolean('inventory_processed')->default(false)->after('status');
         });
     }
 
     public function down(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
+        Schema::table('orders', function (Blueprint $table): void {
             $table->dropColumn('inventory_processed');
         });
     }

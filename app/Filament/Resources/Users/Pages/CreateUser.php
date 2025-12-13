@@ -7,6 +7,7 @@ namespace App\Filament\Resources\Users\Pages;
 use App\Filament\Resources\Users\UserResource;
 use Exception;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Support\Facades\Date;
 
 final class CreateUser extends CreateRecord
 {
@@ -21,8 +22,8 @@ final class CreateUser extends CreateRecord
                 $data['email_verified_at'] = now();
             } elseif (is_string($data['email_verified_at'])) {
                 try {
-                    $data['email_verified_at'] = \Illuminate\Support\Carbon::parse($data['email_verified_at']);
-                } catch (Exception $e) {
+                    $data['email_verified_at'] = Date::parse($data['email_verified_at']);
+                } catch (Exception) {
                     $data['email_verified_at'] = now();
                 }
             }

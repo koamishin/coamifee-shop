@@ -40,17 +40,14 @@ final class GenerateProductMetrics extends Command
             $metrics = $this->generateMetricsForProduct($product->id, $period, $days);
 
             foreach ($metrics as $metric) {
-                ProductMetric::updateOrCreate(
-                    [
-                        'product_id' => $metric['product_id'],
-                        'metric_date' => $metric['metric_date'],
-                        'period_type' => $metric['period_type'],
-                    ],
-                    [
-                        'orders_count' => $metric['orders_count'],
-                        'total_revenue' => $metric['total_revenue'],
-                    ]
-                );
+                ProductMetric::query()->updateOrCreate([
+                    'product_id' => $metric['product_id'],
+                    'metric_date' => $metric['metric_date'],
+                    'period_type' => $metric['period_type'],
+                ], [
+                    'orders_count' => $metric['orders_count'],
+                    'total_revenue' => $metric['total_revenue'],
+                ]);
 
                 $generatedCount++;
             }

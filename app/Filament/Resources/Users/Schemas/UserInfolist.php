@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Users\Schemas;
 
 use Filament\Infolists\Components\IconEntry;
-use Filament\Infolists\Components\Split;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -20,22 +19,21 @@ final class UserInfolist
             ->components([
                 Section::make('User Information')
                     ->schema([
-                        
-                            TextEntry::make('name')
-                                ->label('Full Name')
-                                ->size(TextSize::Large)
-                                ->weight(FontWeight::Bold)
-                                ->icon('heroicon-m-user'),
 
-                            IconEntry::make('email_verified_at')
-                                ->label('Email Verified')
-                                ->boolean()
-                                ->trueIcon('heroicon-o-check-badge')
-                                ->falseIcon('heroicon-o-x-circle')
-                                ->trueColor('success')
-                                ->falseColor('danger')
-                                ->grow(false),
+                        TextEntry::make('name')
+                            ->label('Full Name')
+                            ->size(TextSize::Large)
+                            ->weight(FontWeight::Bold)
+                            ->icon('heroicon-m-user'),
 
+                        IconEntry::make('email_verified_at')
+                            ->label('Email Verified')
+                            ->boolean()
+                            ->trueIcon('heroicon-o-check-badge')
+                            ->falseIcon('heroicon-o-x-circle')
+                            ->trueColor('success')
+                            ->falseColor('danger')
+                            ->grow(false),
 
                         TextEntry::make('email')
                             ->label('Email Address')
@@ -49,7 +47,7 @@ final class UserInfolist
                             ->dateTime('M d, Y H:i')
                             ->icon('heroicon-m-calendar')
                             ->placeholder('Not verified')
-                            ->color(fn ($state) => $state ? 'success' : 'danger'),
+                            ->color(fn ($state): string => $state ? 'success' : 'danger'),
                     ])
                     ->columns(2),
 
@@ -73,7 +71,7 @@ final class UserInfolist
                             ->placeholder('No direct permissions')
                             ->columnSpanFull()
                             ->limit(10),
-                            // ->limitedRemainingText(isSeparate: true),
+                        // ->limitedRemainingText(isSeparate: true),
 
                         TextEntry::make('all_permissions')
                             ->label('Total Permissions (via Roles)')
@@ -98,7 +96,7 @@ final class UserInfolist
                             ->dateTime('M d, Y H:i')
                             ->icon('heroicon-m-calendar')
                             ->placeholder('Not enabled')
-                            ->hidden(fn ($state) => ! $state),
+                            ->hidden(fn ($state): bool => ! $state),
 
                         TextEntry::make('created_at')
                             ->label('Account Created')

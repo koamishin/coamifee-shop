@@ -59,8 +59,6 @@ final class ProductsTable
                     ->defaultImageUrl(url('/placeholder-product.png'))
                     ->alignCenter(),
 
-                
-
                 TextColumn::make('created_at')
                     ->label('Created')
                     ->dateTime('M j, Y')

@@ -15,8 +15,8 @@ use Illuminate\Http\Request;
 final class PosApiController extends Controller
 {
     public function __construct(
-        private PosService $posService,
-        private PosCheckoutAction $posCheckoutAction
+        private readonly PosService $posService,
+        private readonly PosCheckoutAction $posCheckoutAction
     ) {}
 
     public function getProducts(Request $request): JsonResponse
@@ -28,7 +28,7 @@ final class PosApiController extends Controller
         $availability = $this->posService->updateProductAvailability($products);
 
         return response()->json([
-            'products' => $products->map(fn ($product) => [
+            'products' => $products->map(fn ($product): array => [
                 'id' => $product->id,
                 'name' => $product->name,
                 'price' => $product->price,
@@ -52,7 +52,7 @@ final class PosApiController extends Controller
         $categories = $this->posService->getActiveCategories();
 
         return response()->json([
-            'categories' => $categories->map(fn ($category) => [
+            'categories' => $categories->map(fn ($category): array => [
                 'id' => $category->id,
                 'name' => $category->name,
                 'icon' => $category->icon,
@@ -64,11 +64,11 @@ final class PosApiController extends Controller
     public function addToCart(Request $request): JsonResponse
     {
         $request->validate([
-            'product_id' => 'required|integer',
-            'quantity' => 'required|integer|min:1',
+            'product_id' => ['required', 'integer'],
+            'quantity' => ['required', 'integer', 'min:1'],
         ]);
 
-        $product = Product::find($request->product_id);
+        $product = Product::query()->find($request->product_id);
         if (! $product) {
             return response()->json(['error' => 'Product not found'], 404);
         }
@@ -93,9 +93,9 @@ final class PosApiController extends Controller
     public function calculateTotals(Request $request): JsonResponse
     {
         $request->validate([
-            'cart' => 'required|array',
-            'add_ons' => 'array',
-            'discount_amount' => 'numeric|min:0',
+            'cart' => ['required', 'array'],
+            'add_ons' => ['array'],
+            'discount_amount' => ['numeric', 'min:0'],
         ]);
 
         $cart = $request->input('cart', []);
@@ -113,14 +113,14 @@ final class PosApiController extends Controller
     public function checkout(Request $request): JsonResponse
     {
         $request->validate([
-            'cart' => 'required|array',
-            'customer_name' => 'nullable|string|max:255',
-            'order_type' => 'required|in:dine-in,take-out,delivery',
-            'table_number' => 'nullable|string|max:50',
-            'payment_method' => 'required|in:cash,gcash,maya',
-            'add_ons' => 'array',
-            'notes' => 'nullable|string|max:500',
-            'discount_amount' => 'numeric|min:0',
+            'cart' => ['required', 'array'],
+            'customer_name' => ['nullable', 'string', 'max:255'],
+            'order_type' => ['required', 'in:dine-in,take-out,delivery'],
+            'table_number' => ['nullable', 'string', 'max:50'],
+            'payment_method' => ['required', 'in:cash,gcash,maya'],
+            'add_ons' => ['array'],
+            'notes' => ['nullable', 'string', 'max:500'],
+            'discount_amount' => ['numeric', 'min:0'],
         ]);
 
         if (empty($request->cart)) {
@@ -180,7 +180,7 @@ final class PosApiController extends Controller
         $bestSellers = $this->posService->getBestSellers();
 
         return response()->json([
-            'best_sellers' => $bestSellers->map(fn ($product) => [
+            'best_sellers' => $bestSellers->map(fn ($product): array => [
                 'id' => $product->id,
                 'name' => $product->name,
                 'price' => $product->price,
@@ -198,7 +198,7 @@ final class PosApiController extends Controller
             ->get();
 
         return response()->json([
-            'recent_orders' => $recentOrders->map(fn ($order) => [
+            'recent_orders' => $recentOrders->map(fn ($order): array => [
                 'id' => $order->id,
                 'order_number' => $order->order_number,
                 'customer_name' => $order->customer_name,

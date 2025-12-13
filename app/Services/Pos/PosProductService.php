@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Services\Pos;
 
 use App\Models\Category;
+use App\Models\Ingredient;
+use App\Models\IngredientInventory;
 use App\Models\Product;
+use App\Models\ProductIngredient;
 use App\Services\InventoryService;
 use App\Services\ReportingService;
 use Illuminate\Support\Collection;
@@ -29,7 +32,7 @@ final readonly class PosProductService
     {
         return $this->reportingService
             ->getTopProducts($limit, 'daily', 7)
-            ->map(fn ($metric) => $metric->product);
+            ->map(fn ($metric): ?Product => $metric->product);
     }
 
     public function getFilteredProducts(?int $categoryId = null, ?string $search = null): Collection
@@ -82,11 +85,11 @@ final readonly class PosProductService
         $ingredients = $product->ingredients()->with('ingredient.inventory')->get();
         $maxQuantities = [];
 
-        /** @var \App\Models\ProductIngredient $productIngredient */
+        /** @var ProductIngredient $productIngredient */
         foreach ($ingredients as $productIngredient) {
-            /** @var \App\Models\Ingredient $ingredient */
+            /** @var Ingredient $ingredient */
             $ingredient = $productIngredient->ingredient;
-            /** @var \App\Models\IngredientInventory|null $inventory */
+            /** @var IngredientInventory|null $inventory */
             $inventory = $ingredient->inventory;
             if ($inventory) {
                 $maxQuantities[] = (int) ($inventory->current_stock / $productIngredient->quantity_required);

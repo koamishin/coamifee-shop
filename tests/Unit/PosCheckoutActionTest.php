@@ -15,7 +15,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->action = app(PosCheckoutAction::class);
+    $this->action = resolve(PosCheckoutAction::class);
 
     // Create category
     $category = Category::factory()->create(['name' => 'Coffee']);

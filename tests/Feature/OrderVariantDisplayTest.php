@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('order items store and display variant information', function () {
+test('order items store and display variant information', function (): void {
     $category = Category::factory()->create(['name' => 'Beverages']);
 
     $product = Product::factory()->create([
@@ -20,7 +20,7 @@ test('order items store and display variant information', function () {
         'price' => 100,
     ]);
 
-    $hotVariant = ProductVariant::create([
+    $hotVariant = ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Hot',
         'price' => 89,
@@ -29,7 +29,7 @@ test('order items store and display variant information', function () {
         'sort_order' => 0,
     ]);
 
-    $coldVariant = ProductVariant::create([
+    $coldVariant = ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Cold',
         'price' => 99,
@@ -49,7 +49,7 @@ test('order items store and display variant information', function () {
     ]);
 
     // Create order item with hot variant
-    $hotItem = OrderItem::create([
+    $hotItem = OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product->id,
         'product_variant_id' => $hotVariant->id,
@@ -60,7 +60,7 @@ test('order items store and display variant information', function () {
     ]);
 
     // Create order item with cold variant
-    $coldItem = OrderItem::create([
+    $coldItem = OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product->id,
         'product_variant_id' => $coldVariant->id,
@@ -73,12 +73,12 @@ test('order items store and display variant information', function () {
     // Verify the items are stored correctly
     expect($order->items)->toHaveCount(2);
 
-    $refreshedHotItem = OrderItem::find($hotItem->id);
+    $refreshedHotItem = OrderItem::query()->find($hotItem->id);
     expect($refreshedHotItem->variant_name)->toBe('Hot');
     expect($refreshedHotItem->product_variant_id)->toBe($hotVariant->id);
     expect((float) $refreshedHotItem->price)->toBe(89.0);
 
-    $refreshedColdItem = OrderItem::find($coldItem->id);
+    $refreshedColdItem = OrderItem::query()->find($coldItem->id);
     expect($refreshedColdItem->variant_name)->toBe('Cold');
     expect($refreshedColdItem->product_variant_id)->toBe($coldVariant->id);
     expect((float) $refreshedColdItem->price)->toBe(99.0);
@@ -88,7 +88,7 @@ test('order items store and display variant information', function () {
     expect($refreshedColdItem->variant->name)->toBe('Cold');
 });
 
-test('order items without variants work correctly', function () {
+test('order items without variants work correctly', function (): void {
     $product = Product::factory()->create([
         'name' => 'Regular Product',
         'price' => 150,
@@ -100,7 +100,7 @@ test('order items without variants work correctly', function () {
         'total' => 150,
     ]);
 
-    $item = OrderItem::create([
+    $item = OrderItem::query()->create([
         'order_id' => $order->id,
         'product_id' => $product->id,
         'quantity' => 1,

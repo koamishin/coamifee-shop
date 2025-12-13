@@ -63,7 +63,7 @@ final class PosCheckoutAction
 
             // Process the order with inventory deduction
             $order->load(['items.product']);
-            $result = app(ProcessOrderAction::class)->execute($order);
+            $result = resolve(ProcessOrderAction::class)->execute($order);
 
             if (! $result['success']) {
                 DB::rollBack();

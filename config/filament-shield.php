@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Filament\Pages\OrdersProcessing;
+use App\Filament\Pages\PosPage;
 use App\Models\User;
 use BezhanSalleh\FilamentShield\Resources\Roles\RoleResource;
 use Filament\Pages\Dashboard;
@@ -200,8 +202,8 @@ return [
         'prefix' => 'view',
         'exclude' => [
             Dashboard::class,
-            App\Filament\Pages\PosPage::class,
-            App\Filament\Pages\OrdersProcessing::class,
+            PosPage::class,
+            OrdersProcessing::class,
         ],
     ],
 

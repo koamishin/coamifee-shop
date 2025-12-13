@@ -23,25 +23,26 @@ final readonly class PosService
      */
     public function getFilteredProducts(?int $selectedCategory = null, ?string $search = null): Collection
     {
-        return Product::with(['category', 'ingredients.ingredient'])
+        return Product::with([
+            'category',
+            'ingredients.ingredient.inventory',
+            'activeVariants',
+        ])
             ->where('is_active', true)
             ->when($selectedCategory && $selectedCategory > 0, function ($query) use ($selectedCategory): void {
                 $query->where('category_id', $selectedCategory);
             })
             ->when($search, function ($query) use ($search): void {
-                // Split search into individual words and search for each
-                $searchWords = explode(' ', trim($search));
-                $searchWords = array_filter($searchWords, function($word) {
-                    return strlen(trim($word)) > 0;
-                });
+                $searchWords = array_values(array_filter(
+                    array_map(trim(...), explode(' ', mb_trim($search))),
+                    static fn (string $word): bool => $word !== ''
+                ));
 
-                if (empty($searchWords)) {
+                if ($searchWords === []) {
                     return;
                 }
 
-                // Use AND logic - all words must be present in the product
                 foreach ($searchWords as $word) {
-                    $word = trim($word);
                     $query->where(function ($subQuery) use ($word): void {
                         $subQuery->where('name', 'like', '%'.$word.'%')
                             ->orWhere('description', 'like', '%'.$word.'%')
@@ -69,7 +70,7 @@ final readonly class PosService
     public function getBestSellers(int $limit = 5, string $period = 'daily', int $days = 7): Collection
     {
         return $this->reportingService->getTopProducts($limit, $period, $days)
-            ->map(fn ($metric) => $metric->product);
+            ->map(fn ($metric): ?Product => $metric->product);
     }
 
     /**
@@ -92,7 +93,7 @@ final readonly class PosService
                 'category' => $product->category->name ?? 'Unknown',
                 'can_produce' => $this->inventoryService->canProduceProduct($product->id, 1),
             ])
-            ->toArray();
+            ->all();
     }
 
     /**
@@ -161,10 +162,51 @@ final readonly class PosService
         $availability = [];
 
         foreach ($products as $product) {
+            $maxQuantity = 999;
+            $canProduce = true;
+
+            $productIngredients = $product->ingredients;
+
+            if ($productIngredients->isNotEmpty()) {
+                $maxQuantity = PHP_INT_MAX;
+
+                foreach ($productIngredients as $productIngredient) {
+                    $ingredient = $productIngredient->ingredient;
+                    $inventory = $ingredient?->inventory;
+
+                    $quantityRequired = (float) $productIngredient->quantity_required;
+
+                    if (! $inventory || $quantityRequired <= 0) {
+                        $canProduce = false;
+                        $maxQuantity = 0;
+
+                        break;
+                    }
+
+                    $currentStock = (float) $inventory->current_stock;
+                    if ($currentStock < $quantityRequired) {
+                        $canProduce = false;
+                    }
+
+                    $possibleQuantity = (int) floor($currentStock / $quantityRequired);
+                    $maxQuantity = min($maxQuantity, $possibleQuantity);
+                }
+
+                if ($maxQuantity === PHP_INT_MAX) {
+                    $maxQuantity = 0;
+                }
+            }
+
+            $stockStatus = match (true) {
+                ! $canProduce => 'out_of_stock',
+                $maxQuantity <= 5 => 'low_stock',
+                default => 'in_stock',
+            };
+
             $availability[$product->id] = [
-                'can_produce' => $this->inventoryService->canProduceProduct($product->id, 1),
-                'max_quantity' => $this->getMaxProducibleQuantity($product->id),
-                'stock_status' => $this->getStockStatus($product->id),
+                'can_produce' => $canProduce,
+                'max_quantity' => $maxQuantity,
+                'stock_status' => $stockStatus,
             ];
         }
 

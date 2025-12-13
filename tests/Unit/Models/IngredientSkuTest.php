@@ -3,12 +3,13 @@
 declare(strict_types=1);
 
 use App\Models\Ingredient;
+use BinaryCats\Sku\HasSku;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-describe('Ingredient SKU Generation', function () {
-    it('automatically generates SKU when ingredient is created', function () {
+describe('Ingredient SKU Generation', function (): void {
+    it('automatically generates SKU when ingredient is created', function (): void {
         $ingredient = Ingredient::factory()->create([
             'name' => 'Arabica Coffee Beans',
         ]);
@@ -18,7 +19,7 @@ describe('Ingredient SKU Generation', function () {
             ->toBeString();
     });
 
-    it('generates unique SKUs for different ingredients', function () {
+    it('generates unique SKUs for different ingredients', function (): void {
         $ingredient1 = Ingredient::factory()->create([
             'name' => 'Water',
         ]);
@@ -31,19 +32,19 @@ describe('Ingredient SKU Generation', function () {
             ->not->toBe($ingredient2->sku);
     });
 
-    it('generates SKU based on ingredient name', function () {
+    it('generates SKU based on ingredient name', function (): void {
         $ingredient = Ingredient::factory()->create([
             'name' => 'Coffee Beans',
         ]);
 
         // SKU should contain either COF or BEA from the name
-        $containsExpectedChars = str_contains($ingredient->sku, 'COF') ||
-                                 str_contains($ingredient->sku, 'BEA');
+        $containsExpectedChars = str_contains((string) $ingredient->sku, 'COF') ||
+                                 str_contains((string) $ingredient->sku, 'BEA');
 
         expect($containsExpectedChars)->toBeTrue();
     });
 
-    it('persists SKU to database', function () {
+    it('persists SKU to database', function (): void {
         $ingredient = Ingredient::factory()->create([
             'name' => 'Sugar',
         ]);
@@ -56,7 +57,7 @@ describe('Ingredient SKU Generation', function () {
         expect($ingredient->sku)->toBe($savedSku);
     });
 
-    it('regenerates SKU on name update', function () {
+    it('regenerates SKU on name update', function (): void {
         $ingredient = Ingredient::factory()->create([
             'name' => 'Salt',
         ]);
@@ -70,9 +71,9 @@ describe('Ingredient SKU Generation', function () {
         expect($ingredient->sku)->not->toBe($originalSku);
     });
 
-    it('has HasSku trait', function () {
+    it('has HasSku trait', function (): void {
         $ingredient = new Ingredient();
 
-        expect(in_array('BinaryCats\Sku\HasSku', class_uses_recursive($ingredient)))->toBeTrue();
+        expect(in_array(HasSku::class, class_uses_recursive($ingredient)))->toBeTrue();
     });
 });

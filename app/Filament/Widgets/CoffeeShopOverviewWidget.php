@@ -7,9 +7,9 @@ namespace App\Filament\Widgets;
 use App\Models\IngredientInventory;
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\GeneralSettingsService;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 
 final class CoffeeShopOverviewWidget extends BaseWidget
@@ -24,7 +24,7 @@ final class CoffeeShopOverviewWidget extends BaseWidget
         Date::now()->startOfWeek();
         Date::now()->startOfMonth();
 
-        $currency = app(\App\Services\GeneralSettingsService::class)->getCurrency();
+        $currency = resolve(GeneralSettingsService::class)->getCurrency();
         $todaysSales = Order::query()->whereDate('created_at', $today)->where('payment_status', 'paid')->sum('total');
         $totalRevenue = $this->getTotalRevenue();
         $totalUnitsSold = $this->getTotalUnitsSold();
@@ -37,11 +37,11 @@ final class CoffeeShopOverviewWidget extends BaseWidget
                 ->chart([0, 2, 5, 3, 8, 12, 15]),
 
             Stat::make('Today\'s Sales', number_format($todaysSales, 2))
-                ->description("{$currency} " . number_format($todaysSales, 2) . ' from today')
+                ->description("{$currency} ".number_format($todaysSales, 2).' from today')
                 ->descriptionIcon('mdi-currency-php')
                 ->color('primary'),
-            
-            Stat::make('Total Revenue', "{$currency} " . number_format($totalRevenue, 2))
+
+            Stat::make('Total Revenue', "{$currency} ".number_format($totalRevenue, 2))
                 ->description('All-time total revenue')
                 ->descriptionIcon('heroicon-m-banknotes')
                 ->color('success'),
@@ -62,13 +62,12 @@ final class CoffeeShopOverviewWidget extends BaseWidget
                 ->descriptionIcon('heroicon-m-cube')
                 ->color('info'),
 
-
         ];
     }
 
     private function getLowStockCount(): int
     {
-        return IngredientInventory::whereHas('ingredient', fn($query) => $query->whereNotNull('id'))
+        return IngredientInventory::query()->whereHas('ingredient', fn ($query) => $query->whereNotNull('id'))
             ->whereColumn('current_stock', '<=', 'min_stock_level')
             ->count();
     }

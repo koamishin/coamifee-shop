@@ -15,8 +15,8 @@ enum DiscountType: string
     public static function getOptions(): array
     {
         return collect(self::cases())
-            ->mapWithKeys(fn ($case) => [$case->value => $case->getLabel()])
-            ->toArray();
+            ->mapWithKeys(fn ($case): array => [$case->value => $case->getLabel()])
+            ->all();
     }
 
     /**

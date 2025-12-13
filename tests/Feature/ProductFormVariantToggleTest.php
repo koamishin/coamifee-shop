@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     // Create categories
     $this->beveragesCategory = Category::factory()->create([
         'name' => 'Beverages',
@@ -22,14 +22,14 @@ beforeEach(function () {
     ]);
 });
 
-test('beverage products can have variants', function () {
+test('beverage products can have variants', function (): void {
     $product = Product::factory()->create([
         'name' => 'Coffee',
         'category_id' => $this->beveragesCategory->id,
         'price' => 89.00,
     ]);
 
-    $hotVariant = ProductVariant::create([
+    $hotVariant = ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Hot',
         'price' => 89.00,
@@ -38,7 +38,7 @@ test('beverage products can have variants', function () {
         'sort_order' => 0,
     ]);
 
-    $coldVariant = ProductVariant::create([
+    $coldVariant = ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Cold',
         'price' => 99.00,
@@ -62,7 +62,7 @@ test('beverage products can have variants', function () {
     expect($cold->is_default)->toBeFalse();
 });
 
-test('beverage products without variants work correctly', function () {
+test('beverage products without variants work correctly', function (): void {
     $product = Product::factory()->create([
         'name' => 'Simple Coffee',
         'category_id' => $this->beveragesCategory->id,
@@ -74,7 +74,7 @@ test('beverage products without variants work correctly', function () {
     expect((float) $product->price)->toBe(85.0);
 });
 
-test('non-beverage products cannot have variants', function () {
+test('non-beverage products cannot have variants', function (): void {
     $product = Product::factory()->create([
         'name' => 'Burger',
         'category_id' => $this->foodCategory->id,
@@ -86,14 +86,14 @@ test('non-beverage products cannot have variants', function () {
     expect((float) $product->price)->toBe(150.0);
 });
 
-test('inactive variants are not included in active variants', function () {
+test('inactive variants are not included in active variants', function (): void {
     $product = Product::factory()->create([
         'name' => 'Tea',
         'category_id' => $this->beveragesCategory->id,
         'price' => 79.00,
     ]);
 
-    ProductVariant::create([
+    ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Hot',
         'price' => 79.00,
@@ -102,7 +102,7 @@ test('inactive variants are not included in active variants', function () {
         'sort_order' => 0,
     ]);
 
-    ProductVariant::create([
+    ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Cold',
         'price' => 89.00,
@@ -118,14 +118,14 @@ test('inactive variants are not included in active variants', function () {
     expect($activeVariant->name)->toBe('Hot');
 });
 
-test('variants are ordered by sort_order', function () {
+test('variants are ordered by sort_order', function (): void {
     $product = Product::factory()->create([
         'name' => 'Latte',
         'category_id' => $this->beveragesCategory->id,
         'price' => 120.00,
     ]);
 
-    ProductVariant::create([
+    ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Cold',
         'price' => 130.00,
@@ -134,7 +134,7 @@ test('variants are ordered by sort_order', function () {
         'sort_order' => 1,
     ]);
 
-    ProductVariant::create([
+    ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Hot',
         'price' => 120.00,
@@ -149,14 +149,14 @@ test('variants are ordered by sort_order', function () {
     expect($activeVariants->last()->name)->toBe('Cold');
 });
 
-test('default variant is properly flagged', function () {
+test('default variant is properly flagged', function (): void {
     $product = Product::factory()->create([
         'name' => 'Mocha',
         'category_id' => $this->beveragesCategory->id,
         'price' => 130.00,
     ]);
 
-    $hotVariant = ProductVariant::create([
+    $hotVariant = ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Hot',
         'price' => 130.00,
@@ -165,7 +165,7 @@ test('default variant is properly flagged', function () {
         'sort_order' => 0,
     ]);
 
-    $coldVariant = ProductVariant::create([
+    $coldVariant = ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Cold',
         'price' => 140.00,
@@ -178,14 +178,14 @@ test('default variant is properly flagged', function () {
     expect($coldVariant->is_default)->toBeFalse();
 });
 
-test('products in beverages category id 1 can have variants', function () {
+test('products in beverages category id 1 can have variants', function (): void {
     $product = Product::factory()->create([
         'name' => 'Cappuccino',
         'category_id' => 1, // Hard-coded Beverages category ID
         'price' => 110.00,
     ]);
 
-    ProductVariant::create([
+    ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Hot',
         'price' => 110.00,
@@ -194,7 +194,7 @@ test('products in beverages category id 1 can have variants', function () {
         'sort_order' => 0,
     ]);
 
-    ProductVariant::create([
+    ProductVariant::query()->create([
         'product_id' => $product->id,
         'name' => 'Cold',
         'price' => 120.00,

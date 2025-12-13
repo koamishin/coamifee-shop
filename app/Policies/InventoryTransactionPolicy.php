@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Models\InventoryTransaction;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Foundation\Auth\User as AuthUser;
 
@@ -17,7 +16,7 @@ final class InventoryTransactionPolicy
         return $authUser->can('ViewAny:InventoryTransaction');
     }
 
-    public function view(AuthUser $authUser, InventoryTransaction $inventoryTransaction): bool
+    public function view(AuthUser $authUser): bool
     {
         return $authUser->can('View:InventoryTransaction');
     }
@@ -27,22 +26,22 @@ final class InventoryTransactionPolicy
         return $authUser->can('Create:InventoryTransaction');
     }
 
-    public function update(AuthUser $authUser, InventoryTransaction $inventoryTransaction): bool
+    public function update(AuthUser $authUser): bool
     {
         return $authUser->can('Update:InventoryTransaction');
     }
 
-    public function delete(AuthUser $authUser, InventoryTransaction $inventoryTransaction): bool
+    public function delete(AuthUser $authUser): bool
     {
         return $authUser->can('Delete:InventoryTransaction');
     }
 
-    public function restore(AuthUser $authUser, InventoryTransaction $inventoryTransaction): bool
+    public function restore(AuthUser $authUser): bool
     {
         return $authUser->can('Restore:InventoryTransaction');
     }
 
-    public function forceDelete(AuthUser $authUser, InventoryTransaction $inventoryTransaction): bool
+    public function forceDelete(AuthUser $authUser): bool
     {
         return $authUser->can('ForceDelete:InventoryTransaction');
     }
@@ -57,7 +56,7 @@ final class InventoryTransactionPolicy
         return $authUser->can('RestoreAny:InventoryTransaction');
     }
 
-    public function replicate(AuthUser $authUser, InventoryTransaction $inventoryTransaction): bool
+    public function replicate(AuthUser $authUser): bool
     {
         return $authUser->can('Replicate:InventoryTransaction');
     }

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use BinaryCats\Sku\Concerns\SkuGenerator;
+
 return [
 
     /*
@@ -59,5 +61,5 @@ return [
     | It must implement \BinaryCats\Sku\Contracts\SkuGenerator
     |
     */
-    'generator' => BinaryCats\Sku\Concerns\SkuGenerator::class,
+    'generator' => SkuGenerator::class,
 ];

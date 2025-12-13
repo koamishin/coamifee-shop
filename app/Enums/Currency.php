@@ -181,12 +181,12 @@ enum Currency: string
         $symbol = $this->getSymbol();
 
         // Currencies with symbol after the amount
-        if (in_array($this, [self::EUR])) {
+        if ($this === self::EUR) {
             return $formattedAmount.$symbol;
         }
 
         // Currencies with space between symbol and amount
-        if (in_array($this, [self::BRL])) {
+        if ($this === self::BRL) {
             return $symbol.' '.$formattedAmount;
         }
 

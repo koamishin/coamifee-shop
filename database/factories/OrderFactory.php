@@ -29,8 +29,8 @@ final class OrderFactory extends Factory
             'subtotal' => fake()->randomFloat(2, 5.00, 150.00),
             'total' => fake()->randomFloat(2, 5.00, 150.00),
             'paid_amount' => fake()->randomFloat(2, 5.00, 150.00),
-            'status' => fake()->randomElement(['pending', 'confirmed', 'completed']),
-            'inventory_processed' => fake()->boolean(),
+            'status' => 'pending',
+            'inventory_processed' => false,
             'table_number' => fake()->optional(0.7)->randomElement(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']),
             'notes' => fake()->optional(0.3)->sentence(),
         ];

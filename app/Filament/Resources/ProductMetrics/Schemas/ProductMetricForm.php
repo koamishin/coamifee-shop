@@ -96,7 +96,7 @@ final class ProductMetricForm
                                 )
                                 ->reactive()
                                 ->afterStateUpdated(
-                                    function ($state, callable $set, callable $get) {
+                                    function ($state, callable $set, callable $get): void {
                                         $totalRevenue = $get('total_revenue');
                                         $average = self::calculateAverageOrderValue($state, $totalRevenue);
                                         $set('average_order_value', $average);
@@ -120,7 +120,7 @@ final class ProductMetricForm
                                 )
                                 ->reactive()
                                 ->afterStateUpdated(
-                                    function ($state, callable $set, callable $get) {
+                                    function ($state, callable $set, callable $get): void {
                                         $ordersCount = $get('orders_count');
                                         $average = self::calculateAverageOrderValue($ordersCount, $state);
                                         $set('average_order_value', $average);

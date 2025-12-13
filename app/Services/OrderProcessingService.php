@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Ingredient;
+use App\Models\IngredientInventory;
 use App\Models\IngredientUsage;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\ProductIngredient;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -44,7 +46,7 @@ final readonly class OrderProcessingService
         if (! $this->canFulfillOrder($order)) {
             Log::warning('Insufficient inventory for order', [
                 'order_id' => $order->id,
-                'order_items' => $order->items->map(fn($item) => [
+                'order_items' => $order->items->map(fn ($item): array => [
                     'product_id' => $item->product_id,
                     'product_name' => $item->product?->name,
                     'quantity' => $item->quantity,
@@ -116,7 +118,7 @@ final readonly class OrderProcessingService
     private function processOrderItem(OrderItem $orderItem): void
     {
         $product = $orderItem->product;
-        $productName = $product instanceof \App\Models\Product ? $product->name : 'Unknown Product';
+        $productName = $product instanceof Product ? $product->name : 'Unknown Product';
 
         Log::info('Processing order item', [
             'order_item_id' => $orderItem->id,
@@ -220,7 +222,7 @@ final readonly class OrderProcessingService
     private function canFulfillOrderItem(OrderItem $orderItem): bool
     {
         $product = $orderItem->product;
-        $productName = $product instanceof \App\Models\Product ? $product->name : 'Unknown Product';
+        $productName = $product instanceof Product ? $product->name : 'Unknown Product';
 
         $productIngredients = ProductIngredient::with('ingredient')
             ->where('product_id', $orderItem->product_id)
@@ -250,7 +252,7 @@ final readonly class OrderProcessingService
             $quantityNeeded = $productIngredient->quantity_required * $orderItem->quantity;
             $inventory = $ingredient->inventory()->first();
 
-            if (! $inventory || ! $inventory instanceof \App\Models\IngredientInventory) {
+            if (! $inventory || ! $inventory instanceof IngredientInventory) {
                 Log::warning('No inventory found for ingredient', [
                     'ingredient_id' => $ingredient->id,
                     'ingredient_name' => $ingredient->name,
@@ -298,9 +300,7 @@ final readonly class OrderProcessingService
         $discountPercentage = (float) $order->discount_value / 100;
 
         // Calculate total subtotal for proportional distribution
-        $totalSubtotal = $order->items->sum(function ($item) {
-            return $item->price * $item->quantity;
-        });
+        $totalSubtotal = $order->items->sum(fn ($item): int|float => $item->price * $item->quantity);
 
         if ($totalSubtotal <= 0) {
             Log::warning('Total subtotal is zero, cannot calculate discounted prices', [

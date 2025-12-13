@@ -6,6 +6,7 @@ namespace App\Filament\Resources\ProductMetrics\Widgets;
 
 use App\Filament\Concerns\CurrencyAware;
 use App\Models\ProductMetric;
+use App\Services\GeneralSettingsService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -17,12 +18,12 @@ final class ProductMetricsOverview extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $dailyMetrics = ProductMetric::where('period_type', 'daily')->get();
-        $weeklyMetrics = ProductMetric::where('period_type', 'weekly')->get();
-        $monthlyMetrics = ProductMetric::where('period_type', 'monthly')->get();
+        $dailyMetrics = ProductMetric::query()->where('period_type', 'daily')->get();
+        $weeklyMetrics = ProductMetric::query()->where('period_type', 'weekly')->get();
+        $monthlyMetrics = ProductMetric::query()->where('period_type', 'monthly')->get();
 
-        $totalSales = ProductMetric::sum('total_revenue');
-        $totalOrders = ProductMetric::sum('orders_count');
+        $totalSales = ProductMetric::query()->sum('total_revenue');
+        $totalOrders = ProductMetric::query()->sum('orders_count');
         $avgOrderValue = $totalOrders > 0 ? $totalSales / $totalOrders : 0;
 
         return [
@@ -62,7 +63,7 @@ final class ProductMetricsOverview extends StatsOverviewWidget
 
     private function formatMoney(float $amount): string
     {
-        $currency = app(\App\Services\GeneralSettingsService::class)->getCurrency();
+        $currency = resolve(GeneralSettingsService::class)->getCurrency();
 
         return $currency.' '.number_format($amount, 2);
     }
@@ -72,7 +73,7 @@ final class ProductMetricsOverview extends StatsOverviewWidget
         $data = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->format('Y-m-d');
-            $total = ProductMetric::where('period_type', 'daily')
+            $total = ProductMetric::query()->where('period_type', 'daily')
                 ->whereDate('metric_date', $date)
                 ->sum('total_revenue');
             $data[] = (float) $total;
@@ -86,7 +87,7 @@ final class ProductMetricsOverview extends StatsOverviewWidget
         $data = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->format('Y-m-d');
-            $total = ProductMetric::where('period_type', 'daily')
+            $total = ProductMetric::query()->where('period_type', 'daily')
                 ->whereDate('metric_date', $date)
                 ->sum('orders_count');
             $data[] = (int) $total;

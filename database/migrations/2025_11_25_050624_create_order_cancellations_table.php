@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('order_cancellations', function (Blueprint $table) {
+        Schema::create('order_cancellations', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
             $table->foreignId('cancelled_by')->constrained('users');

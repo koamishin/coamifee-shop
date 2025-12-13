@@ -7,79 +7,79 @@ namespace App\Enums;
 enum UnitType: string
 {
     case GRAMS = 'grams';
+    case KILOGRAMS = 'kilograms';
     case MILLILITERS = 'ml';
+    case LITERS = 'liters';
     case PIECES = 'pieces';
 
     /**
-     * Get all options for filament select field
+     * Get all options for filament select field.
+     *
+     * @return array<string, string>
      */
     public static function getOptions(): array
     {
-        return collect(self::cases())->mapWithKeys(function (UnitType $unit) {
-            return [$unit->value => $unit->getLabel()];
-        })->toArray();
+        return collect(self::cases())
+            ->mapWithKeys(fn (UnitType $unit): array => [$unit->value => $unit->getLabel()])
+            ->all();
     }
 
     /**
-     * Get filament select field configuration
+     * Get filament select field configuration.
+     *
+     * @return array<int, array{value: string, label: string, icon: string, description: string, color: string}>
      */
     public static function getSelectFieldConfig(): array
     {
-        return collect(self::cases())->map(function (UnitType $unit) {
-            return [
+        return collect(self::cases())
+            ->map(fn (UnitType $unit): array => [
                 'value' => $unit->value,
                 'label' => $unit->getLabel(),
                 'icon' => $unit->getIcon(),
                 'description' => $unit->getDescription(),
                 'color' => $unit->getColor(),
-            ];
-        })->toArray();
+            ])
+            ->all();
     }
 
-    /**
-     * Get display label for unit type
-     */
     public function getLabel(): string
     {
         return match ($this) {
-            self::GRAMS => 'Grams (g)',
-            self::MILLILITERS => 'Milliliters (ml)',
+            self::GRAMS => 'Grams',
+            self::KILOGRAMS => 'Kilograms',
+            self::MILLILITERS => 'Milliliters',
+            self::LITERS => 'Liters',
             self::PIECES => 'Pieces',
         };
     }
 
-    /**
-     * Get heroicon for unit type
-     */
     public function getIcon(): string
     {
         return match ($this) {
-            self::GRAMS => 'heroicon-o-scale',
-            self::MILLILITERS => 'heroicon-o-beaker',
+            self::GRAMS, self::KILOGRAMS => 'heroicon-o-scale',
+            self::MILLILITERS, self::LITERS => 'heroicon-o-beaker',
             self::PIECES => 'heroicon-o-cube',
         };
     }
 
-    /**
-     * Get filament color for unit type
-     */
     public function getColor(): string
     {
         return match ($this) {
             self::GRAMS => 'warning',
+            self::KILOGRAMS => 'danger',
             self::MILLILITERS => 'info',
+            self::LITERS => 'primary',
             self::PIECES => 'success',
         };
     }
 
-    /**
-     * Get full description for unit type
-     */
     public function getDescription(): string
     {
         return match ($this) {
-            self::GRAMS => 'Weight measurement in grams (enter kg as grams: 1kg = 1000g)',
-            self::MILLILITERS => 'Volume measurement in milliliters (enter L as ml: 1L = 1000ml)',
+            self::GRAMS => 'Weight measurement in grams (g)',
+            self::KILOGRAMS => 'Weight measurement in kilograms (kg)',
+            self::MILLILITERS => 'Volume measurement in milliliters (ml)',
+            self::LITERS => 'Volume measurement in liters (L)',
             self::PIECES => 'Count measurement for individual items',
         };
     }

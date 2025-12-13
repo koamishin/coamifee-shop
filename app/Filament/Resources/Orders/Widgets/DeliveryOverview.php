@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Orders\Widgets;
 
 use App\Filament\Concerns\CurrencyAware;
 use App\Models\Order;
+use App\Services\GeneralSettingsService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -17,20 +18,20 @@ final class DeliveryOverview extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $deliveryOrders = Order::where('order_type', 'delivery')
+        $deliveryOrders = Order::query()->where('order_type', 'delivery')
             ->where('payment_status', '!=', 'refunded')
             ->where('payment_status', '!=', 'refund_partial')
             ->get();
-        $dineInOrders = Order::whereIn('order_type', ['dine_in', 'dine-in'])
+        $dineInOrders = Order::query()->whereIn('order_type', ['dine_in', 'dine-in'])
             ->where('payment_status', '!=', 'refunded')
             ->where('payment_status', '!=', 'refund_partial')
             ->get();
-        $takeawayOrders = Order::where('order_type', 'takeaway')
+        $takeawayOrders = Order::query()->where('order_type', 'takeaway')
             ->where('payment_status', '!=', 'refunded')
             ->where('payment_status', '!=', 'refund_partial')
             ->get();
 
-        $totalOrders = Order::where('payment_status', '!=', 'refunded')
+        $totalOrders = Order::query()->where('payment_status', '!=', 'refunded')
             ->where('payment_status', '!=', 'refund_partial')
             ->count();
         $deliveryPercentage = $totalOrders > 0 ? round(($deliveryOrders->count() / $totalOrders) * 100, 1) : 0;
@@ -60,7 +61,7 @@ final class DeliveryOverview extends StatsOverviewWidget
 
     private function formatMoney(float $amount): string
     {
-        $currency = app(\App\Services\GeneralSettingsService::class)->getCurrency();
+        $currency = resolve(GeneralSettingsService::class)->getCurrency();
 
         return $currency.' '.number_format($amount, 2);
     }
@@ -70,7 +71,7 @@ final class DeliveryOverview extends StatsOverviewWidget
         $data = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->format('Y-m-d');
-            $query = Order::whereDate('created_at', $date)
+            $query = Order::query()->whereDate('created_at', $date)
                 ->where('payment_status', '!=', 'refunded')
                 ->where('payment_status', '!=', 'refund_partial');
 

@@ -62,17 +62,17 @@ final class OrderItem extends Model
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 
-    public function getTotalQuantityAttribute(): int
+    protected function getTotalQuantityAttribute(): int
     {
         return (int) $this->quantity;
     }
 
-    public function getTotalRevenueAttribute(): float
+    protected function getTotalRevenueAttribute(): float
     {
         return (float) ($this->quantity * $this->price);
     }
 
-    public function getSubtotalAttribute(): float
+    protected function getSubtotalAttribute(): float
     {
         return (float) ($this->quantity * $this->price);
     }
