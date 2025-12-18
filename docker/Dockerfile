@@ -26,14 +26,16 @@ COPY docker/php.ini /usr/local/etc/php/conf.d/99-coamifee.ini
 FROM composer:2.9.1 AS composer-deps
 
 # Composer resolves platform requirements, so we need required extensions here too.
-RUN apk add --no-cache icu-dev \
-    && docker-php-ext-install intl
+# Install build deps defensively so intl compiles reliably.
+RUN apk add --no-cache icu-dev $PHPIZE_DEPS \
+    && docker-php-ext-install intl \
+    && apk del --no-network $PHPIZE_DEPS
 
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-autoloader
 COPY . .
-RUN composer dump-autoload --optimize --classmap-authoritative
+RUN composer dump-autoload --optimize --classmap-authoritative --no-scripts
 
 # Build frontend assets using bun
 FROM oven/bun:1.3.2-alpine AS assets
