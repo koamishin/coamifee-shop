@@ -1,22 +1,138 @@
 services:
-  vito:
-    build:
-      context: ../
-      dockerfile: docker/Dockerfile
-    environment:
-      NAME: "koamishin"
-      EMAIL: "koamishin@example.com"
-      PASSWORD: "password"
-      APP_KEY: "base64:UodiJrx3DkcMlizmoimNlDn+yd4q5f2VbkBay19rJwM="
-      APP_PORT: 80
-      APP_URL: "http://localhost:80"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    ports:
-      - "${APP_PORT:-80}:80"
-      - "${VITE_PORT:-5173}:${VITE_PORT:-5173}"
-    volumes:
-      - "vito-storage:/var/www/html/storage"
+    app:
+        build:
+            context: ../
+            dockerfile: docker/Dockerfile
+        environment:
+            APP_ENV: "production"
+            APP_DEBUG: "false"
+            APP_KEY: "${APP_KEY:?Set APP_KEY in your environment}"
+            APP_URL: "${APP_URL:-http://localhost:${APP_PORT:-80}}"
+
+            RUN_MIGRATIONS: "${RUN_MIGRATIONS:-true}"
+            RUN_OPTIMIZE: "${RUN_OPTIMIZE:-false}"
+            RUN_SHIELD_GENERATE: "${RUN_SHIELD_GENERATE:-false}"
+            RUN_DB_SEED: "${RUN_DB_SEED:-false}"
+            CREATE_ADMIN_USER: "${CREATE_ADMIN_USER:-false}"
+            ADMIN_NAME: "${ADMIN_NAME:-}"
+            ADMIN_EMAIL: "${ADMIN_EMAIL:-}"
+            ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
+
+            DB_CONNECTION: "pgsql"
+            DB_HOST: "postgres"
+            DB_PORT: "5432"
+            DB_DATABASE: "coamifee"
+            DB_USERNAME: "coamifee"
+            DB_PASSWORD: "coamifee"
+
+            REDIS_HOST: "redis"
+            REDIS_PORT: "6379"
+            CACHE_STORE: "redis"
+            QUEUE_CONNECTION: "redis"
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+        ports:
+            - "${APP_PORT:-80}:80"
+        volumes:
+            - "coamifee-storage:/var/www/html/storage"
+        depends_on:
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+
+    worker:
+        build:
+            context: ../
+            dockerfile: docker/Dockerfile
+        command: "php /var/www/html/artisan queue:work --sleep=3 --tries=3 --max-time=3600"
+        restart: unless-stopped
+        environment:
+            APP_ENV: "production"
+            APP_DEBUG: "false"
+            APP_KEY: "${APP_KEY:?Set APP_KEY in your environment}"
+
+            DB_CONNECTION: "pgsql"
+            DB_HOST: "postgres"
+            DB_PORT: "5432"
+            DB_DATABASE: "coamifee"
+            DB_USERNAME: "coamifee"
+            DB_PASSWORD: "coamifee"
+
+            REDIS_HOST: "redis"
+            REDIS_PORT: "6379"
+            CACHE_STORE: "redis"
+            QUEUE_CONNECTION: "redis"
+        volumes:
+            - "coamifee-storage:/var/www/html/storage"
+        depends_on:
+            app:
+                condition: service_started
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+
+    scheduler:
+        build:
+            context: ../
+            dockerfile: docker/Dockerfile
+        command: "php /var/www/html/artisan schedule:work"
+        restart: unless-stopped
+        environment:
+            APP_ENV: "production"
+            APP_DEBUG: "false"
+            APP_KEY: "${APP_KEY:?Set APP_KEY in your environment}"
+
+            DB_CONNECTION: "pgsql"
+            DB_HOST: "postgres"
+            DB_PORT: "5432"
+            DB_DATABASE: "coamifee"
+            DB_USERNAME: "coamifee"
+            DB_PASSWORD: "coamifee"
+
+            REDIS_HOST: "redis"
+            REDIS_PORT: "6379"
+            CACHE_STORE: "redis"
+            QUEUE_CONNECTION: "redis"
+        volumes:
+            - "coamifee-storage:/var/www/html/storage"
+        depends_on:
+            app:
+                condition: service_started
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+
+    postgres:
+        image: postgres:16-alpine
+        environment:
+            POSTGRES_DB: "coamifee"
+            POSTGRES_USER: "coamifee"
+            POSTGRES_PASSWORD: "coamifee"
+        volumes:
+            - "coamifee-postgres:/var/lib/postgresql/data"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U coamifee -d coamifee"]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+
+    redis:
+        image: redis:alpine
+        volumes:
+            - "coamifee-redis:/data"
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+
 volumes:
-  vito-storage:
-    driver: local
+    coamifee-storage:
+        driver: local
+    coamifee-postgres:
+        driver: local
+    coamifee-redis:
+        driver: local
