@@ -9,6 +9,9 @@ RUN_SHIELD_GENERATE="${RUN_SHIELD_GENERATE:-false}"
 RUN_DB_SEED="${RUN_DB_SEED:-false}"
 CREATE_ADMIN_USER="${CREATE_ADMIN_USER:-false}"
 
+MIGRATE_ISOLATED="${MIGRATE_ISOLATED:-auto}"
+MIGRATION_CACHE_STORE="${MIGRATION_CACHE_STORE:-}"
+
 ADMIN_NAME="${ADMIN_NAME:-${NAME:-}}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-${EMAIL:-}}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-${PASSWORD:-}}"
@@ -34,8 +37,28 @@ chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || 
 echo "Running Laravel setup..."
 
 if [ "$RUN_MIGRATIONS" = "true" ]; then
+  CACHE_STORE_CURRENT="${CACHE_STORE:-${CACHE_DRIVER:-}}"
+  USE_ISOLATED=false
+
+  if [ "$MIGRATE_ISOLATED" = "true" ]; then
+    USE_ISOLATED=true
+  elif [ "$MIGRATE_ISOLATED" = "false" ]; then
+    USE_ISOLATED=false
+  else
+    if [ -z "$CACHE_STORE_CURRENT" ] || [ "$CACHE_STORE_CURRENT" = "database" ]; then
+      USE_ISOLATED=false
+    else
+      USE_ISOLATED=true
+    fi
+  fi
+
+  MIGRATE_ARGS="migrate --force"
+  if [ "$USE_ISOLATED" = "true" ]; then
+    MIGRATE_ARGS="$MIGRATE_ARGS --isolated"
+  fi
+
   ATTEMPTS=0
-  until php /var/www/html/artisan migrate --force --isolated; do
+  until (if [ -n "$MIGRATION_CACHE_STORE" ]; then CACHE_STORE="$MIGRATION_CACHE_STORE" php /var/www/html/artisan $MIGRATE_ARGS; else php /var/www/html/artisan $MIGRATE_ARGS; fi); do
     ATTEMPTS=$((ATTEMPTS + 1))
     if [ "$ATTEMPTS" -ge 30 ]; then
       echo "ERROR: database not ready after $ATTEMPTS attempts"
