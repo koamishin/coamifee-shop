@@ -3,14 +3,14 @@ set -eu
 
 INIT_FLAG="/var/www/html/storage/.INIT_ENV"
 
-RUN_MIGRATIONS="${RUN_MIGRATIONS:-true}"
+RUN_MIGRATIONS="${RUN_MIGRATIONS:-false}"
 RUN_OPTIMIZE="${RUN_OPTIMIZE:-false}"
 RUN_SHIELD_GENERATE="${RUN_SHIELD_GENERATE:-false}"
 RUN_DB_SEED="${RUN_DB_SEED:-false}"
 CREATE_ADMIN_USER="${CREATE_ADMIN_USER:-false}"
 
-MIGRATE_ISOLATED="${MIGRATE_ISOLATED:-auto}"
-MIGRATION_CACHE_STORE="${MIGRATION_CACHE_STORE:-}"
+DB_WAIT_MAX_SECONDS="${DB_WAIT_MAX_SECONDS:-60}"
+DB_WAIT_INTERVAL_SECONDS="${DB_WAIT_INTERVAL_SECONDS:-2}"
 
 ADMIN_NAME="${ADMIN_NAME:-${NAME:-}}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-${EMAIL:-}}"
@@ -36,48 +36,62 @@ chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || 
 
 echo "Running Laravel setup..."
 
-if [ "$RUN_MIGRATIONS" = "true" ]; then
-  CACHE_STORE_CURRENT="${CACHE_STORE:-${CACHE_DRIVER:-}}"
-  USE_ISOLATED=false
-
-  if [ "$MIGRATE_ISOLATED" = "true" ]; then
-    USE_ISOLATED=true
-  elif [ "$MIGRATE_ISOLATED" = "false" ]; then
-    USE_ISOLATED=false
-  else
-    if [ -z "$CACHE_STORE_CURRENT" ] || [ "$CACHE_STORE_CURRENT" = "database" ]; then
-      USE_ISOLATED=false
-    else
-      USE_ISOLATED=true
-    fi
+wait_for_database() {
+  if [ -z "${DB_CONNECTION:-}" ]; then
+    return 0
   fi
 
-  MIGRATE_ARGS="migrate --force"
-  if [ "$USE_ISOLATED" = "true" ]; then
-    MIGRATE_ARGS="$MIGRATE_ARGS --isolated"
+  if [ "$DB_CONNECTION" = "sqlite" ]; then
+    return 0
   fi
 
-  ATTEMPTS=0
-  until (if [ -n "$MIGRATION_CACHE_STORE" ]; then CACHE_STORE="$MIGRATION_CACHE_STORE" php /var/www/html/artisan $MIGRATE_ARGS; else php /var/www/html/artisan $MIGRATE_ARGS; fi); do
-    ATTEMPTS=$((ATTEMPTS + 1))
-    if [ "$ATTEMPTS" -ge 30 ]; then
-      echo "ERROR: database not ready after $ATTEMPTS attempts"
-      exit 1
+  START_TIME=$(date +%s)
+
+  while :; do
+    php -r "
+      \$driver = getenv('DB_CONNECTION');
+      \$host = getenv('DB_HOST');
+      \$port = getenv('DB_PORT') ?: '5432';
+      \$database = getenv('DB_DATABASE');
+      \$username = getenv('DB_USERNAME');
+      \$password = getenv('DB_PASSWORD');
+
+      if (\$driver === 'pgsql') {
+        \$dsn = sprintf('pgsql:host=%s;port=%s;dbname=%s', \$host, \$port, \$database);
+        new PDO(\$dsn, \$username, \$password, [PDO::ATTR_TIMEOUT => 2]);
+      } elseif (\$driver === 'mysql' || \$driver === 'mariadb') {
+        \$dsn = sprintf('mysql:host=%s;port=%s;dbname=%s', \$host, \$port, \$database);
+        new PDO(\$dsn, \$username, \$password, [PDO::ATTR_TIMEOUT => 2]);
+      }
+    " >/dev/null 2>&1 && return 0
+
+    NOW=$(date +%s)
+    ELAPSED=$((NOW - START_TIME))
+
+    if [ "$ELAPSED" -ge "$DB_WAIT_MAX_SECONDS" ]; then
+      echo "ERROR: database not ready after ${DB_WAIT_MAX_SECONDS}s"
+      return 1
     fi
 
-    echo "Waiting for database... ($ATTEMPTS/30)"
-    sleep 2
+    echo "Waiting for database... (${ELAPSED}s/${DB_WAIT_MAX_SECONDS}s)"
+    sleep "$DB_WAIT_INTERVAL_SECONDS"
   done
+}
+
+if [ "$RUN_MIGRATIONS" = "true" ]; then
+  wait_for_database
+
+  php /var/www/html/artisan migrate --force --no-interaction
 else
   echo "Skipping migrations (RUN_MIGRATIONS=$RUN_MIGRATIONS)"
 fi
-
-php /var/www/html/artisan optimize:clear >/dev/null 2>&1 || true
 
 OPTIMIZE_PID=""
 SHIELD_PID=""
 
 if [ "$FIRST_RUN" = "true" ] && [ "$RUN_OPTIMIZE" = "true" ]; then
+  php /var/www/html/artisan optimize:clear >/dev/null 2>&1 || true
+
   php /var/www/html/artisan optimize >/dev/null 2>&1 &
   OPTIMIZE_PID=$!
 fi
