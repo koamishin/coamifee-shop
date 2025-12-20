@@ -12,6 +12,8 @@ CREATE_ADMIN_USER="${CREATE_ADMIN_USER:-false}"
 DB_WAIT_MAX_SECONDS="${DB_WAIT_MAX_SECONDS:-60}"
 DB_WAIT_INTERVAL_SECONDS="${DB_WAIT_INTERVAL_SECONDS:-2}"
 
+FIX_PERMISSIONS="${FIX_PERMISSIONS:-auto}"
+
 ADMIN_NAME="${ADMIN_NAME:-${NAME:-}}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-${EMAIL:-}}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-${PASSWORD:-}}"
@@ -31,8 +33,17 @@ if [ ! -f "$INIT_FLAG" ]; then
   echo "Initialization complete"
 fi
 
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
-chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
+SHOULD_FIX_PERMISSIONS=false
+if [ "$FIX_PERMISSIONS" = "true" ]; then
+  SHOULD_FIX_PERMISSIONS=true
+elif [ "$FIX_PERMISSIONS" = "auto" ] && [ "$FIRST_RUN" = "true" ]; then
+  SHOULD_FIX_PERMISSIONS=true
+fi
+
+if [ "$SHOULD_FIX_PERMISSIONS" = "true" ]; then
+  chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
+  chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
+fi
 
 echo "Running Laravel setup..."
 
