@@ -244,7 +244,7 @@ final class OrderInfolist
                                 ->icon('heroicon-o-tag')
                                 ->formatStateUsing(function ($record): string {
                                     if ($record->discount_amount > 0 && $record->discount_type && $record->discount_value) {
-                                        return ucfirst((string) $record->discount_type).' ('.$record->discount_value.'%) - '.self::getMoneyConfig()['currency'].' '.number_format($record->discount_amount, 2);
+                                        return ucfirst((string) $record->discount_type).' ('.$record->discount_value.'%) - '.self::getCurrencySymbol().' '.number_format($record->discount_amount, 2);
                                     }
 
                                     return 'No discount';

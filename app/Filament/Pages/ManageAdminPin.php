@@ -16,6 +16,12 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Validate;
 use UnitEnum;
 
+/**
+ * @property \Filament\Forms\Form $form
+ */
+/**
+ * @property \Filament\Forms\Form $form
+ */
 final class ManageAdminPin extends Page implements HasForms
 {
     use HasPageShield;
@@ -46,7 +52,9 @@ final class ManageAdminPin extends Page implements HasForms
     {
         $this->validate();
 
-        Auth::user()->update([
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $user->update([
             'admin_pin' => $this->admin_pin,
         ]);
 

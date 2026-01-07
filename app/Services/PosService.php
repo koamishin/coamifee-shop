@@ -9,7 +9,7 @@ use App\Models\Ingredient;
 use App\Models\IngredientInventory;
 use App\Models\Product;
 use App\Models\ProductIngredient;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
 
 final readonly class PosService
 {

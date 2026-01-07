@@ -115,7 +115,7 @@ final class BestSellers extends Page
         $categoryProducts = $productSales
             ->groupBy(fn ($item) => $item->product->category->name ?? 'Uncategorized')
             ->filter(fn ($products): bool => $products->count() >= 1)
-            ->map(fn ($products) => $products->take(3)->values());
+            ->map(fn (Collection $products) => $products->take(3)->values());
 
         return $categoryProducts;
     }
