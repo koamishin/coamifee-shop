@@ -1,0 +1,201 @@
+#!/usr/bin/env sh
+set -e
+
+container_mode=${CONTAINER_MODE:-"http"}
+octane_server=${OCTANE_SERVER}
+running_migrations_and_seeders=${RUNNING_MIGRATIONS_AND_SEEDERS:-"false"}
+
+# Provide sane defaults for service env vars so health checks don't fail when
+# project .env hasn't been loaded into the container environment yet.
+# Only export them if they are likely to be used, to avoid "Name or service not known" errors
+# if the hostnames (like 'redis') don't exist in the network.
+
+if [ "$CACHE_STORE" = "redis" ] || [ "$QUEUE_CONNECTION" = "redis" ] || [ "$SESSION_DRIVER" = "redis" ]; then
+    REDIS_HOST="${REDIS_HOST:-redis}"
+    REDIS_PORT="${REDIS_PORT:-6379}"
+    export REDIS_HOST REDIS_PORT
+fi
+
+DB_CONNECTION="${DB_CONNECTION:-sqlite}"
+
+if [ "$DB_CONNECTION" = "pgsql" ]; then
+    DB_HOST="${DB_HOST:-pgsql}"
+    DB_PORT="${DB_PORT:-5432}"
+    export DB_HOST DB_PORT
+elif [ "$DB_CONNECTION" = "mysql" ] || [ "$DB_CONNECTION" = "mariadb" ]; then
+    DB_HOST="${DB_HOST:-mysql}"
+    DB_PORT="${DB_PORT:-3306}"
+    export DB_HOST DB_PORT
+fi
+
+ensure_storage_link() {
+    # "php artisan storage:link" fails if the link exists.
+    if [ -e "public/storage" ] || [ -L "public/storage" ]; then
+        echo "Storage link already exists, skipping."
+        return 0
+    fi
+
+    php artisan storage:link
+}
+
+ensure_vendor_view_dirs() {
+    # Some vendor packages ship empty view directories that may be missing in dist archives.
+    # If the directory is missing, view caching fails.
+    if [ -d "vendor/moataz-01/filament-notification-sound" ]; then
+        mkdir -p "vendor/moataz-01/filament-notification-sound/resources/views"
+    fi
+}
+
+initialStuff() {
+    echo "Container mode: $container_mode"
+
+    check_connections
+
+    ensure_storage_link
+    ensure_vendor_view_dirs
+
+    php artisan optimize:clear
+    php artisan optimize
+}
+
+check_connections() {
+    echo "Checking connections..."
+
+    # Check Redis
+    if [ "$CACHE_STORE" = "redis" ] || [ "$QUEUE_CONNECTION" = "redis" ] || [ "$SESSION_DRIVER" = "redis" ]; then
+        echo "Testing Redis connection to ${REDIS_HOST}:${REDIS_PORT}..."
+        php -r "
+            \$maxTries = 30;
+            for (\$i = 0; \$i < \$maxTries; \$i++) {
+                try {
+                    \$redis = new Redis();
+                    \$redis->connect(getenv('REDIS_HOST'), getenv('REDIS_PORT'));
+                    if (\$redis->ping()) {
+                        echo 'Redis connection successful.' . PHP_EOL;
+                        exit(0);
+                    }
+                } catch (Exception \$e) {}
+                sleep(1);
+            }
+            echo 'Failed to connect to Redis.' . PHP_EOL;
+            exit(1);
+        "
+    fi
+
+    # Check Database
+    DB_CONNECTION="${DB_CONNECTION:-sqlite}"
+
+    if [ "$DB_CONNECTION" = "sqlite" ]; then
+        echo "Testing SQLite database..."
+        php -r "
+            \$dbDatabase = getenv('DB_DATABASE') ?: '/var/www/html/database/database.sqlite';
+            \$dir = dirname(\$dbDatabase);
+            if (!is_dir(\$dir)) {
+                if (!@mkdir(\$dir, 0775, true)) {
+                    echo 'Database directory does not exist and could not be created: ' . \$dir . PHP_EOL;
+                    exit(1);
+                }
+            }
+            if (!file_exists(\$dbDatabase)) {
+                touch(\$dbDatabase);
+                echo 'Created SQLite database file: ' . \$dbDatabase . PHP_EOL;
+            }
+            if (file_exists(\$dbDatabase) && !is_writable(\$dbDatabase)) {
+                echo 'SQLite database file exists but is NOT writable.' . PHP_EOL;
+                exit(1);
+            }
+            if (!file_exists(\$dbDatabase) && !is_writable(\$dir)) {
+                echo 'SQLite database directory is NOT writable.' . PHP_EOL;
+                exit(1);
+            }
+            echo 'SQLite database check successful.' . PHP_EOL;
+        "
+    elif [ "$DB_CONNECTION" = "pgsql" ] || [ "$DB_CONNECTION" = "mysql" ] || [ "$DB_CONNECTION" = "mariadb" ]; then
+        echo "Testing Database connection ($DB_CONNECTION) to ${DB_HOST}:${DB_PORT}..."
+        if [ -z "${DB_DATABASE}" ] || [ -z "${DB_USERNAME}" ]; then
+            echo "Skipping Database check (DB_DATABASE/DB_USERNAME not set in environment)."
+        else
+            php -r "
+                \$maxTries = 30;
+                \$driver = '$DB_CONNECTION';
+                if (\$driver === 'mariadb') \$driver = 'mysql';
+
+                for (\$i = 0; \$i < \$maxTries; \$i++) {
+                    try {
+                        \$dsn = \$driver . ':host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT') . ';dbname=' . getenv('DB_DATABASE');
+                        \$pdo = new PDO(\$dsn, getenv('DB_USERNAME'), getenv('DB_PASSWORD'));
+                        echo 'Database connection successful.' . PHP_EOL;
+                        exit(0);
+                    } catch (Exception \$e) {}
+                    sleep(1);
+                }
+                echo 'Failed to connect to Database.' . PHP_EOL;
+                exit(1);
+            "
+        fi
+    fi
+
+    # Check Storage
+    echo "Testing Storage permissions..."
+    php -r "
+        \$path = '/var/www/html/storage/framework/testing/connection_test';
+        @mkdir(dirname(\$path), 0777, true);
+        if (@file_put_contents(\$path, 'test') !== false && @unlink(\$path)) {
+            echo 'Storage is writable and readable.' . PHP_EOL;
+            exit(0);
+        }
+        echo 'Storage is NOT writable or readable.' . PHP_EOL;
+        exit(1);
+    "
+
+    # Check OPcache directory
+    echo "Testing OPcache directory..."
+    php -r "
+        \$opcacheDir = '/tmp/opcache-file-cache';
+        if (!is_dir(\$opcacheDir)) {
+            mkdir(\$opcacheDir, 0777, true);
+        }
+        if (is_dir(\$opcacheDir) && is_writable(\$opcacheDir)) {
+            echo 'OPcache directory is accessible and writable.' . PHP_EOL;
+            exit(0);
+        }
+        echo 'OPcache directory is NOT accessible or writable.' . PHP_EOL;
+        exit(1);
+    "
+}
+
+if [ "$1" != "" ]; then
+    exec "$@"
+elif [ "${container_mode}" = "http" ]; then
+    initialStuff
+    echo "Octane Server: $octane_server"
+    if [ "${octane_server}"  = "frankenphp" ]; then
+        exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/supervisord.frankenphp.conf
+    elif [ "${octane_server}"  = "swoole" ]; then
+        exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/supervisord.swoole.conf
+    elif [ "${octane_server}"  = "roadrunner" ]; then
+        exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/supervisord.roadrunner.conf
+    else
+        echo "Invalid Octane server supplied."
+        exit 1
+    fi
+elif [ "${container_mode}" = "horizon" ]; then
+    initialStuff
+    exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/supervisord.horizon.conf
+elif [ "${container_mode}" = "reverb" ]; then
+    initialStuff
+    exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/supervisord.reverb.conf
+elif [ "${container_mode}" = "scheduler" ]; then
+    initialStuff
+    exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/supervisord.scheduler.conf
+elif [ "${container_mode}" = "worker" ]; then
+    if [ -z "${WORKER_COMMAND}" ]; then
+        echo "WORKER_COMMAND is undefined."
+        exit 1
+    fi
+    initialStuff
+    exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/supervisord.worker.conf
+else
+    echo "Container mode mismatched."
+    exit 1
+fi
