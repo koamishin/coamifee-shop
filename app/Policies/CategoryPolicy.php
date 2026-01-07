@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Models\Category;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Foundation\Auth\User as AuthUser;
 
@@ -17,7 +16,7 @@ final class CategoryPolicy
         return $authUser->can('ViewAny:Category');
     }
 
-    public function view(AuthUser $authUser, Category $category): bool
+    public function view(AuthUser $authUser): bool
     {
         return $authUser->can('View:Category');
     }
@@ -27,22 +26,22 @@ final class CategoryPolicy
         return $authUser->can('Create:Category');
     }
 
-    public function update(AuthUser $authUser, Category $category): bool
+    public function update(AuthUser $authUser): bool
     {
         return $authUser->can('Update:Category');
     }
 
-    public function delete(AuthUser $authUser, Category $category): bool
+    public function delete(AuthUser $authUser): bool
     {
         return $authUser->can('Delete:Category');
     }
 
-    public function restore(AuthUser $authUser, Category $category): bool
+    public function restore(AuthUser $authUser): bool
     {
         return $authUser->can('Restore:Category');
     }
 
-    public function forceDelete(AuthUser $authUser, Category $category): bool
+    public function forceDelete(AuthUser $authUser): bool
     {
         return $authUser->can('ForceDelete:Category');
     }
@@ -57,7 +56,7 @@ final class CategoryPolicy
         return $authUser->can('RestoreAny:Category');
     }
 
-    public function replicate(AuthUser $authUser, Category $category): bool
+    public function replicate(AuthUser $authUser): bool
     {
         return $authUser->can('Replicate:Category');
     }

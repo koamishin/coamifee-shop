@@ -10,10 +10,10 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
-use Carbon\Carbon;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\Cache\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Date;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -62,7 +62,7 @@ it('can load the create order page', function (): void {
 });
 
 it('can create an order with default date (current time)', function (): void {
-    Carbon::setTestNow(Carbon::parse('2026-01-07 10:30:00'));
+    Date::setTestNow(Date::parse('2026-01-07 10:30:00'));
 
     Livewire::test(CreateOrder::class)
         ->assertOk()
@@ -76,16 +76,16 @@ it('can create an order with default date (current time)', function (): void {
         ->call('create')
         ->assertHasNoFormErrors();
 
-    $order = Order::where('customer_name', 'John Doe')->first();
+    $order = Order::query()->where('customer_name', 'John Doe')->first();
 
     expect($order)->not->toBeNull();
     expect($order->created_at->format('Y-m-d'))->toBe('2026-01-07');
 
-    Carbon::setTestNow(); // Reset
+    Date::setTestNow(); // Reset
 });
 
 it('can create an order with a backdated order date', function (): void {
-    $backdatedDate = Carbon::parse('2025-12-25 14:30:00');
+    $backdatedDate = Date::parse('2025-12-25 14:30:00');
 
     Livewire::test(CreateOrder::class)
         ->assertOk()
@@ -100,7 +100,7 @@ it('can create an order with a backdated order date', function (): void {
         ->call('create')
         ->assertHasNoFormErrors();
 
-    $order = Order::where('customer_name', 'Jane Smith')->first();
+    $order = Order::query()->where('customer_name', 'Jane Smith')->first();
 
     expect($order)->not->toBeNull();
     expect($order->created_at->format('Y-m-d'))->toBe('2025-12-25');
@@ -124,14 +124,14 @@ it('can create an order backdated to a week ago', function (): void {
         ->call('create')
         ->assertHasNoFormErrors();
 
-    $order = Order::where('customer_name', 'Backdated Customer')->first();
+    $order = Order::query()->where('customer_name', 'Backdated Customer')->first();
 
     expect($order)->not->toBeNull();
     expect($order->created_at->format('Y-m-d'))->toBe($oneWeekAgo->format('Y-m-d'));
 });
 
 it('saves correct order data when backdating', function (): void {
-    $backdatedDate = Carbon::parse('2025-11-15 09:00:00');
+    $backdatedDate = Date::parse('2025-11-15 09:00:00');
 
     Livewire::test(CreateOrder::class)
         ->assertOk()
@@ -157,7 +157,7 @@ it('saves correct order data when backdating', function (): void {
         'notes' => 'Test order with backdated date',
     ]);
 
-    $order = Order::where('customer_name', 'Test Customer')->first();
+    $order = Order::query()->where('customer_name', 'Test Customer')->first();
     expect($order->created_at->format('Y-m-d H:i:s'))->toBe('2025-11-15 09:00:00');
 });
 
@@ -207,7 +207,7 @@ it('can create an order with products', function (): void {
         ->assertHasNoFormErrors();
 
     // Verify order was created
-    $order = Order::where('customer_name', 'Product Order Customer')->first();
+    $order = Order::query()->where('customer_name', 'Product Order Customer')->first();
     expect($order)->not->toBeNull();
     expect((float) $order->total)->toBe(130.0); // (2 * 50) + (1 * 30)
     expect((float) $order->subtotal)->toBe(130.0);
@@ -216,14 +216,14 @@ it('can create an order with products', function (): void {
     // Verify order items were created
     expect($order->items)->toHaveCount(2);
 
-    $item1 = OrderItem::where('order_id', $order->id)
+    $item1 = OrderItem::query()->where('order_id', $order->id)
         ->where('product_id', $product1->id)
         ->first();
     expect($item1)->not->toBeNull();
     expect($item1->quantity)->toBe(2);
     expect((float) $item1->price)->toBe(50.0);
 
-    $item2 = OrderItem::where('order_id', $order->id)
+    $item2 = OrderItem::query()->where('order_id', $order->id)
         ->where('product_id', $product2->id)
         ->first();
     expect($item2)->not->toBeNull();
@@ -266,7 +266,7 @@ it('can create an order with product variants', function (): void {
         ->assertHasNoFormErrors();
 
     // Verify order was created
-    $order = Order::where('customer_name', 'Variant Order Customer')->first();
+    $order = Order::query()->where('customer_name', 'Variant Order Customer')->first();
     expect($order)->not->toBeNull();
     expect((float) $order->total)->toBe(165.0); // 3 * 55
 
@@ -280,7 +280,7 @@ it('can create an order with product variants', function (): void {
 });
 
 it('can create a backdated order with products', function (): void {
-    $backdatedDate = Carbon::parse('2025-12-01 15:00:00');
+    $backdatedDate = Date::parse('2025-12-01 15:00:00');
 
     $category = Category::factory()->create();
     $product = Product::factory()->create([
@@ -308,7 +308,7 @@ it('can create a backdated order with products', function (): void {
         ->call('create')
         ->assertHasNoFormErrors();
 
-    $order = Order::where('customer_name', 'Backdated Product Customer')->first();
+    $order = Order::query()->where('customer_name', 'Backdated Product Customer')->first();
     expect($order)->not->toBeNull();
     expect($order->created_at->format('Y-m-d'))->toBe('2025-12-01');
     expect((float) $order->total)->toBe(100.0); // 4 * 25
@@ -342,7 +342,7 @@ it('creates order items with notes', function (): void {
         ->call('create')
         ->assertHasNoFormErrors();
 
-    $order = Order::where('customer_name', 'Notes Test Customer')->first();
+    $order = Order::query()->where('customer_name', 'Notes Test Customer')->first();
     expect($order)->not->toBeNull();
 
     $orderItem = $order->items->first();

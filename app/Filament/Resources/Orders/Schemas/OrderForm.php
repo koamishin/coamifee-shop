@@ -147,7 +147,7 @@ final class OrderForm
                                                 return;
                                             }
 
-                                            $product = Product::find($state);
+                                            $product = Product::query()->find($state);
                                             if ($product) {
                                                 // Check if product has variants
                                                 if ($product->variants()->exists()) {
@@ -191,7 +191,7 @@ final class OrderForm
                                         ->live()
                                         ->afterStateUpdated(function (Get $get, Set $set, ?int $state): void {
                                             if ($state) {
-                                                $variant = ProductVariant::find($state);
+                                                $variant = ProductVariant::query()->find($state);
                                                 if ($variant) {
                                                     $set('price', $variant->price);
                                                 }
@@ -199,7 +199,7 @@ final class OrderForm
                                                 // Fall back to product price
                                                 $productId = $get('product_id');
                                                 if ($productId) {
-                                                    $product = Product::find($productId);
+                                                    $product = Product::query()->find($productId);
                                                     if ($product) {
                                                         $set('price', $product->price);
                                                     }
@@ -275,7 +275,7 @@ final class OrderForm
                                     return null;
                                 }
 
-                                $product = Product::find($productId);
+                                $product = Product::query()->find($productId);
                                 if (! $product) {
                                     return null;
                                 }
@@ -283,7 +283,7 @@ final class OrderForm
                                 $variantId = $state['product_variant_id'] ?? null;
                                 $variantName = '';
                                 if ($variantId) {
-                                    $variant = ProductVariant::find($variantId);
+                                    $variant = ProductVariant::query()->find($variantId);
                                     if ($variant) {
                                         $variantName = " ({$variant->name})";
                                     }

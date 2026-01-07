@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Models\Ingredient;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Foundation\Auth\User as AuthUser;
 
@@ -17,7 +16,7 @@ final class IngredientPolicy
         return $authUser->can('ViewAny:Ingredient');
     }
 
-    public function view(AuthUser $authUser, Ingredient $ingredient): bool
+    public function view(AuthUser $authUser): bool
     {
         return $authUser->can('View:Ingredient');
     }
@@ -27,22 +26,22 @@ final class IngredientPolicy
         return $authUser->can('Create:Ingredient');
     }
 
-    public function update(AuthUser $authUser, Ingredient $ingredient): bool
+    public function update(AuthUser $authUser): bool
     {
         return $authUser->can('Update:Ingredient');
     }
 
-    public function delete(AuthUser $authUser, Ingredient $ingredient): bool
+    public function delete(AuthUser $authUser): bool
     {
         return $authUser->can('Delete:Ingredient');
     }
 
-    public function restore(AuthUser $authUser, Ingredient $ingredient): bool
+    public function restore(AuthUser $authUser): bool
     {
         return $authUser->can('Restore:Ingredient');
     }
 
-    public function forceDelete(AuthUser $authUser, Ingredient $ingredient): bool
+    public function forceDelete(AuthUser $authUser): bool
     {
         return $authUser->can('ForceDelete:Ingredient');
     }
@@ -57,7 +56,7 @@ final class IngredientPolicy
         return $authUser->can('RestoreAny:Ingredient');
     }
 
-    public function replicate(AuthUser $authUser, Ingredient $ingredient): bool
+    public function replicate(AuthUser $authUser): bool
     {
         return $authUser->can('Replicate:Ingredient');
     }

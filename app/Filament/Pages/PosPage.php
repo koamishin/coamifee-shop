@@ -163,10 +163,8 @@ final class PosPage extends Page
             $this->paymentTiming = 'pay_now';
         }
 
-        if ($this->orderType === 'delivery') {
-            if (! in_array($this->paymentMethod, ['grab', 'food_panda'], true)) {
-                $this->paymentMethod = 'grab';
-            }
+        if ($this->orderType === 'delivery' && ! in_array($this->paymentMethod, ['grab', 'food_panda'], true)) {
+            $this->paymentMethod = 'grab';
         }
     }
 

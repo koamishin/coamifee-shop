@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Models\ProductMetric;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Foundation\Auth\User as AuthUser;
 
@@ -17,7 +16,7 @@ final class ProductMetricPolicy
         return $authUser->can('ViewAny:ProductMetric');
     }
 
-    public function view(AuthUser $authUser, ProductMetric $productMetric): bool
+    public function view(AuthUser $authUser): bool
     {
         return $authUser->can('View:ProductMetric');
     }
@@ -27,22 +26,22 @@ final class ProductMetricPolicy
         return $authUser->can('Create:ProductMetric');
     }
 
-    public function update(AuthUser $authUser, ProductMetric $productMetric): bool
+    public function update(AuthUser $authUser): bool
     {
         return $authUser->can('Update:ProductMetric');
     }
 
-    public function delete(AuthUser $authUser, ProductMetric $productMetric): bool
+    public function delete(AuthUser $authUser): bool
     {
         return $authUser->can('Delete:ProductMetric');
     }
 
-    public function restore(AuthUser $authUser, ProductMetric $productMetric): bool
+    public function restore(AuthUser $authUser): bool
     {
         return $authUser->can('Restore:ProductMetric');
     }
 
-    public function forceDelete(AuthUser $authUser, ProductMetric $productMetric): bool
+    public function forceDelete(AuthUser $authUser): bool
     {
         return $authUser->can('ForceDelete:ProductMetric');
     }
@@ -57,7 +56,7 @@ final class ProductMetricPolicy
         return $authUser->can('RestoreAny:ProductMetric');
     }
 
-    public function replicate(AuthUser $authUser, ProductMetric $productMetric): bool
+    public function replicate(AuthUser $authUser): bool
     {
         return $authUser->can('Replicate:ProductMetric');
     }
