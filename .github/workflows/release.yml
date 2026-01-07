@@ -4,24 +4,24 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release'
+        description: "Version to release"
         required: true
       latest:
-        description: 'Mark as latest release?'
+        description: "Mark as latest release?"
         required: true
-        default: 'true'
+        default: "true"
         type: choice
         options:
-          - 'true'
-          - 'false'
+          - "true"
+          - "false"
       prerelease:
-        description: 'Is this a pre-release?'
+        description: "Is this a pre-release?"
         required: true
-        default: 'false'
+        default: "false"
         type: choice
         options:
-          - 'true'
-          - 'false'
+          - "true"
+          - "false"
 
 permissions:
   contents: write
@@ -81,7 +81,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: "8.4"
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, tokenizer, xml, gd, zip, sqlite3
           coverage: none
 
@@ -100,10 +100,17 @@ jobs:
         run: npm run build
 
       # Release
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.RELEASE_GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Build version ${{ steps.version.outputs.version }}"
+          commit_options: '--author="github-actions[bot] <github-actions[bot]@users.noreply.github.com>"'
 
       - name: Create release
         uses: softprops/action-gh-release@v2
