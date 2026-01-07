@@ -5,12 +5,18 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Orders\Schemas;
 
 use App\Filament\Concerns\CurrencyAware;
+use App\Models\Product;
+use App\Models\ProductVariant;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 final class OrderForm
@@ -46,7 +52,7 @@ final class OrderForm
                                 ->columnSpan(1),
                         ]),
 
-                        Grid::make(3)->schema([
+                        Grid::make(4)->schema([
                             Select::make('order_type')
                                 ->label('Order Type')
                                 ->required()
@@ -100,8 +106,223 @@ final class OrderForm
                                 ->helperText('Table number for dine-in orders')
                                 // ->alphaNumeric()
                                 ->columnSpan(1),
+
+                            DateTimePicker::make('order_date')
+                                ->label('Order Date')
+                                ->default(now())
+                                ->maxDate(now())
+                                ->native(false)
+                                ->displayFormat('M d, Y h:i A')
+                                ->helperText(
+                                    'Leave as current time or select a past date for backdated orders',
+                                )
+                                ->columnSpan(1),
                         ]),
                     ]),
+
+                Section::make('Order Items')
+                    ->description('Add products to this order')
+                    ->icon('heroicon-o-queue-list')
+                    ->schema([
+                        Repeater::make('order_items')
+                            ->label('')
+                            ->schema([
+                                Grid::make(12)->schema([
+                                    Select::make('product_id')
+                                        ->label('Product')
+                                        ->options(
+                                            Product::query()
+                                                ->where('is_active', true)
+                                                ->orderBy('name')
+                                                ->pluck('name', 'id')
+                                        )
+                                        ->searchable()
+                                        ->required()
+                                        ->live()
+                                        ->afterStateUpdated(function (Get $get, Set $set, ?int $state): void {
+                                            if (! $state) {
+                                                $set('price', null);
+                                                $set('product_variant_id', null);
+
+                                                return;
+                                            }
+
+                                            $product = Product::find($state);
+                                            if ($product) {
+                                                // Check if product has variants
+                                                if ($product->variants()->exists()) {
+                                                    // Get default variant or first variant
+                                                    $defaultVariant = $product->variants()
+                                                        ->where('is_active', true)
+                                                        ->where('is_default', true)
+                                                        ->first();
+
+                                                    if ($defaultVariant) {
+                                                        $set('product_variant_id', $defaultVariant->id);
+                                                        $set('price', $defaultVariant->price);
+                                                    } else {
+                                                        $set('price', $product->price);
+                                                    }
+                                                } else {
+                                                    $set('price', $product->price);
+                                                    $set('product_variant_id', null);
+                                                }
+                                            }
+
+                                            self::recalculateTotal($get, $set);
+                                        })
+                                        ->columnSpan(4),
+
+                                    Select::make('product_variant_id')
+                                        ->label('Variant')
+                                        ->options(function (Get $get): array {
+                                            $productId = $get('product_id');
+                                            if (! $productId) {
+                                                return [];
+                                            }
+
+                                            return ProductVariant::query()
+                                                ->where('product_id', $productId)
+                                                ->where('is_active', true)
+                                                ->orderBy('sort_order')
+                                                ->pluck('name', 'id')
+                                                ->toArray();
+                                        })
+                                        ->live()
+                                        ->afterStateUpdated(function (Get $get, Set $set, ?int $state): void {
+                                            if ($state) {
+                                                $variant = ProductVariant::find($state);
+                                                if ($variant) {
+                                                    $set('price', $variant->price);
+                                                }
+                                            } else {
+                                                // Fall back to product price
+                                                $productId = $get('product_id');
+                                                if ($productId) {
+                                                    $product = Product::find($productId);
+                                                    if ($product) {
+                                                        $set('price', $product->price);
+                                                    }
+                                                }
+                                            }
+
+                                            self::recalculateTotal($get, $set);
+                                        })
+                                        ->visible(function (Get $get): bool {
+                                            $productId = $get('product_id');
+                                            if (! $productId) {
+                                                return false;
+                                            }
+
+                                            return ProductVariant::query()
+                                                ->where('product_id', $productId)
+                                                ->where('is_active', true)
+                                                ->exists();
+                                        })
+                                        ->columnSpan(2),
+
+                                    TextInput::make('quantity')
+                                        ->label('Qty')
+                                        ->numeric()
+                                        ->default(1)
+                                        ->minValue(1)
+                                        ->required()
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Get $get, Set $set): void {
+                                            self::recalculateTotal($get, $set);
+                                        })
+                                        ->columnSpan(2),
+
+                                    TextInput::make('price')
+                                        ->label('Price')
+                                        ->numeric()
+                                        ->prefix(self::getCurrencyPrefix())
+                                        ->suffix(self::getCurrencySuffix())
+                                        ->required()
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Get $get, Set $set): void {
+                                            self::recalculateTotal($get, $set);
+                                        })
+                                        ->columnSpan(2),
+
+                                    Placeholder::make('item_subtotal')
+                                        ->label('Subtotal')
+                                        ->content(function (Get $get): string {
+                                            $quantity = (int) ($get('quantity') ?? 1);
+                                            $price = (float) ($get('price') ?? 0);
+
+                                            return self::formatCurrency($quantity * $price);
+                                        })
+                                        ->columnSpan(2),
+                                ]),
+
+                                Textarea::make('notes')
+                                    ->label('Item Notes')
+                                    ->placeholder('Special instructions for this item...')
+                                    ->rows(1)
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(1)
+                            ->defaultItems(0)
+                            ->addActionLabel('Add Product')
+                            ->reorderable(false)
+                            ->collapsible()
+                            ->itemLabel(function (array $state): ?string {
+                                $productId = $state['product_id'] ?? null;
+                                $quantity = $state['quantity'] ?? 1;
+
+                                if (! $productId) {
+                                    return null;
+                                }
+
+                                $product = Product::find($productId);
+                                if (! $product) {
+                                    return null;
+                                }
+
+                                $variantId = $state['product_variant_id'] ?? null;
+                                $variantName = '';
+                                if ($variantId) {
+                                    $variant = ProductVariant::find($variantId);
+                                    if ($variant) {
+                                        $variantName = " ({$variant->name})";
+                                    }
+                                }
+
+                                return "{$product->name}{$variantName} x {$quantity}";
+                            }),
+
+                        Grid::make(2)->schema([
+                            Placeholder::make('items_count')
+                                ->label('Items Count')
+                                ->content(function (Get $get): string {
+                                    $items = $get('order_items') ?? [];
+                                    $totalItems = 0;
+
+                                    foreach ($items as $item) {
+                                        $totalItems += (int) ($item['quantity'] ?? 0);
+                                    }
+
+                                    return (string) $totalItems;
+                                }),
+
+                            Placeholder::make('calculated_total')
+                                ->label('Calculated Total')
+                                ->content(function (Get $get): string {
+                                    $items = $get('order_items') ?? [];
+                                    $total = 0.0;
+
+                                    foreach ($items as $item) {
+                                        $quantity = (int) ($item['quantity'] ?? 0);
+                                        $price = (float) ($item['price'] ?? 0);
+                                        $total += $quantity * $price;
+                                    }
+
+                                    return self::formatCurrency($total);
+                                }),
+                        ]),
+                    ])
+                    ->collapsed(fn ($record): bool => $record !== null),
 
                 Section::make('Order Status & Amount')
                     ->description('Manage order status and financial details')
@@ -240,5 +461,24 @@ final class OrderForm
                     ->visible(fn ($record): bool => $record !== null),
             ])
             ->columns(1);
+    }
+
+    /**
+     * Recalculate the total based on order items.
+     */
+    private static function recalculateTotal(Get $get, Set $set): void
+    {
+        // Navigate up from the repeater item to get order_items
+        $items = $get('../../order_items') ?? [];
+        $total = 0.0;
+
+        foreach ($items as $item) {
+            $quantity = (int) ($item['quantity'] ?? 0);
+            $price = (float) ($item['price'] ?? 0);
+            $total += $quantity * $price;
+        }
+
+        // Set the total field (navigate up to root level)
+        $set('../../total', $total);
     }
 }

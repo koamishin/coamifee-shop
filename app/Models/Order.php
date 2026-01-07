@@ -32,6 +32,8 @@ final class Order extends Model
         'inventory_processed',
         'table_number',
         'notes',
+        'created_at',
+        'updated_at',
     ];
 
     protected $casts = [
