@@ -19,8 +19,9 @@ final class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        // Create super_admin role if it doesn't exist
+        // Create roles if they don't exist
         Role::query()->firstOrCreate(['name' => 'super_admin'], ['guard_name' => 'web']);
+        Role::query()->firstOrCreate(['name' => 'cashier'], ['guard_name' => 'web']);
 
         $user = User::query()->firstOrCreate([
             'email' => 'test@example.com',
@@ -29,8 +30,8 @@ final class DatabaseSeeder extends Seeder
             'password' => Hash::make('password'),
         ]);
 
-        // Assign super_admin role to test user
-        $user->assignRole('super_admin');
+        // Assign both roles to super admin user
+        $user->syncRoles(['super_admin', 'cashier']);
 
         // Use the CoffeeShopSeeder for existing data
         $this->call(CoffeeShopSeeder::class);
