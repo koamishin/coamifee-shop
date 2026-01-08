@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\CashierLogin;
 use App\Filament\Pages\OrdersProcessing;
 use App\Filament\Pages\PosPage;
 use Filament\Http\Middleware\Authenticate;
@@ -30,7 +31,7 @@ final class CashierPanelProvider extends PanelProvider
         return $panel
             ->id('cashier')
             ->path('cashier')
-            ->login()
+            ->login(CashierLogin::class)
             ->colors([
                 'primary' => Color::Emerald,
             ])
