@@ -16,6 +16,7 @@ use App\Services\PosService;
 use BackedEnum;
 use Exception;
 use Filament\Actions\Action;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
@@ -26,6 +27,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\View;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Locked;
@@ -69,6 +71,8 @@ final class PosPage extends Page
     public ?int $selectedProductForVariant = null;
 
     public ?int $selectedVariantId = null;
+
+    public ?string $creationDate = null;
 
     #[Locked]
     public ?int $currentOrderId = null;
@@ -496,6 +500,8 @@ final class PosPage extends Page
             $paymentStatus = $this->paymentTiming === 'pay_now' ? 'paid' : 'unpaid';
             $paymentMethod = $this->paymentTiming === 'pay_now' ? $this->paymentMethod : null;
 
+            $creationDate = $this->creationDate ? Carbon::parse($this->creationDate) : now();
+
             // Prepare order data
             $orderData = [
                 'customer_id' => $this->customerId,
@@ -513,6 +519,8 @@ final class PosPage extends Page
                 'status' => 'pending',
                 'payment_status' => $paymentStatus,
                 'payment_method' => $paymentMethod,
+                'created_at' => $creationDate,
+                'updated_at' => $creationDate,
             ];
 
             // Add paid amount and change if paying now
@@ -563,6 +571,8 @@ final class PosPage extends Page
                     'discount_percentage' => $discountPercentage,
                     'discount_amount' => $discountAmount,
                     'discount' => $discountAmount, // Using the same value for legacy compatibility
+                    'created_at' => $creationDate,
+                    'updated_at' => $creationDate,
                 ];
 
                 Log::info('Creating Order Item with Discount', [
@@ -627,6 +637,7 @@ final class PosPage extends Page
         $this->discountType = null;
         $this->discountValue = null;
         $this->addOns = [];
+        $this->creationDate = now()->toDateTimeString();
         $this->calculateTotals();
     }
 
@@ -749,12 +760,20 @@ final class PosPage extends Page
                     'discountType' => $this->discountType,
                     'discountValue' => $this->discountValue,
                     'addOns' => $this->addOns,
+                    'creationDate' => $this->creationDate ?? now()->toDateTimeString(),
                 ])
                 ->schema([
                     Grid::make(2)
                         ->schema([
                             Section::make('Order')
                                 ->schema([
+                                    DateTimePicker::make('creationDate')
+                                        ->label('Order Date')
+                                        ->required()
+                                        ->seconds(false)
+                                        ->default(now())
+                                        ->columnSpanFull(),
+
                                     ToggleButtons::make('orderType')
                                         ->label('Order type')
                                         ->options([
@@ -1230,6 +1249,7 @@ final class PosPage extends Page
                     $this->discountType = filled($data['discountType'] ?? null) ? (string) $data['discountType'] : null;
                     $this->discountValue = filled($data['discountValue'] ?? null) ? (float) $data['discountValue'] : null;
                     $this->addOns = $data['addOns'] ?? [];
+                    $this->creationDate = $data['creationDate'] ?? now()->toDateTimeString();
 
                     if ($this->paymentTiming !== 'pay_now' || $this->paymentMethod !== 'cash') {
                         $this->paidAmount = 0.0;
