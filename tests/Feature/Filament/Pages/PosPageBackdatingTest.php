@@ -9,7 +9,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 use Livewire\Livewire;
 
 use function Pest\Laravel\actingAs;
@@ -30,7 +30,7 @@ beforeEach(function (): void {
 });
 
 it('can place order with a past date', function (): void {
-    $pastDate = Carbon::now()->subDays(5)->setSeconds(0)->toDateTimeString();
+    $pastDate = Date::now()->subDays(5)->setSeconds(0)->toDateTimeString();
 
     Livewire::test(PosPage::class)
         ->set('orderType', 'dine_in')
@@ -76,8 +76,8 @@ it('can place order with a past date', function (): void {
 
 it('defaults to current date if creation date is not provided', function (): void {
     // We need to freeze time to verify "now"
-    $now = Carbon::now()->setSeconds(0);
-    Carbon::setTestNow($now);
+    $now = Date::now()->setSeconds(0);
+    Date::setTestNow($now);
 
     Livewire::test(PosPage::class)
         ->set('orderType', 'dine_in')

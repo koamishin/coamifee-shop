@@ -9,6 +9,7 @@ use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
@@ -16,6 +17,9 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Validate;
 use UnitEnum;
 
+/**
+ * @property mixed $form
+ */
 final class ManageAdminPin extends Page implements HasForms
 {
     use HasPageShield;
@@ -46,7 +50,9 @@ final class ManageAdminPin extends Page implements HasForms
     {
         $this->validate();
 
-        Auth::user()->update([
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $user->update([
             'admin_pin' => $this->admin_pin,
         ]);
 

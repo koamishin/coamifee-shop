@@ -204,6 +204,7 @@ final class InventoryService
                 return false; // No inventory tracking means we can't deduct
             }
 
+            /** @var \App\Models\IngredientInventory $inventory */
             // Calculate required quantity (recipe quantity * number of products ordered)
             $requiredQuantity = $productIngredient->quantity_required * $quantity;
 

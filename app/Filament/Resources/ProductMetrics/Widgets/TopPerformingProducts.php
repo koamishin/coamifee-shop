@@ -34,6 +34,7 @@ final class TopPerformingProducts extends StatsOverviewWidget
         $stats = [];
 
         foreach ($topProducts as $index => $metric) {
+            /** @var \App\Models\ProductMetric&object{total_sales: float, total_ord: int} $metric */
             $position = $index + 1;
             $medal = match ($position) {
                 1 => '🥇',
@@ -49,7 +50,7 @@ final class TopPerformingProducts extends StatsOverviewWidget
                 default => 'gray',
             };
 
-            $productName = $metric->product?->name ?? 'Unknown Product';
+            $productName = $metric->product->name ?? 'Unknown Product';
             $sales = (float) $metric->total_sales;
             $orders = (int) $metric->total_ord;
             $aov = $orders > 0 ? $sales / $orders : 0;
@@ -67,8 +68,7 @@ final class TopPerformingProducts extends StatsOverviewWidget
             $medal = match ($position) {
                 1 => '🥇',
                 2 => '🥈',
-                3 => '🥉',
-                default => '🏆',
+                default => '🥉',
             };
 
             $stats[] = Stat::make("{$medal} #{$position} - No Data", $this->formatMoney(0))

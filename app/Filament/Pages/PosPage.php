@@ -12,8 +12,8 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\GeneralSettingsService;
 use App\Services\PosService;
-// use App\Models\Category; // Not used directly, using PosService instead
 use BackedEnum;
+// use App\Models\Category; // Not used directly, using PosService instead
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -27,7 +27,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\View;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Locked;
@@ -77,9 +77,9 @@ final class PosPage extends Page
     #[Locked]
     public ?int $currentOrderId = null;
 
-    public Collection $categories;
+    public \Illuminate\Support\Collection $categories;
 
-    public Collection $products;
+    public \Illuminate\Support\Collection $products;
 
     public Collection $customers;
 
@@ -98,8 +98,6 @@ final class PosPage extends Page
     protected static ?string $title = 'Point of Sale';
 
     protected string $view = 'filament.pages.pos-page';
-
-    private static ?string $model = Order::class;
 
     private PosService $posService;
 
@@ -167,10 +165,8 @@ final class PosPage extends Page
             $this->paymentTiming = 'pay_now';
         }
 
-        if ($this->orderType === 'delivery') {
-            if (! in_array($this->paymentMethod, ['grab', 'food_panda'], true)) {
-                $this->paymentMethod = 'grab';
-            }
+        if ($this->orderType === 'delivery' && ! in_array($this->paymentMethod, ['grab', 'food_panda'], true)) {
+            $this->paymentMethod = 'grab';
         }
     }
 
@@ -192,6 +188,7 @@ final class PosPage extends Page
             return;
         }
 
+        /** @var \App\Models\Product|null $product */
         $product = $this->products->firstWhere('id', $productId);
 
         if (! $product) {
@@ -217,6 +214,7 @@ final class PosPage extends Page
         $productPrice = $product->price;
 
         if ($variantId) {
+            /** @var \App\Models\ProductVariant|null $variant */
             $variant = $product->activeVariants()->find($variantId);
             if ($variant) {
                 $variantName = $variant->name;
@@ -228,7 +226,7 @@ final class PosPage extends Page
         if ($existingItemKey !== null) {
             $existingItem = $this->cartItems[$existingItemKey];
             // Check if we can increment quantity
-            $newQuantity = $existingItem['quantity'] + 1;
+            $newQuantity = (int) $existingItem['quantity'] + 1;
             $maxQuantity = $this->posService->getMaxProducibleQuantity($productId);
 
             if ($newQuantity > $maxQuantity) {
@@ -361,9 +359,7 @@ final class PosPage extends Page
                 $discountType = DiscountType::tryFrom($value);
                 if ($discountType) {
                     $percentage = $discountType->getPercentage();
-                    if ($percentage !== null) {
-                        $this->cartItems[$index]['discount_percentage'] = $percentage;
-                    }
+                    $this->cartItems[$index]['discount_percentage'] = $percentage;
                 }
             } else {
                 $this->cartItems[$index]['discount_percentage'] = 0;
@@ -500,7 +496,7 @@ final class PosPage extends Page
             $paymentStatus = $this->paymentTiming === 'pay_now' ? 'paid' : 'unpaid';
             $paymentMethod = $this->paymentTiming === 'pay_now' ? $this->paymentMethod : null;
 
-            $creationDate = $this->creationDate ? Carbon::parse($this->creationDate) : now();
+            $creationDate = $this->creationDate ? Date::parse($this->creationDate) : now();
 
             // Prepare order data
             $orderData = [
@@ -872,6 +868,7 @@ final class PosPage extends Page
                                             $options = ['walk_in' => 'Walk-in'];
 
                                             foreach ($this->customers->take(8) as $customer) {
+                                                /** @var \App\Models\Customer $customer */
                                                 $options[(string) $customer->id] = $customer->name;
                                             }
 
@@ -892,10 +889,11 @@ final class PosPage extends Page
                                             }
 
                                             $customerId = (int) $state;
+                                            /** @var \App\Models\Customer|null $customer */
                                             $customer = $this->customers->firstWhere('id', $customerId);
 
                                             $this->customerId = $customerId;
-                                            $this->customerName = $customer?->name ?? '';
+                                            $this->customerName = $customer ? $customer->name : '';
 
                                             $set('customerId', $customerId);
                                             $set('customerName', $this->customerName);

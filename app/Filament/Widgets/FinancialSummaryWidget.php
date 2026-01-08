@@ -88,6 +88,7 @@ final class FinancialSummaryWidget extends BaseWidget
         $chart = [];
         for ($i = 29; $i >= 0; $i--) {
             $date = now()->subDays($i)->format('Y-m-d');
+            /** @var (\App\Models\Order&object{sales: float, date: string})|null $dayData */
             $dayData = $data->firstWhere('date', $date);
             $chart[] = $dayData ? (float) $dayData->sales : 0;
         }

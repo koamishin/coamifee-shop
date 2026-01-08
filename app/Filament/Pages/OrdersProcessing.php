@@ -116,12 +116,12 @@ final class OrdersProcessing extends Page
             // Recalculate order total to ensure item discounts are reflected
             $this->recalculateOrderTotal($order);
 
-            $itemsWithDiscount = $order->items->filter(fn ($item): bool => ($item->discount_amount ?? 0) > 0 || ($item->discount_percentage ?? 0) > 0);
+            $itemsWithDiscount = $order->items->filter(fn (OrderItem $item): bool => ($item->discount_amount ?? 0) > 0 || ($item->discount_percentage ?? 0) > 0);
 
             if ($itemsWithDiscount->isNotEmpty()) {
                 Log::info('OrdersProcessing: Order with discounted items loaded', [
                     'order_id' => $order->id,
-                    'items_with_discount' => $itemsWithDiscount->map(fn ($item): array => [
+                    'items_with_discount' => $itemsWithDiscount->map(fn (OrderItem $item): array => [
                         'item_id' => $item->id,
                         'product_id' => $item->product_id,
                         'product_name' => $item->product->name ?? 'Unknown',
@@ -423,6 +423,7 @@ final class OrdersProcessing extends Page
                         Placeholder::make('order_details')
                             ->label('')
                             ->content(function ($get): HtmlString {
+                                /** @var Order $order */
                                 $order = Order::with(['items.product', 'items.variant'])->find($get('orderId'));
 
                                 // Build items HTML
@@ -615,7 +616,7 @@ final class OrdersProcessing extends Page
                                     </div>
                                 ");
                             })
-                            ->visible(fn ($get): bool => $get('paymentMethod') === 'cash' && ! $this->isTabletMode && (float) ($get('paidAmountDesktop') ?? 0) > 0),
+                            ->visible(fn ($get): bool => $get('paymentMethod') === 'cash' && ! $this->isTabletMode && ((float) ($get('paidAmountDesktop') ?? 0)) > 0),
                     ]),
             ])
             ->action(function (array $data): void {
@@ -956,9 +957,7 @@ final class OrdersProcessing extends Page
             $discountEnum = DiscountType::tryFrom($discountType);
             if ($discountEnum) {
                 $percentage = $discountEnum->getPercentage();
-                if ($percentage !== null) {
-                    $this->cartItems[$index]['discount_percentage'] = $percentage;
-                }
+                $this->cartItems[$index]['discount_percentage'] = $percentage;
             }
         } else {
             $this->cartItems[$index]['discount_percentage'] = 0;
@@ -1153,7 +1152,7 @@ final class OrdersProcessing extends Page
         $products = $this->posService->getFilteredProducts(
             $this->selectedCategoryId,
             $this->search
-        )->load('activeVariants');
+        );
 
         if ($products->isEmpty()) {
             return "<p class='col-span-2 text-xs text-gray-500 text-center py-4'>No products found</p>";

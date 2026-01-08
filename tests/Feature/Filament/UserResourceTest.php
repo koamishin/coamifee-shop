@@ -510,7 +510,7 @@ describe('User Bulk Actions', function (): void {
                 'role' => 'contributor',
             ]);
 
-        $users->each(fn ($user): Expectation => expect($user->refresh()->hasRole('contributor'))->toBeTrue());
+        $users->each(fn ($user) => expect($user->refresh()->hasRole('contributor'))->toBeTrue());
     });
 
     it('can bulk delete users', function (): void {
@@ -520,6 +520,6 @@ describe('User Bulk Actions', function (): void {
             ->selectTableRecords($users->pluck('id')->toArray())
             ->callAction(TestAction::make(DeleteAction::class)->table()->bulk());
 
-        $users->each(fn ($user): Expectation => expect(User::query()->find($user->id))->toBeNull());
+        $users->each(fn ($user) => expect(User::query()->find($user->id))->toBeNull());
     });
 });

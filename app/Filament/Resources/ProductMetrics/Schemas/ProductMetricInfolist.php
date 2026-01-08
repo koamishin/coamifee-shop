@@ -123,12 +123,12 @@ final class ProductMetricInfolist
                                 $sales = (float) $record->total_revenue;
 
                                 if ($orders === 0) {
-                                    return self::getMoneyConfig()['currency'].' 0.0';
+                                    return self::getMoneyConfig().' 0.0';
                                 }
 
                                 $aov = $sales / $orders;
 
-                                return self::getMoneyConfig()['currency'].' '.number_format($aov, 2);
+                                return self::getMoneyConfig().' '.number_format($aov, 2);
                             }),
 
                         TextEntry::make('revenue_per_day')
@@ -149,7 +149,7 @@ final class ProductMetricInfolist
 
                                 $salesPerDay = $sales / $days;
 
-                                return self::getMoneyConfig()['currency'].' '.number_format($salesPerDay, 2);
+                                return self::getMoneyConfig().' '.number_format($salesPerDay, 2);
                             }),
 
                         TextEntry::make('performance')

@@ -74,7 +74,9 @@ final class UnitConversionService
     {
         return match ($unit) {
             UnitType::GRAMS => $quantity,
+            UnitType::KILOGRAMS => $quantity * 1000,
             UnitType::MILLILITERS => $quantity,
+            UnitType::LITERS => $quantity * 1000,
             UnitType::PIECES => $quantity,
         };
     }
@@ -87,7 +89,9 @@ final class UnitConversionService
     {
         return match ($unit) {
             UnitType::GRAMS => $baseQuantity,
+            UnitType::KILOGRAMS => $baseQuantity / 1000,
             UnitType::MILLILITERS => $baseQuantity,
+            UnitType::LITERS => $baseQuantity / 1000,
             UnitType::PIECES => $baseQuantity,
         };
     }

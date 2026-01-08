@@ -113,8 +113,8 @@ final readonly class OrderModificationService
                     'quantity' => $newItem['quantity'],
                     'price' => $newItem['price'],
                     'discount_type' => $newItem['discount_type'] ?? null,
-                    'discount_percentage' => $newItem['discount_percentage'] ?? 0,
-                    'discount_amount' => $newItem['discount_amount'] ?? 0,
+                    'discount_percentage' => $newItem['discount_percentage'],
+                    'discount_amount' => $newItem['discount_amount'],
                     'is_served' => false, // New items are always unserved
                 ]);
             }
@@ -159,12 +159,11 @@ final readonly class OrderModificationService
     /**
      * Get available products that can be added to orders
      *
-     * @return Collection
+     * @return \Illuminate\Support\Collection
      */
     public function getAvailableProducts()
     {
         return $this->posService->getActiveCategories()
-            ->load('products.activeVariants')
             ->map(function ($category) {
                 $category->products = $category->products->filter(fn ($product): bool => $this->posService->canAddToCart($product->id));
 
@@ -197,11 +196,12 @@ final readonly class OrderModificationService
         $order->load('items');
 
         // Calculate new subtotal from all items
-        $newSubtotal = $order->items->sum(fn ($item): int|float => $item->price * $item->quantity);
+        $newSubtotal = $order->items->sum(fn (OrderItem $item): int|float => $item->price * $item->quantity);
 
         // Calculate item-level discount total
         $itemLevelDiscountTotal = 0.0;
         foreach ($order->items as $item) {
+            /** @var OrderItem $item */
             $itemLevelDiscountTotal += (float) ($item->discount_amount ?? 0);
         }
 
@@ -274,6 +274,7 @@ final readonly class OrderModificationService
         }
 
         foreach ($order->items as $orderItem) {
+            /** @var OrderItem $orderItem */
             $itemSubtotal = $orderItem->price * $orderItem->quantity;
             $itemDiscountAmount = $itemSubtotal * $discountPercentage;
             $discountedPrice = $orderItem->price - ($itemDiscountAmount / $orderItem->quantity);

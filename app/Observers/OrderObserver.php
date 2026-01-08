@@ -24,6 +24,8 @@ final readonly class OrderObserver
         $order->load('items.product');
 
         foreach ($order->items as $orderItem) {
+            /** @var \App\Models\OrderItem $orderItem */
+            /** @var \App\Models\Product $product */
             $product = $orderItem->product;
             $quantity = $orderItem->quantity;
 

@@ -198,9 +198,9 @@ final class PosApiController extends Controller
             ->get();
 
         return response()->json([
-            'recent_orders' => $recentOrders->map(fn ($order): array => [
+            'recent_orders' => $recentOrders->map(fn (Order $order): array => [
                 'id' => $order->id,
-                'order_number' => $order->order_number,
+                'order_number' => $order->order_number ?? 'N/A',
                 'customer_name' => $order->customer_name,
                 'total' => $order->total,
                 'created_at' => $order->created_at->format('M d, Y H:i'),

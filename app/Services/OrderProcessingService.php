@@ -46,11 +46,16 @@ final readonly class OrderProcessingService
         if (! $this->canFulfillOrder($order)) {
             Log::warning('Insufficient inventory for order', [
                 'order_id' => $order->id,
-                'order_items' => $order->items->map(fn ($item): array => [
-                    'product_id' => $item->product_id,
-                    'product_name' => $item->product?->name,
-                    'quantity' => $item->quantity,
-                ]),
+                'order_items' => $order->items->map(function (OrderItem $item): array {
+                    /** @var Product|null $product */
+                    $product = $item->product;
+
+                    return [
+                        'product_id' => $item->product_id,
+                        'product_name' => $product?->name,
+                        'quantity' => $item->quantity,
+                    ];
+                }),
             ]);
 
             return false;
@@ -65,7 +70,7 @@ final readonly class OrderProcessingService
             $this->updateOrderItemDiscountedPrices($order);
 
             foreach ($order->items as $orderItem) {
-                assert($orderItem instanceof OrderItem);
+                /** @var OrderItem $orderItem */
                 $this->processOrderItem($orderItem);
             }
 
@@ -97,13 +102,15 @@ final readonly class OrderProcessingService
         Log::info('Checking if order can be fulfilled', ['order_id' => $order->id]);
 
         foreach ($order->items as $orderItem) {
-            assert($orderItem instanceof OrderItem);
+            /** @var OrderItem $orderItem */
             if (! $this->canFulfillOrderItem($orderItem)) {
+                /** @var Product|null $product */
+                $product = $orderItem->product;
                 Log::warning('Order item cannot be fulfilled', [
                     'order_id' => $order->id,
                     'order_item_id' => $orderItem->id,
                     'product_id' => $orderItem->product_id,
-                    'product_name' => $orderItem->product?->name,
+                    'product_name' => $product?->name,
                 ]);
 
                 return false;
@@ -159,6 +166,7 @@ final readonly class OrderProcessingService
             ]);
 
             $inventory = $ingredient->inventory()->first();
+            /** @var \App\Models\IngredientInventory|null $inventory */
             if ($inventory) {
                 $success = $this->inventoryService->decreaseIngredientStock(
                     $ingredient,
@@ -300,7 +308,7 @@ final readonly class OrderProcessingService
         $discountPercentage = (float) $order->discount_value / 100;
 
         // Calculate total subtotal for proportional distribution
-        $totalSubtotal = $order->items->sum(fn ($item): int|float => $item->price * $item->quantity);
+        $totalSubtotal = $order->items->sum(fn (OrderItem $item): int|float => $item->price * $item->quantity);
 
         if ($totalSubtotal <= 0) {
             Log::warning('Total subtotal is zero, cannot calculate discounted prices', [
@@ -312,6 +320,7 @@ final readonly class OrderProcessingService
 
         // Update each item with its discounted price
         foreach ($order->items as $orderItem) {
+            /** @var OrderItem $orderItem */
             $itemSubtotal = $orderItem->price * $orderItem->quantity;
 
             // Calculate proportional discount for this item

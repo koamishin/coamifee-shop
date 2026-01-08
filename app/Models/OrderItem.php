@@ -46,7 +46,6 @@ final class OrderItem extends Model
     protected $appends = [
         'total_quantity',
         'total_revenue',
-        'subtotal',
     ];
 
     public function order(): BelongsTo

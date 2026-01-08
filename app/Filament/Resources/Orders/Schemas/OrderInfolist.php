@@ -22,9 +22,12 @@ final class OrderInfolist
 
     public static function configure(Schema $schema): Schema
     {
-        return $schema->components([
-            Flex::make([
-                Grid::make(1)
+         // Because the type is coming from a PHPDoc, you can turn off this
+         // check by setting treatPhpDocTypesAsCertain: false in your phpstan.neo
+         // n.
+         return $schema->components([
+             Flex::make([
+                 Grid::make(1)
                     ->schema([
                         Section::make('Order Information')
                             ->icon('heroicon-o-shopping-cart')
@@ -244,7 +247,7 @@ final class OrderInfolist
                                 ->icon('heroicon-o-tag')
                                 ->formatStateUsing(function ($record): string {
                                     if ($record->discount_amount > 0 && $record->discount_type && $record->discount_value) {
-                                        return ucfirst((string) $record->discount_type).' ('.$record->discount_value.'%) - '.self::getMoneyConfig()['currency'].' '.number_format($record->discount_amount, 2);
+                                        return ucfirst((string) $record->discount_type).' ('.$record->discount_value.'%) - '.self::getMoneyConfig().' '.number_format($record->discount_amount, 2);
                                     }
 
                                     return 'No discount';
@@ -274,13 +277,13 @@ final class OrderInfolist
                         ]),
 
                     TextEntry::make('total')
-                        ->label('GRAND TOTAL')
-                        ->money(self::getMoneyConfig())
-                        ->size(TextSize::Large)
-                        ->weight(FontWeight::Bold)
-                        ->color('success')
-                        ->icon('heroicon-o-currency-dollar')
-                        ->columnSpanFull(),
+                                ->label('GRAND TOTAL')
+                                ->money(self::getMoneyConfig())
+                                ->size(TextSize::Large)
+                                ->weight(FontWeight::Bold)
+                                ->color('success')
+                                ->icon('heroicon-o-currency-dollar')
+                                ->columnSpanFull(),
 
                     Grid::make(3)
                         ->schema([
@@ -352,7 +355,7 @@ final class OrderInfolist
                                 return '• '.$name.$price;
                             })->join("\n");
                         })
-                        ->visible(fn ($record): bool => $record->add_ons && is_array($record->add_ons) && count($record->add_ons) > 0),
+                        ->visible(fn ($record): bool => $record->add_ons && is_array($record->add_ons)),
                 ])
                 ->collapsible()
                 ->collapsed(),

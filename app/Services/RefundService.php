@@ -67,6 +67,7 @@ final class RefundService
         // Case 1: Order is paid with items in progress - refund all items
         if ($order->payment_status === 'paid' && $order->status === 'pending') {
             foreach ($order->items as $item) {
+                /** @var \App\Models\OrderItem $item */
                 $itemSubtotal = $item->price * $item->quantity;
                 $refundableItems[] = [
                     'order_item_id' => $item->id,
@@ -82,6 +83,7 @@ final class RefundService
         // Case 2: Partially paid - refund only unpaid items
         elseif ($order->payment_status === 'partially_paid') {
             foreach ($order->items as $item) {
+                /** @var \App\Models\OrderItem $item */
                 // Items added after initial payment are considered unpaid
                 $itemSubtotal = $item->price * $item->quantity;
                 $refundableItems[] = [
@@ -98,6 +100,7 @@ final class RefundService
         // Case 3: Completed but not fully paid
         elseif ($order->status === 'completed' && $order->payment_status !== 'paid') {
             foreach ($order->items as $item) {
+                /** @var \App\Models\OrderItem $item */
                 $itemSubtotal = $item->price * $item->quantity;
                 $refundableItems[] = [
                     'order_item_id' => $item->id,
@@ -123,6 +126,13 @@ final class RefundService
      */
     public function processRefund(Order $order, Authenticatable|User $user, string $pin): array
     {
+        if (! $user instanceof User) {
+            return [
+                'success' => false,
+                'message' => 'User is not authorized.',
+            ];
+        }
+
         // Verify the PIN
         if (! $this->verifyPin($user, $pin)) {
             return [
@@ -238,6 +248,7 @@ final class RefundService
         $inventoryService = resolve(InventoryService::class);
 
         foreach ($refundableItems as $item) {
+            /** @var \App\Models\OrderItem|null $orderItem */
             $orderItem = $order->items()->find($item['order_item_id']);
             if (! $orderItem) {
                 continue;
@@ -246,6 +257,7 @@ final class RefundService
                 continue;
             }
 
+            /** @var \App\Models\Product|null $product */
             $product = $orderItem->product;
             if (! $product) {
                 continue;
@@ -258,6 +270,7 @@ final class RefundService
 
             // Restore each ingredient based on quantity ordered
             foreach ($productIngredients as $productIngredient) {
+                /** @var \App\Models\ProductIngredient $productIngredient */
                 $ingredient = $productIngredient->ingredient;
                 if (! $ingredient) {
                     continue;

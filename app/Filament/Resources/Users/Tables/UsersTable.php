@@ -257,7 +257,10 @@ final class UsersTable
                         ->requiresConfirmation()
                         ->deselectRecordsAfterCompletion()
                         ->action(function (Collection $records): void {
-                            $records->each->update(['email_verified_at' => now()]);
+                            $records->each(function ($user) {
+                                $user->update(['email_verified_at' => now()]);
+                                return true;
+                            });
 
                             Notification::make()
                                 ->title('Emails verified')
@@ -279,7 +282,11 @@ final class UsersTable
                         ->requiresConfirmation()
                         ->deselectRecordsAfterCompletion()
                         ->action(function (Collection $records, array $data): void {
-                            $records->each->assignRole($data['role']);
+                            $records->each(function ($user) use ($data) {
+                                /** @var User $user */
+                                $user->assignRole($data['role']);
+                                return true;
+                            });
 
                             Notification::make()
                                 ->title('Role assigned')

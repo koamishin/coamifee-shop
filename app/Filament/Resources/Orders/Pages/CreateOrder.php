@@ -8,9 +8,9 @@ use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ProductVariant;
-use Carbon\Carbon;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Date;
 
 final class CreateOrder extends CreateRecord
 {
@@ -34,7 +34,7 @@ final class CreateOrder extends CreateRecord
     {
         // Handle backdated order date
         if (! empty($data['order_date'])) {
-            $orderDate = Carbon::parse($data['order_date']);
+            $orderDate = Date::parse($data['order_date']);
 
             $data['created_at'] = $orderDate;
             $data['updated_at'] = $orderDate;
@@ -76,7 +76,7 @@ final class CreateOrder extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         /** @var Order $order */
-        $order = self::getModel()::create($data);
+        $order = self::getModel()::query()->create($data);
 
         // Create order items
         $this->createOrderItems($order);
@@ -103,13 +103,13 @@ final class CreateOrder extends CreateRecord
             // Get variant name if variant is selected
             $variantName = null;
             if ($variantId) {
-                $variant = ProductVariant::find($variantId);
+                $variant = ProductVariant::query()->find($variantId);
                 if ($variant) {
                     $variantName = $variant->name;
                 }
             }
 
-            OrderItem::create([
+            OrderItem::query()->create([
                 'order_id' => $order->id,
                 'product_id' => $productId,
                 'product_variant_id' => $variantId,

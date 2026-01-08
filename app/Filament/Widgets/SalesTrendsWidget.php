@@ -44,6 +44,7 @@ final class SalesTrendsWidget extends ChartWidget
 
         while ($currentDate <= $endDate) {
             $dateStr = $currentDate->format('Y-m-d');
+            /** @var (\App\Models\Order&object{order_count: int, sales: float, date: string})|null $dayData */
             $dayData = $dataByDate->get($dateStr);
 
             $labels[] = $currentDate->format('M j');

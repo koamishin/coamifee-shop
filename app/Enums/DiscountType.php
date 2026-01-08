@@ -33,7 +33,7 @@ enum DiscountType: string
     /**
      * Get the discount percentage for the type
      */
-    public function getPercentage(): ?float
+    public function getPercentage(): float
     {
         return match ($this) {
             self::PWD => 20.0,

@@ -102,6 +102,7 @@ final class BestSellers extends Page
             ->map(function (Collection $items) {
                 $firstItem = $items->first();
 
+                /** @var \App\Models\OrderItem $firstItem */
                 return (object) [
                     'product' => $firstItem->product,
                     'total_quantity' => $items->sum('quantity'),
@@ -115,6 +116,7 @@ final class BestSellers extends Page
         $categoryProducts = $productSales
             ->groupBy(fn ($item) => $item->product->category->name ?? 'Uncategorized')
             ->filter(fn ($products): bool => $products->count() >= 1)
+            /** @phpstan-ignore argument.type, return.type */
             ->map(fn ($products) => $products->take(3)->values());
 
         return $categoryProducts;

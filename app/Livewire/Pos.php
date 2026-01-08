@@ -7,9 +7,11 @@ namespace App\Livewire;
 use AllowDynamicProperties;
 use App\Actions\PosCheckoutAction;
 use App\Models\Customer;
+use App\Models\Ingredient;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductIngredient;
 use App\Services\GeneralSettingsService;
 use App\Services\PosService;
 use Illuminate\Support\Facades\Log;
@@ -834,7 +836,7 @@ final class Pos extends Component
                 return false;
             }
 
-            /** @var Ingredient $ingredient */
+            /** @var \App\Models\IngredientInventory|null $inventory */
             $inventory = $ingredient->inventory;
             if (! $inventory) {
                 return false;

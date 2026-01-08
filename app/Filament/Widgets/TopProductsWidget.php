@@ -35,6 +35,7 @@ final class TopProductsWidget extends ChartWidget
         $revenues = [];
 
         foreach ($topProducts as $item) {
+            /** @var \App\Models\OrderItem&object{qty_sold: int, revenue: float} $item */
             $labels[] = $item->product->getAttribute('name');
             $quantities[] = (int) $item->qty_sold;
             $revenues[] = (float) $item->revenue;

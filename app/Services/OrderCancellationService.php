@@ -49,6 +49,13 @@ final class OrderCancellationService
      */
     public function processCancellation(Order $order, Authenticatable|User $user, string $pin, ?string $reason = null): array
     {
+        if (! $user instanceof User) {
+            return [
+                'success' => false,
+                'message' => 'User is not authorized.',
+            ];
+        }
+
         // Verify the PIN
         if (! $this->verifyPin($user, $pin)) {
             return [
