@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
-use App\Filament\Pages\Auth\Login;
+use App\Filament\Pages\Auth\AdminLogin;
 use App\Filament\Widgets\CoffeeShopOverviewWidget;
 use App\Filament\Widgets\LowStockAlertWidget;
 use App\Filament\Widgets\OrderStatusWidget;
@@ -37,7 +37,7 @@ final class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login(Login::class)
+            ->login(AdminLogin::class)
             ->topbar(false)
             ->spa(true)
             ->sidebarCollapsibleOnDesktop()
