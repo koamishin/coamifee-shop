@@ -26,6 +26,8 @@ final class OrderItem extends Model
         'discount',
         'notes',
         'is_served',
+        'created_at',
+        'updated_at',
     ];
 
     protected $casts = [
