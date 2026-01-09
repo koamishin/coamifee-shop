@@ -47,6 +47,16 @@ fi
 
 echo "Running Laravel setup..."
 
+if [ "${DB_CONNECTION:-sqlite}" = "sqlite" ]; then
+    DB_FILE="${DB_DATABASE:-/var/www/html/database/database.sqlite}"
+    if [ "$DB_FILE" != ":memory:" ] && [ ! -f "$DB_FILE" ]; then
+        echo "Creating SQLite database at $DB_FILE"
+        mkdir -p "$(dirname "$DB_FILE")"
+        touch "$DB_FILE"
+        chown www-data:www-data "$DB_FILE"
+    fi
+fi
+
 wait_for_database() {
   if [ -z "${DB_CONNECTION:-}" ]; then
     return 0
@@ -136,7 +146,7 @@ if [ -n "${SHIELD_PID:-}" ]; then
 fi
 
 echo ""
-echo "Coamifee is running"
+echo "${APP_NAME:-Coamifee} is running"
 if [ "$CREATE_ADMIN_USER" = "true" ]; then
   echo "User: $ADMIN_NAME"
   echo "Email: $ADMIN_EMAIL"

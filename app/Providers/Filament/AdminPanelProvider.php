@@ -44,6 +44,9 @@ final class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
+            ->brandLogo(fn () => view('filament.brands.admin-logo'))
+            ->brandLogoHeight('3rem')
+            ->favicon(asset('images/admin-favicon.svg'))
             ->discoverResources(
                 in: app_path('Filament/Resources'),
                 for: "App\Filament\Resources",

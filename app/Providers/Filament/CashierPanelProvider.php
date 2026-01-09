@@ -35,6 +35,9 @@ final class CashierPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Emerald,
             ])
+            ->brandLogo(fn () => view('filament.brands.cashier-logo'))
+            ->brandLogoHeight('3rem')
+            ->favicon(asset('images/cashier-favicon.svg'))
             ->topNavigation()
             ->discoverResources(in: app_path('Filament/Cashier/Resources'), for: 'App\Filament\Cashier\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
