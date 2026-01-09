@@ -1,0 +1,12 @@
+<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Tablet Body -->
+    <rect x="8" y="4" width="32" height="34" rx="4" stroke="#059669" stroke-width="4" stroke-linejoin="round"/>
+    <!-- Stand Base -->
+    <path d="M12 44H36" stroke="#059669" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Legs -->
+    <path d="M34 38L40 44" stroke="#059669" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M14 38L8 44" stroke="#059669" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Screen Details -->
+    <path d="M14 12H34" stroke="#059669" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="32" cy="28" r="4" stroke="#059669" stroke-width="4"/>
+</svg>
