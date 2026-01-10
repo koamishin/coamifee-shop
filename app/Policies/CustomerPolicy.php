@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\Customer;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Foundation\Auth\User as AuthUser;
 
@@ -16,7 +17,7 @@ final class CustomerPolicy
         return $authUser->can('ViewAny:Customer');
     }
 
-    public function view(AuthUser $authUser): bool
+    public function view(AuthUser $authUser, Customer $customer): bool
     {
         return $authUser->can('View:Customer');
     }
@@ -26,22 +27,22 @@ final class CustomerPolicy
         return $authUser->can('Create:Customer');
     }
 
-    public function update(AuthUser $authUser): bool
+    public function update(AuthUser $authUser, Customer $customer): bool
     {
         return $authUser->can('Update:Customer');
     }
 
-    public function delete(AuthUser $authUser): bool
+    public function delete(AuthUser $authUser, Customer $customer): bool
     {
         return $authUser->can('Delete:Customer');
     }
 
-    public function restore(AuthUser $authUser): bool
+    public function restore(AuthUser $authUser, Customer $customer): bool
     {
         return $authUser->can('Restore:Customer');
     }
 
-    public function forceDelete(AuthUser $authUser): bool
+    public function forceDelete(AuthUser $authUser, Customer $customer): bool
     {
         return $authUser->can('ForceDelete:Customer');
     }
@@ -56,7 +57,7 @@ final class CustomerPolicy
         return $authUser->can('RestoreAny:Customer');
     }
 
-    public function replicate(AuthUser $authUser): bool
+    public function replicate(AuthUser $authUser, Customer $customer): bool
     {
         return $authUser->can('Replicate:Customer');
     }
