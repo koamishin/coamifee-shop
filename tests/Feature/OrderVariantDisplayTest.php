@@ -40,7 +40,7 @@ test('order items store and display variant information', function (): void {
 
     $order = Order::factory()->create([
         'customer_name' => 'Test Customer',
-        'order_type' => 'dine_in',
+        'order_type' => 'dine-in',
         'table_number' => 'Table 1',
         'subtotal' => 188,
         'total' => 188,

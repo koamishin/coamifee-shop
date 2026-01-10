@@ -44,7 +44,7 @@ final class PosPage extends Page
 
     public string $customerName = '';
 
-    public string $orderType = 'dine_in';
+    public string $orderType = 'dine-in';
 
     public ?string $tableNumber = null;
 
@@ -157,11 +157,11 @@ final class PosPage extends Page
     {
         $this->orderType = $orderType;
 
-        if ($this->orderType !== 'dine_in') {
+        if ($this->orderType !== 'dine-in') {
             $this->tableNumber = null;
         }
 
-        if ($this->orderType !== 'dine_in') {
+        if ($this->orderType !== 'dine-in') {
             $this->paymentTiming = 'pay_now';
         }
 
@@ -444,7 +444,7 @@ final class PosPage extends Page
             return;
         }
 
-        if ($this->orderType === 'dine_in' && blank($this->tableNumber)) {
+        if ($this->orderType === 'dine-in' && blank($this->tableNumber)) {
             Notification::make()
                 ->warning()
                 ->title('Table is required')
@@ -624,7 +624,7 @@ final class PosPage extends Page
         $this->cartItems = [];
         $this->customerId = null;
         $this->customerName = '';
-        $this->orderType = 'dine_in';
+        $this->orderType = 'dine-in';
         $this->tableNumber = null;
         $this->notes = '';
         $this->paymentTiming = 'pay_later';
@@ -773,8 +773,8 @@ final class PosPage extends Page
                                     ToggleButtons::make('orderType')
                                         ->label('Order type')
                                         ->options([
-                                            'dine_in' => 'Dine In',
-                                            'takeaway' => 'Takeaway',
+                                            'dine-in' => 'Dine In',
+                                            'takeout' => 'Takeout',
                                             'delivery' => 'Delivery',
                                         ])
                                         ->grouped()
@@ -787,7 +787,7 @@ final class PosPage extends Page
 
                                             $this->setOrderType($state);
 
-                                            if ($state !== 'dine_in') {
+                                            if ($state !== 'dine-in') {
                                                 $set('tableNumber', null);
                                                 $set('paymentTiming', 'pay_now');
                                             }
@@ -822,8 +822,8 @@ final class PosPage extends Page
                                         ->label('Table (dine-in)')
                                         ->options(TableNumber::getOptions())
                                         ->columns(5)
-                                        ->required(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine_in')
-                                        ->visible(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine_in')
+                                        ->required(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine-in')
+                                        ->visible(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine-in')
                                         ->live()
                                         ->afterStateUpdated(function (?string $state): void {
                                             if ($state === null) {
@@ -868,7 +868,7 @@ final class PosPage extends Page
                                             $options = ['walk_in' => 'Walk-in'];
 
                                             foreach ($this->customers->take(8) as $customer) {
-                                                /** @var \App\Models\Customer $customer */
+                                                /** @var Customer $customer */
                                                 $options[(string) $customer->id] = $customer->name;
                                             }
 
@@ -889,7 +889,7 @@ final class PosPage extends Page
                                             }
 
                                             $customerId = (int) $state;
-                                            /** @var \App\Models\Customer|null $customer */
+                                            /** @var Customer|null $customer */
                                             $customer = $this->customers->firstWhere('id', $customerId);
 
                                             $this->customerId = $customerId;
@@ -980,9 +980,9 @@ final class PosPage extends Page
                                             'pay_now' => 'Pay now',
                                         ])
                                         ->grouped()
-                                        ->required(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine_in')
-                                        ->default(fn ($get): string => ($get('orderType') ?? $this->orderType) === 'dine_in' ? 'pay_later' : 'pay_now')
-                                        ->visible(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine_in')
+                                        ->required(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine-in')
+                                        ->default(fn ($get): string => ($get('orderType') ?? $this->orderType) === 'dine-in' ? 'pay_later' : 'pay_now')
+                                        ->visible(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine-in')
                                         ->live()
                                         ->afterStateUpdated(function (?string $state): void {
                                             if ($state === null) {
@@ -1235,7 +1235,7 @@ final class PosPage extends Page
                     $this->notes = (string) ($data['notes'] ?? '');
 
                     $this->paymentTiming = match ($this->orderType) {
-                        'dine_in' => (string) ($data['paymentTiming'] ?? $this->paymentTiming ?? 'pay_later'),
+                        'dine-in' => (string) ($data['paymentTiming'] ?? $this->paymentTiming ?? 'pay_later'),
                         default => 'pay_now',
                     };
 

@@ -59,7 +59,7 @@ test('POS creates order with item-level discounts that display in OrdersProcessi
     // Create order similar to how PosPage does it
     $order = Order::query()->create([
         'customer_name' => 'Test Customer',
-        'order_type' => 'dine_in',
+        'order_type' => 'dine-in',
         'payment_method' => 'cash',
         'payment_status' => 'unpaid',
         'subtotal' => 250.00,

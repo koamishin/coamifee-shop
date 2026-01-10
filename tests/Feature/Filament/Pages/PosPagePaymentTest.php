@@ -31,7 +31,7 @@ it('can place order with pay now and cash payment', function (): void {
     Livewire::test(PosPage::class)
         ->set('isTabletMode', true)
         ->set('paidAmount', 250.00)
-        ->set('orderType', 'dine_in')
+        ->set('orderType', 'dine-in')
         ->set('cartItems', [
             [
                 'product_id' => $this->product->id,
@@ -68,7 +68,7 @@ it('can place order with pay now and cash payment', function (): void {
 
 it('can place order with pay now and GCash payment', function (): void {
     Livewire::test(PosPage::class)
-        ->set('orderType', 'dine_in')
+        ->set('orderType', 'dine-in')
         ->set('cartItems', [
             [
                 'product_id' => $this->product->id,
@@ -103,7 +103,7 @@ it('can place order with pay now and GCash payment', function (): void {
 
 it('can place order with pay now and Maya payment', function (): void {
     Livewire::test(PosPage::class)
-        ->set('orderType', 'dine_in')
+        ->set('orderType', 'dine-in')
         ->set('cartItems', [
             [
                 'product_id' => $this->product->id,
@@ -138,7 +138,7 @@ it('can place order with pay now and Maya payment', function (): void {
 
 it('can place order with pay later', function (): void {
     Livewire::test(PosPage::class)
-        ->set('orderType', 'dine_in')
+        ->set('orderType', 'dine-in')
         ->set('cartItems', [
             [
                 'product_id' => $this->product->id,
@@ -154,7 +154,7 @@ it('can place order with pay later', function (): void {
         ->mountAction('placeOrder')
         ->fillForm([
             'tableNumber' => 'table_3',
-            'orderType' => 'dine_in',
+            'orderType' => 'dine-in',
             'paymentTiming' => 'pay_later',
         ])
         ->callMountedAction()
@@ -175,7 +175,7 @@ it('can place order with discount and pay now', function (): void {
     Livewire::test(PosPage::class)
         ->set('isTabletMode', true)
         ->set('paidAmount', 200.00)
-        ->set('orderType', 'dine_in')
+        ->set('orderType', 'dine-in')
         ->set('cartItems', [
             [
                 'product_id' => $this->product->id,
@@ -287,7 +287,7 @@ it('correctly calculates change with paid amount 50 and total 45', function (): 
     Livewire::test(PosPage::class)
         ->set('isTabletMode', true)
         ->set('paidAmount', 50.00)
-        ->set('orderType', 'dine_in')
+        ->set('orderType', 'dine-in')
         ->set('cartItems', [
             [
                 'product_id' => $this->product->id,
