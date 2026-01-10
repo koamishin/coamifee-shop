@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Pages\Dashboard;
 use App\Models\Order;
 use App\Services\GeneralSettingsService;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Facades\Date;
+use Filament\Widgets\Concerns\InteractsWithPageFilters;
 
 final class SalesTrendsWidget extends ChartWidget
 {
+    use InteractsWithPageFilters;
+
     protected static ?int $sort = 2;
 
     protected int|string|array $columnSpan = 'full';
@@ -19,14 +22,23 @@ final class SalesTrendsWidget extends ChartWidget
 
     public function getHeading(): string
     {
-        return 'Sales Trends (Last 7 Days)';
+        $filters = $this->pageFilters ?? [];
+        $periodLabel = Dashboard::getPeriodLabel($filters);
+
+        return "Sales Trends ({$periodLabel})";
     }
 
     protected function getData(): array
     {
+        $filters = $this->pageFilters ?? [];
+        $dateRange = Dashboard::getDateRangeFromFilters($filters);
+
+        $startDate = $dateRange['start'];
+        $endDate = $dateRange['end'];
+
         $data = Order::query()->selectRaw('date(created_at) as date, COUNT(*) as order_count, SUM(total) as sales')
-            ->where('created_at', '>=', Date::now()->subDays(6)->startOfDay())
-            ->where('created_at', '<=', Date::now()->endOfDay())
+            ->where('created_at', '>=', $startDate)
+            ->where('created_at', '<=', $endDate)
             ->groupByRaw('date(created_at)')
             ->orderBy('date', 'asc')
             ->get();
@@ -35,16 +47,13 @@ final class SalesTrendsWidget extends ChartWidget
         $ordersData = [];
         $salesData = [];
 
-        // Fill in missing days with zeros
-        $startDate = Date::now()->subDays(6)->startOfDay();
-        $endDate = Date::now()->endOfDay();
+        // Fill in all days with data (including zeros for days without orders)
         $currentDate = $startDate->copy();
-
         $dataByDate = $data->keyBy('date');
 
         while ($currentDate <= $endDate) {
             $dateStr = $currentDate->format('Y-m-d');
-            /** @var (\App\Models\Order&object{order_count: int, sales: float, date: string})|null $dayData */
+            /** @var (Order&object{order_count: int, sales: float, date: string})|null $dayData */
             $dayData = $dataByDate->get($dateStr);
 
             $labels[] = $currentDate->format('M j');

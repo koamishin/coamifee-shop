@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\IngredientInventory;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Foundation\Auth\User as AuthUser;
 
@@ -16,7 +17,7 @@ final class IngredientInventoryPolicy
         return $authUser->can('ViewAny:IngredientInventory');
     }
 
-    public function view(AuthUser $authUser): bool
+    public function view(AuthUser $authUser, IngredientInventory $ingredientInventory): bool
     {
         return $authUser->can('View:IngredientInventory');
     }
@@ -26,22 +27,22 @@ final class IngredientInventoryPolicy
         return $authUser->can('Create:IngredientInventory');
     }
 
-    public function update(AuthUser $authUser): bool
+    public function update(AuthUser $authUser, IngredientInventory $ingredientInventory): bool
     {
         return $authUser->can('Update:IngredientInventory');
     }
 
-    public function delete(AuthUser $authUser): bool
+    public function delete(AuthUser $authUser, IngredientInventory $ingredientInventory): bool
     {
         return $authUser->can('Delete:IngredientInventory');
     }
 
-    public function restore(AuthUser $authUser): bool
+    public function restore(AuthUser $authUser, IngredientInventory $ingredientInventory): bool
     {
         return $authUser->can('Restore:IngredientInventory');
     }
 
-    public function forceDelete(AuthUser $authUser): bool
+    public function forceDelete(AuthUser $authUser, IngredientInventory $ingredientInventory): bool
     {
         return $authUser->can('ForceDelete:IngredientInventory');
     }
@@ -56,7 +57,7 @@ final class IngredientInventoryPolicy
         return $authUser->can('RestoreAny:IngredientInventory');
     }
 
-    public function replicate(AuthUser $authUser): bool
+    public function replicate(AuthUser $authUser, IngredientInventory $ingredientInventory): bool
     {
         return $authUser->can('Replicate:IngredientInventory');
     }
