@@ -33,7 +33,7 @@ it('can place order with a past date', function (): void {
     $pastDate = Date::now()->subDays(5)->setSeconds(0)->toDateTimeString();
 
     Livewire::test(PosPage::class)
-        ->set('orderType', 'dine_in')
+        ->set('orderType', 'dine-in')
         ->set('cartItems', [
             [
                 'product_id' => $this->product->id,
@@ -80,7 +80,7 @@ it('defaults to current date if creation date is not provided', function (): voi
     Date::setTestNow($now);
 
     Livewire::test(PosPage::class)
-        ->set('orderType', 'dine_in')
+        ->set('orderType', 'dine-in')
         ->set('cartItems', [
             [
                 'product_id' => $this->product->id,

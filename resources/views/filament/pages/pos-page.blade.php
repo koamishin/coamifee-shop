@@ -206,19 +206,19 @@
                     <div class="grid grid-cols-3 gap-2">
                         <button
                             type="button"
-                            wire:click="setOrderType('dine_in')"
-                            class="flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all touch-manipulation {{ $orderType === 'dine_in' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 hover:border-gray-300 text-gray-700' }}"
+                            wire:click="setOrderType('dine-in')"
+                            class="flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all touch-manipulation {{ $orderType === 'dine-in' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 hover:border-gray-300 text-gray-700' }}"
                         >
                             <span class="text-2xl">🍽️</span>
                             <span class="mt-1 text-sm font-bold">Dine In</span>
                         </button>
                         <button
                             type="button"
-                            wire:click="setOrderType('takeaway')"
-                            class="flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all touch-manipulation {{ $orderType === 'takeaway' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 hover:border-gray-300 text-gray-700' }}"
+                            wire:click="setOrderType('takeout')"
+                            class="flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all touch-manipulation {{ $orderType === 'takeout' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 hover:border-gray-300 text-gray-700' }}"
                         >
                             <span class="text-2xl">🥡</span>
-                            <span class="mt-1 text-sm font-bold">Takeaway</span>
+                            <span class="mt-1 text-sm font-bold">Takeout</span>
                         </button>
                         <button
                             type="button"
@@ -232,7 +232,7 @@
                 </div>
 
                 {{-- Table selector (tap to select) --}}
-                @if($orderType === 'dine_in')
+                @if($orderType === 'dine-in')
                     <div class="bg-white rounded-xl shadow-sm border border-orange-100 p-3">
                         <div class="flex items-center justify-between mb-3">
                             <div class="text-sm font-bold text-gray-900">Table</div>
@@ -360,7 +360,7 @@
                 {{-- Checkout sticky footer --}}
                 @if(!empty($this->cartItems))
                     <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg border-2 border-orange-400 p-3">
-                        @if($orderType === 'dine_in' && empty($tableNumber))
+                        @if($orderType === 'dine-in' && empty($tableNumber))
                             <div class="mb-3 bg-white/20 rounded-xl p-3 text-white">
                                 <div class="text-sm font-bold">Select a table to continue</div>
                                 <div class="text-xs text-orange-100">Dine-in orders require a table number.</div>
@@ -379,7 +379,7 @@
                             wire:click="mountAction('placeOrder')"
                             wire:loading.attr="disabled"
                             wire:target="mountAction"
-                            {{ $orderType === 'dine_in' && empty($tableNumber) ? 'disabled' : '' }}
+                            {{ $orderType === 'dine-in' && empty($tableNumber) ? 'disabled' : '' }}
                             class="mt-3 w-full bg-white text-orange-700 hover:bg-orange-50 font-extrabold py-4 rounded-xl transition-all flex items-center justify-center text-base shadow-lg touch-manipulation active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             <x-filament::icon icon="heroicon-o-shopping-bag" class="w-6 h-6 mr-2" />
