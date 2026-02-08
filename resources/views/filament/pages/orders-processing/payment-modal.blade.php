@@ -1,9 +1,3 @@
-@php
-    $order = $this->getMountedActionForm()->getModel();
-    // If the model isn't available directly (sometimes it's just an array in actions), we might need to fetch it or use what's passed
-    // In the action definition, we can pass 'order' => $order to viewData
-    // Let's assume $order is passed in viewData or we can access it via the wire form state if needed, but viewData is better for read-only display
-@endphp
 
 <div x-data="{
     paymentMethod: @entangle('mountedActionsData.0.paymentMethod'),
