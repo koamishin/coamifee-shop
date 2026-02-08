@@ -22,13 +22,10 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
-use JaOcero\RadioDeck\Forms\Components\RadioDeck;
 
 final class OrdersProcessing extends Page
 {
@@ -327,7 +324,9 @@ final class OrdersProcessing extends Page
     {
         return Action::make('collectPayment')
             ->modalHeading(fn (array $arguments): string => 'Collect Payment - Order #'.$arguments['orderId'])
-            ->modalWidth('lg')
+            ->modalWidth('6xl')
+            ->modalSubmitAction(false)
+            ->modalCancelAction(false)
             ->fillForm(function (array $arguments): array {
                 $order = Order::with('items')->find($arguments['orderId']);
 
@@ -337,288 +336,37 @@ final class OrdersProcessing extends Page
                 // Refresh after update to get latest value
                 $order = $order->fresh();
 
+                $isDelivery = $order->order_type === 'delivery';
+
                 return [
                     'orderId' => $arguments['orderId'],
-                    'total' => (float) $order->total,
+                    'paymentMethod' => $isDelivery ? 'grab' : 'cash',
+                    'paidAmount' => 0,
                 ];
             })
             ->form([
                 Hidden::make('orderId'),
-
-                RadioDeck::make('paymentMethod')
-                    ->label('Payment Method')
-                    ->options(function ($get): array {
-                        $order = Order::query()->find($get('orderId'));
-
-                        if ($order && $order->order_type === 'delivery') {
-                            // Delivery orders show delivery partners
-                            return [
-                                'grab' => 'Grab',
-                                'food_panda' => 'Food Panda',
-                            ];
-                        }
-
-                        // Dine In / Takeaway show standard payment methods
-                        return [
-                            'cash' => 'Cash',
-                            'gcash' => 'Gcash',
-                            'maya' => 'Maya',
-                            'bank_transfer' => 'Bank Transfer',
-                        ];
-                    })
-                    ->descriptions(function ($get): array {
-                        $order = Order::query()->find($get('orderId'));
-
-                        if ($order && $order->order_type === 'delivery') {
-                            return [
-                                'grab' => 'Payment via Grab',
-                                'food_panda' => 'Payment via Food Panda',
-                            ];
-                        }
-
-                        return [
-                            'cash' => 'Cash payment',
-                            'gcash' => 'Gcash mobile payment',
-                            'maya' => 'Maya mobile payment',
-                            'bank_transfer' => 'Bank transfer',
-                        ];
-                    })
-                    ->icons(function ($get): array {
-                        $order = Order::query()->find($get('orderId'));
-
-                        if ($order && $order->order_type === 'delivery') {
-                            return [
-                                'grab' => 'heroicon-o-device-phone-mobile',
-                                'food_panda' => 'heroicon-o-device-phone-mobile',
-                            ];
-                        }
-
-                        return [
-                            'cash' => 'heroicon-o-banknotes',
-                            'gcash' => 'heroicon-o-device-phone-mobile',
-                            'maya' => 'heroicon-o-device-phone-mobile',
-                            'bank_transfer' => 'heroicon-o-building-office',
-                        ];
-                    })
-                    ->default(function ($get): string {
-                        $order = Order::query()->find($get('orderId'));
-
-                        return ($order && $order->order_type === 'delivery') ? 'grab' : 'cash';
-                    })
-                    ->required()
-                    ->reactive()
-                    ->columns(function ($get): int {
-                        $order = Order::query()->find($get('orderId'));
-                        if ($order && $order->order_type === 'delivery') {
-                            return 2; // Show delivery partners in 2 columns
-                        }
-
-                        return 2; // Show standard payment methods in 2x2 grid
-
-                    })
-                    ->color('primary'),
-
-                Section::make('Order Summary')
-                    ->schema([
-                        Placeholder::make('order_details')
-                            ->label('')
-                            ->content(function ($get): HtmlString {
-                                /** @var Order $order */
-                                $order = Order::with(['items.product', 'items.variant'])->find($get('orderId'));
-
-                                // Build items HTML
-                                $itemsHtml = '';
-                                $itemLevelDiscountTotal = 0.0;
-
-                                foreach ($order->items as $item) {
-                                    $itemSubtotal = (float) $item->subtotal;
-                                    $itemDiscountAmount = (float) ($item->discount_amount ?? $item->discount ?? 0);
-                                    $itemDiscountPercentage = (float) ($item->discount_percentage ?? 0);
-                                    $itemFinalPrice = $itemSubtotal - $itemDiscountAmount;
-                                    $itemLevelDiscountTotal += $itemDiscountAmount;
-
-                                    $productName = $item->product->name ?? 'Unknown Product';
-                                    $variantName = $item->variant_name ? " ({$item->variant_name})" : '';
-                                    $quantity = $item->quantity;
-
-                                    $priceFormatted = $this->formatCurrency($itemSubtotal);
-                                    $finalPriceFormatted = $this->formatCurrency($itemFinalPrice);
-
-                                    $hasDiscount = $itemDiscountAmount > 0;
-
-                                    if ($hasDiscount) {
-                                        $discountBadge = "<span class='inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700'>-{$itemDiscountPercentage}%</span>";
-                                        $itemsHtml .= "
-                                            <div class='flex justify-between items-start py-2 border-b border-gray-200'>
-                                                <div class='flex-1'>
-                                                    <div class='flex items-center gap-2'>
-                                                        <span class='font-medium'>{$quantity}x {$productName}{$variantName}</span>
-                                                        {$discountBadge}
-                                                    </div>
-                                                    <div class='text-xs text-gray-500 mt-1'>
-                                                        <span class='line-through'>{$priceFormatted}</span>
-                                                        <span class='ml-2 text-red-600 font-semibold'>→ {$finalPriceFormatted}</span>
-                                                    </div>
-                                                </div>
-                                                <div class='text-right'>
-                                                    <div class='font-bold text-green-600'>{$finalPriceFormatted}</div>
-                                                    <div class='text-xs text-red-600'>-{$this->formatCurrency($itemDiscountAmount)}</div>
-                                                </div>
-                                            </div>
-                                        ";
-                                    } else {
-                                        $itemsHtml .= "
-                                            <div class='flex justify-between items-center py-2 border-b border-gray-200'>
-                                                <div class='flex-1'>
-                                                    <span class='font-medium'>{$quantity}x {$productName}{$variantName}</span>
-                                                    <div class='text-xs text-gray-500 mt-1'>{$priceFormatted}</div>
-                                                </div>
-                                                <div class='font-semibold'>{$finalPriceFormatted}</div>
-                                            </div>
-                                        ";
-                                    }
-                                }
-
-                                $originalSubtotal = (float) $order->subtotal;
-                                $subtotalAfterItemDiscounts = $originalSubtotal - $itemLevelDiscountTotal;
-                                $orderLevelDiscount = (float) ($order->discount_amount ?? 0);
-                                $existingAddOns = (float) ($order->add_ons_total ?? 0);
-
-                                // Calculate additional discount if applying new one
-                                $newDiscountAmount = 0.0;
-                                if ($get('discountType') && $get('discountValue')) {
-                                    $newDiscountAmount = $originalSubtotal * ((float) $get('discountValue') / 100);
-                                    $orderLevelDiscount = $newDiscountAmount;
-                                }
-
-                                $finalTotal = $subtotalAfterItemDiscounts - $orderLevelDiscount + $existingAddOns;
-
-                                // Build summary HTML
-                                $summaryHtml = "
-                                    <div class='flex justify-between text-sm font-semibold border-t-2 border-gray-300 pt-2 mt-2'>
-                                        <span>Original Subtotal:</span>
-                                        <span>{$this->formatCurrency($originalSubtotal)}</span>
-                                    </div>
-                                ";
-
-                                if ($itemLevelDiscountTotal > 0) {
-                                    $summaryHtml .= "
-                                        <div class='flex justify-between text-sm text-red-600'>
-                                            <span>Item Discounts:</span>
-                                            <span class='font-medium'>-{$this->formatCurrency($itemLevelDiscountTotal)}</span>
-                                        </div>
-                                        <div class='flex justify-between text-sm'>
-                                            <span class='text-gray-600'>Subtotal After Item Discounts:</span>
-                                            <span class='font-medium'>{$this->formatCurrency($subtotalAfterItemDiscounts)}</span>
-                                        </div>
-                                    ";
-                                }
-
-                                if ($orderLevelDiscount > 0) {
-                                    $discountLabel = $order->discount_value ? "Order Discount (-{$order->discount_value}%)" : 'Order Discount';
-                                    $summaryHtml .= "
-                                        <div class='flex justify-between text-sm text-orange-600'>
-                                            <span>{$discountLabel}:</span>
-                                            <span class='font-medium'>-{$this->formatCurrency($orderLevelDiscount)}</span>
-                                        </div>
-                                    ";
-                                }
-
-                                if ($existingAddOns > 0) {
-                                    $summaryHtml .= "
-                                        <div class='flex justify-between text-sm text-purple-600'>
-                                            <span>Add-ons:</span>
-                                            <span class='font-medium'>+{$this->formatCurrency($existingAddOns)}</span>
-                                        </div>
-                                    ";
-                                }
-
-                                $summaryHtml .= "
-                                    <div class='flex justify-between text-xl font-bold border-t-2 border-gray-400 pt-3 mt-2'>
-                                        <span>Total to Pay:</span>
-                                        <span class='text-orange-600'>{$this->formatCurrency($finalTotal)}</span>
-                                    </div>
-                                ";
-
-                                return new HtmlString("
-                                    <div class='space-y-1 p-4 bg-gray-50 rounded-lg'>
-                                        <div class='text-xs font-semibold text-gray-500 uppercase mb-3'>Order Items</div>
-                                        {$itemsHtml}
-                                        <div class='mt-4 space-y-1'>
-                                            {$summaryHtml}
-                                        </div>
-                                    </div>
-                                ");
-                            }),
-                    ]),
-
-                Section::make('Payment Details')
-                    ->schema([
-                        // Hidden field to store the amount (always present)
-                        Hidden::make('paidAmount')
-                            ->default(0),
-
-                        // Slide-over Numpad for Tablet Mode
-                        View::make('filament.components.numpad-slideover')
-                            ->viewData(function ($get): array {
-                                $order = Order::query()->find($get('orderId'));
-
-                                return [
-                                    'orderId' => $get('orderId'),
-                                    'order' => $order,
-                                    'currency' => $this->getCurrencySymbol(),
-                                ];
-                            })
-                            ->visible(fn ($get): bool => $get('paymentMethod') === 'cash' && $this->isTabletMode),
-
-                        // Regular Input for Desktop Mode
-                        TextInput::make('paidAmountDesktop')
-                            ->label('Cash Received')
-                            ->numeric()
-                            ->prefix($this->getCurrencySymbol())
-                            ->step(0.01)
-                            ->default(0)
-                            ->required()
-                            ->live(debounce: 500)
-                            ->afterStateUpdated(function ($state, $set): void {
-                                $set('paidAmount', $state);
-                            })
-                            ->visible(fn ($get): bool => $get('paymentMethod') === 'cash' && ! $this->isTabletMode),
-
-                        Placeholder::make('change_display')
-                            ->label('Change')
-                            ->content(function ($get): HtmlString {
-                                $order = Order::query()->find($get('orderId'));
-                                // Use the order's total which already has all discounts and add-ons applied
-                                $total = (float) $order->total;
-                                $paidAmount = (float) ($get('paidAmount') ?? $get('paidAmountDesktop') ?? 0);
-                                $changeAmount = $paidAmount - $total;
-                                $changeFormatted = $this->formatCurrency(abs($changeAmount));
-
-                                if ($changeAmount > 0) {
-                                    return new HtmlString("
-                                        <div class='p-3 bg-green-50 border-2 border-green-300 rounded-lg'>
-                                            <span class='text-lg font-bold text-green-700'>Change: {$changeFormatted}</span>
-                                        </div>
-                                    ");
-                                }
-                                if ($changeAmount < 0) {
-                                    return new HtmlString("
-                                        <div class='p-3 bg-red-50 border-2 border-red-300 rounded-lg'>
-                                            <span class='text-lg font-bold text-red-700'>Insufficient: {$changeFormatted}</span>
-                                        </div>
-                                    ");
-                                }
-
-                                return new HtmlString("
-                                    <div class='p-3 bg-gray-50 border-2 border-gray-300 rounded-lg'>
-                                        <span class='text-lg font-bold text-gray-700'>Exact Amount</span>
-                                    </div>
-                                ");
-                            })
-                            ->visible(fn ($get): bool => $get('paymentMethod') === 'cash' && ! $this->isTabletMode && ((float) ($get('paidAmountDesktop') ?? 0)) > 0),
-                    ]),
+                Hidden::make('paymentMethod'),
+                Hidden::make('paidAmount'),
             ])
+            ->modalContent(function (array $arguments) {
+                // If arguments are empty (which can happen in some contexts), try to get from form state if possible,
+                // but modalContent is evaluated when modal opens.
+                // For Page Actions, arguments passed to mountAction are usually available here.
+
+                // Fallback if arguments is empty but form is filled?
+                // We'll trust arguments are passed as they are in fillForm.
+                $orderId = $arguments['orderId'] ?? null;
+                if (! $orderId) {
+                    return new HtmlString('<div class="p-4 text-red-500">Error: Order ID not found.</div>');
+                }
+
+                $order = Order::with(['items.product', 'items.variant'])->find($orderId);
+
+                return view('filament.pages.orders-processing.payment-modal', [
+                    'order' => $order,
+                ]);
+            })
             ->action(function (array $data): void {
                 try {
                     DB::beginTransaction();
@@ -734,8 +482,7 @@ final class OrdersProcessing extends Page
                         ->persistent()
                         ->send();
                 }
-            })
-            ->modalSubmitActionLabel('Complete Order');
+            });
     }
 
     public function printKitchenTicket(int $orderId): void
