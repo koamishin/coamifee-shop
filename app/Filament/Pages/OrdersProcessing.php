@@ -14,6 +14,7 @@ use App\Services\OrderModificationService;
 use App\Services\OrderProcessingService;
 use App\Services\PosService;
 use App\Services\RefundService;
+use BackedEnum;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
@@ -55,6 +56,16 @@ final class OrdersProcessing extends Page
         'paidAmount' => 0,
         'orderId' => null,
     ];
+
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-clipboard-document-list';
+
+    protected string $view = 'filament.pages.orders-processing';
+
+    protected static ?string $navigationLabel = 'Orders Processing';
+
+    protected static ?string $title = 'Orders Processing';
+
+    protected static ?int $navigationSort = 2;
 
     private GeneralSettingsService $settingsService;
 

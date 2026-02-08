@@ -7,6 +7,7 @@
 /storage/test-key
 /storage/test-key.pub
 /vendor
+/storage/debugbar/*
 /storage/database.sqlite
 /storage/database-test.sqlite
 /storage/database.sqlite-journal
