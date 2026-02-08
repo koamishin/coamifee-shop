@@ -6,7 +6,6 @@ namespace App\Filament\Pages;
 
 use App\Enums\Currency;
 use App\Enums\DiscountType;
-use App\Enums\TableNumber;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -16,9 +15,6 @@ use BackedEnum;
 // use App\Models\Category; // Not used directly, using PosService instead
 use Exception;
 use Filament\Actions\Action;
-use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Notifications\Notification;
@@ -26,6 +22,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\View;
+use Filament\Schemas\Components\Wizard\Step;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -86,6 +83,8 @@ final class PosPage extends Page
     public Currency $currency;
 
     public array $productAvailability = [];
+
+    public bool $isTableSelectorOpen = false;
 
     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-shopping-cart';
 
@@ -170,9 +169,20 @@ final class PosPage extends Page
         }
     }
 
+    public function openTableSelector(): void
+    {
+        $this->isTableSelectorOpen = true;
+    }
+
+    public function closeTableSelector(): void
+    {
+        $this->isTableSelectorOpen = false;
+    }
+
     public function selectTable(string $tableNumber): void
     {
         $this->tableNumber = $tableNumber;
+        $this->closeTableSelector();
     }
 
     public function addToCart(int $productId, ?int $variantId = null): void
@@ -430,6 +440,22 @@ final class PosPage extends Page
     {
         $this->selectedProductForVariant = null;
         $this->selectedVariantId = null;
+    }
+
+    public function removeOneFromCart(int $productId): void
+    {
+        // Find items with this product ID
+        $indices = array_keys(array_filter($this->cartItems, fn ($item) => $item['product_id'] === $productId));
+
+        if (empty($indices)) {
+            return;
+        }
+
+        // Remove from the last added item of this type (LIFO)
+        $lastIndex = end($indices);
+        $currentQty = (int) $this->cartItems[$lastIndex]['quantity'];
+
+        $this->updateQuantity($lastIndex, $currentQty - 1);
     }
 
     public function createOrder(): void
@@ -736,6 +762,7 @@ final class PosPage extends Page
                 ->label('Send Order')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
+                ->modalWidth('7xl')
                 ->fillForm(fn (): array => [
                     'orderType' => $this->orderType,
                     'tableNumber' => $this->tableNumber,
@@ -758,512 +785,246 @@ final class PosPage extends Page
                     'addOns' => $this->addOns,
                     'creationDate' => $this->creationDate ?? now()->toDateTimeString(),
                 ])
-                ->schema([
-                    Grid::make(2)
+                ->steps([
+                    Step::make('Review')
+                        ->icon('heroicon-o-shopping-bag')
+                        ->description('Review items and quantities')
                         ->schema([
-                            Section::make('Order')
-                                ->schema([
-                                    DateTimePicker::make('creationDate')
-                                        ->label('Order Date')
-                                        ->required()
-                                        ->seconds(false)
-                                        ->default(now())
-                                        ->columnSpanFull(),
-
-                                    ToggleButtons::make('orderType')
-                                        ->label('Order type')
-                                        ->options([
-                                            'dine-in' => 'Dine In',
-                                            'takeout' => 'Takeout',
-                                            'delivery' => 'Delivery',
-                                        ])
-                                        ->grouped()
-                                        ->required()
-                                        ->live()
-                                        ->afterStateUpdated(function (?string $state, callable $set, $get): void {
-                                            if ($state === null) {
-                                                return;
-                                            }
-
-                                            $this->setOrderType($state);
-
-                                            if ($state !== 'dine-in') {
-                                                $set('tableNumber', null);
-                                                $set('paymentTiming', 'pay_now');
-                                            }
-
-                                            if ($state === 'delivery') {
-                                                $selectedProvider = $get('deliveryProvider');
-                                                $selectedPaymentMethod = $get('paymentMethod');
-
-                                                $provider = in_array($selectedProvider, ['grab', 'food_panda'], true)
-                                                    ? $selectedProvider
-                                                    : (in_array($selectedPaymentMethod, ['grab', 'food_panda'], true)
-                                                        ? $selectedPaymentMethod
-                                                        : (in_array($this->paymentMethod, ['grab', 'food_panda'], true) ? $this->paymentMethod : 'grab'));
-
-                                                $this->paymentTiming = 'pay_now';
-                                                $this->paymentMethod = $provider;
-
-                                                $set('deliveryProvider', $provider);
-                                                $set('paymentMethod', $provider);
-
-                                                return;
-                                            }
-
-                                            if (in_array($this->paymentMethod, ['grab', 'food_panda'], true)) {
-                                                $this->paymentMethod = 'cash';
-                                                $set('paymentMethod', 'cash');
-                                            }
-                                        })
-                                        ->columnSpanFull(),
-
-                                    ToggleButtons::make('tableNumber')
-                                        ->label('Table (dine-in)')
-                                        ->options(TableNumber::getOptions())
-                                        ->columns(5)
-                                        ->required(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine-in')
-                                        ->visible(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine-in')
-                                        ->live()
-                                        ->afterStateUpdated(function (?string $state): void {
-                                            if ($state === null) {
-                                                return;
-                                            }
-
-                                            $this->selectTable($state);
-                                        })
-                                        ->columnSpanFull(),
-
-                                    ToggleButtons::make('deliveryProvider')
-                                        ->label('Delivery provider')
-                                        ->options([
-                                            'grab' => 'Grab',
-                                            'food_panda' => 'Food Panda',
-                                        ])
-                                        ->grouped()
-                                        ->columns(2)
-                                        ->required(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'delivery')
-                                        ->visible(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'delivery')
-                                        ->default(fn (): string => in_array($this->paymentMethod, ['grab', 'food_panda'], true) ? $this->paymentMethod : 'grab')
-                                        ->live()
-                                        ->afterStateUpdated(function (?string $state, callable $set): void {
-                                            if ($state === null) {
-                                                return;
-                                            }
-
-                                            $this->paymentTiming = 'pay_now';
-                                            $this->paymentMethod = $state;
-
-                                            $set('paymentTiming', 'pay_now');
-                                            $set('paymentMethod', $state);
-                                        })
-                                        ->columnSpanFull(),
-
-                                    Hidden::make('customerId'),
-                                    Hidden::make('customerName'),
-
-                                    ToggleButtons::make('customerQuick')
-                                        ->label('Customer')
-                                        ->options(function (): array {
-                                            $options = ['walk_in' => 'Walk-in'];
-
-                                            foreach ($this->customers->take(8) as $customer) {
-                                                /** @var Customer $customer */
-                                                $options[(string) $customer->id] = $customer->name;
-                                            }
-
-                                            return $options;
-                                        })
-                                        ->columns(3)
-                                        ->required()
-                                        ->live()
-                                        ->afterStateUpdated(function (?string $state, callable $set): void {
-                                            if (blank($state) || $state === 'walk_in') {
-                                                $this->customerId = null;
-                                                $this->customerName = '';
-
-                                                $set('customerId', null);
-                                                $set('customerName', '');
-
-                                                return;
-                                            }
-
-                                            $customerId = (int) $state;
-                                            /** @var Customer|null $customer */
-                                            $customer = $this->customers->firstWhere('id', $customerId);
-
-                                            $this->customerId = $customerId;
-                                            $this->customerName = $customer ? $customer->name : '';
-
-                                            $set('customerId', $customerId);
-                                            $set('customerName', $this->customerName);
-                                        })
-                                        ->columnSpanFull(),
-
-                                    Hidden::make('notes'),
-
-                                    ToggleButtons::make('notesPresets')
-                                        ->label('Notes')
-                                        ->options(function ($get): array {
-                                            $orderType = $get('orderType') ?? $this->orderType;
-
-                                            if ($orderType === 'delivery') {
-                                                return [
-                                                    'call_on_arrival' => 'Call on arrival',
-                                                    'leave_at_door' => 'Leave at door',
-                                                    'no_contact' => 'No contact',
-                                                    'gate_guard' => 'Gate/guard',
-                                                    'fragile' => 'Handle with care',
-                                                    'deliver_asap' => 'Deliver ASAP',
-                                                ];
-                                            }
-
-                                            return [
-                                                'no_sugar' => 'No sugar',
-                                                'less_sugar' => 'Less sugar',
-                                                'extra_hot' => 'Extra hot',
-                                                'less_ice' => 'Less ice',
-                                                'no_ice' => 'No ice',
-                                                'extra_ice' => 'Extra ice',
-                                                'no_whip' => 'No whip',
-                                                'extra_shot' => 'Extra shot',
-                                            ];
-                                        })
-                                        ->multiple()
-                                        ->columns(3)
-                                        ->live()
-                                        ->dehydrated(false)
-                                        ->afterStateUpdated(function (?array $state, callable $set, $get): void {
-                                            $presets = $state ?? [];
-
-                                            $orderType = $get('orderType') ?? $this->orderType;
-
-                                            $map = $orderType === 'delivery'
-                                                ? [
-                                                    'call_on_arrival' => 'Call on arrival',
-                                                    'leave_at_door' => 'Leave at door',
-                                                    'no_contact' => 'No contact',
-                                                    'gate_guard' => 'Gate/guard',
-                                                    'fragile' => 'Handle with care',
-                                                    'deliver_asap' => 'Deliver ASAP',
-                                                ]
-                                                : [
-                                                    'no_sugar' => 'No sugar',
-                                                    'less_sugar' => 'Less sugar',
-                                                    'extra_hot' => 'Extra hot',
-                                                    'less_ice' => 'Less ice',
-                                                    'no_ice' => 'No ice',
-                                                    'extra_ice' => 'Extra ice',
-                                                    'no_whip' => 'No whip',
-                                                    'extra_shot' => 'Extra shot',
-                                                ];
-
-                                            $notes = collect($presets)
-                                                ->map(fn (string $key): ?string => $map[$key] ?? null)
-                                                ->filter()
-                                                ->values()
-                                                ->implode(', ');
-
-                                            $this->notes = $notes;
-                                            $set('notes', $notes);
-                                        })
-                                        ->columnSpanFull(),
-                                ])
-                                ->columns(1),
-
-                            Section::make('Payment')
-                                ->schema([
-                                    ToggleButtons::make('paymentTiming')
-                                        ->label('Payment timing')
-                                        ->options([
-                                            'pay_later' => 'Pay later',
-                                            'pay_now' => 'Pay now',
-                                        ])
-                                        ->grouped()
-                                        ->required(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine-in')
-                                        ->default(fn ($get): string => ($get('orderType') ?? $this->orderType) === 'dine-in' ? 'pay_later' : 'pay_now')
-                                        ->visible(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine-in')
-                                        ->live()
-                                        ->afterStateUpdated(function (?string $state): void {
-                                            if ($state === null) {
-                                                return;
-                                            }
-
-                                            $this->paymentTiming = $state;
-                                        })
-                                        ->columnSpanFull(),
-
-                                    ToggleButtons::make('paymentMethod')
-                                        ->label('Payment method')
-                                        ->options([
-                                            'cash' => 'Cash',
-                                            'gcash' => 'GCash',
-                                            'maya' => 'Maya',
-                                            'bank_transfer' => 'Bank',
-                                        ])
-                                        ->grouped()
-                                        ->default('cash')
-                                        ->visible(fn ($get): bool => ($get('paymentTiming') ?? $this->paymentTiming) === 'pay_now'
-                                            && ($get('orderType') ?? $this->orderType) !== 'delivery')
-                                        ->live()
-                                        ->afterStateUpdated(function (?string $state): void {
-                                            if ($state === null) {
-                                                return;
-                                            }
-
-                                            $this->paymentMethod = $state;
-                                        })
-                                        ->columnSpanFull(),
-
-                                    ToggleButtons::make('cashTender')
-                                        ->label('Quick cash')
-                                        ->options([
-                                            'exact' => 'Exact',
-                                            'next_50' => 'Next 50',
-                                            'next_100' => 'Next 100',
-                                            'next_500' => 'Next 500',
-                                        ])
-                                        ->grouped()
-                                        ->dehydrated(false)
-                                        ->visible(fn ($get): bool => ($get('paymentTiming') ?? $this->paymentTiming) === 'pay_now'
-                                            && ($get('paymentMethod') ?? $this->paymentMethod) === 'cash'
-                                            && ! $this->isTabletMode)
-                                        ->live()
-                                        ->afterStateUpdated(function (?string $state, callable $set, $get): void {
-                                            if ($state === null) {
-                                                return;
-                                            }
-
-                                            $originalSubtotal = collect($this->cartItems)->sum(fn (array $item): float => (float) ($item['subtotal'] ?? 0));
-                                            $itemDiscountTotal = collect($this->cartItems)->sum(function (array $item): float {
-                                                $subtotal = (float) ($item['subtotal'] ?? 0);
-                                                $percentage = (float) ($item['discount_percentage'] ?? 0);
-
-                                                return $percentage > 0 ? $subtotal * ($percentage / 100) : 0.0;
-                                            });
-
-                                            $orderDiscountAmount = 0.0;
-                                            if (filled($get('discountValue'))) {
-                                                $orderDiscountAmount = $originalSubtotal * ((float) $get('discountValue') / 100);
-                                            }
-
-                                            $addOnsTotal = 0.0;
-                                            foreach (($get('addOns') ?? []) as $addOn) {
-                                                if (! empty($addOn['price'])) {
-                                                    $addOnsTotal += (float) $addOn['price'];
-                                                }
-                                            }
-
-                                            $finalTotal = $originalSubtotal - $itemDiscountTotal - $orderDiscountAmount + $addOnsTotal;
-
-                                            $tendered = match ($state) {
-                                                'exact' => $finalTotal,
-                                                'next_50' => ceil($finalTotal / 50) * 50,
-                                                'next_100' => ceil($finalTotal / 100) * 100,
-                                                'next_500' => ceil($finalTotal / 500) * 500,
-                                                default => $finalTotal,
-                                            };
-
-                                            $set('paidAmount', $tendered);
-                                            $this->paidAmount = $tendered;
-                                            $this->calculateTotals();
-                                        })
-                                        ->columnSpanFull(),
-
-                                    TextInput::make('paidAmount')
-                                        ->label('Cash received')
-                                        ->numeric()
-                                        ->step(0.01)
-                                        ->prefix($this->getCurrencySymbol())
-                                        ->default(0)
-                                        ->dehydrated(fn (): bool => ! $this->isTabletMode)
-                                        ->required(fn ($get): bool => ($get('paymentTiming') ?? $this->paymentTiming) === 'pay_now'
-                                            && ($get('paymentMethod') ?? $this->paymentMethod) === 'cash'
-                                            && ! $this->isTabletMode)
-                                        ->visible(fn ($get): bool => ($get('paymentTiming') ?? $this->paymentTiming) === 'pay_now'
-                                            && ($get('paymentMethod') ?? $this->paymentMethod) === 'cash'
-                                            && ! $this->isTabletMode)
-                                        ->live()
-                                        ->afterStateUpdated(function ($state): void {
-                                            $this->paidAmount = (float) ($state ?? 0);
-                                            $this->calculateTotals();
-                                        })
-                                        ->columnSpanFull(),
-
-                                    View::make('filament.pages.pos.modals.cash-numpad-sheet')
-                                        ->viewData(function ($get): array {
-                                            $originalSubtotal = collect($this->cartItems)->sum(fn (array $item): float => (float) ($item['subtotal'] ?? 0));
-                                            $itemDiscountTotal = collect($this->cartItems)->sum(function (array $item): float {
-                                                $subtotal = (float) ($item['subtotal'] ?? 0);
-                                                $percentage = (float) ($item['discount_percentage'] ?? 0);
-
-                                                return $percentage > 0 ? $subtotal * ($percentage / 100) : 0.0;
-                                            });
-
-                                            $discountAmount = 0.0;
-                                            if (filled($get('discountValue'))) {
-                                                $discountAmount = $originalSubtotal * ((float) $get('discountValue') / 100);
-                                            }
-
-                                            $addOnsTotal = 0.0;
-                                            foreach (($get('addOns') ?? []) as $addOn) {
-                                                if (! empty($addOn['price'])) {
-                                                    $addOnsTotal += (float) $addOn['price'];
-                                                }
-                                            }
-
-                                            $finalTotal = $originalSubtotal - $itemDiscountTotal - $discountAmount + $addOnsTotal;
-
-                                            return [
-                                                'currency' => $this->getCurrencySymbol(),
-                                                'initial' => (string) $this->paidAmount,
-                                                'total' => $finalTotal,
-                                            ];
-                                        })
-                                        ->visible(fn ($get): bool => ($get('paymentTiming') ?? $this->paymentTiming) === 'pay_now'
-                                            && ($get('paymentMethod') ?? $this->paymentMethod) === 'cash'
-                                            && $this->isTabletMode)
-                                        ->columnSpanFull(),
-
-                                    View::make('filament.pages.pos.modals.place-order-totals')
-                                        ->viewData(function ($get): array {
-                                            $originalSubtotal = collect($this->cartItems)->sum(fn (array $item): float => (float) ($item['subtotal'] ?? 0));
-                                            $itemDiscountTotal = collect($this->cartItems)->sum(function (array $item): float {
-                                                $subtotal = (float) ($item['subtotal'] ?? 0);
-                                                $percentage = (float) ($item['discount_percentage'] ?? 0);
-
-                                                return $percentage > 0 ? $subtotal * ($percentage / 100) : 0.0;
-                                            });
-
-                                            $discountAmount = 0.0;
-                                            if (filled($get('discountValue'))) {
-                                                $discountAmount = $originalSubtotal * ((float) $get('discountValue') / 100);
-                                            }
-
-                                            $addOnsTotal = 0.0;
-                                            foreach (($get('addOns') ?? []) as $addOn) {
-                                                if (! empty($addOn['price'])) {
-                                                    $addOnsTotal += (float) $addOn['price'];
-                                                }
-                                            }
-
-                                            $finalTotal = $originalSubtotal - $itemDiscountTotal - $discountAmount + $addOnsTotal;
-
-                                            $paidAmount = $this->isTabletMode
-                                                ? $this->paidAmount
-                                                : (float) ($get('paidAmount') ?? 0);
-
-                                            $changeAmount = $paidAmount - $finalTotal;
-
-                                            return [
-                                                'subtotal' => $originalSubtotal - $itemDiscountTotal,
-                                                'discountAmount' => $discountAmount,
-                                                'addOnsTotal' => $addOnsTotal,
-                                                'finalTotal' => $finalTotal,
-                                                'paidAmount' => $paidAmount,
-                                                'changeAmount' => $changeAmount,
-                                                'paymentTiming' => (string) ($get('paymentTiming') ?? $this->paymentTiming),
-                                                'paymentMethod' => (string) ($get('paymentMethod') ?? $this->paymentMethod),
-                                                'formatCurrency' => $this->formatCurrency(...),
-                                            ];
-                                        })
-                                        ->columnSpanFull(),
-
-                                    Hidden::make('changeAmount')
-                                        ->default(0),
+                            View::make('filament.pages.pos.modals.place-order-items')
+                                ->viewData([
+                                    'cartItems' => $this->cartItems,
+                                    'discountOptions' => DiscountType::getOptions(),
                                 ]),
-                        ])
-                        ->columnSpanFull(),
+                        ]),
 
-                    Section::make('Extras')
+                    Step::make('Details')
+                        ->icon('heroicon-o-user')
+                        ->description('Customer and fulfillment details')
                         ->schema([
-                            ToggleButtons::make('discountType')
-                                ->label('Discount type')
-                                ->options(['' => 'None'] + DiscountType::getOptions())
-                                ->grouped()
-                                ->live()
-                                ->afterStateUpdated(function (?string $state, callable $set): void {
-                                    if (blank($state)) {
-                                        $set('discountValue', null);
+                            View::make('filament.pages.pos.steps.order-details')
+                                ->viewData([
+                                    'orderType' => $this->orderType,
+                                    'tableNumber' => $this->tableNumber,
+                                    'customerId' => $this->customerId,
+                                    'customerName' => $this->customerName,
+                                    'deliveryProvider' => in_array($this->paymentMethod, ['grab', 'food_panda'], true) ? $this->paymentMethod : 'grab',
+                                    'customers' => $this->customers,
+                                ]),
+                        ]),
 
-                                        return;
-                                    }
-
-                                    $discountType = DiscountType::from($state);
-                                    $set('discountValue', $discountType->getPercentage());
-                                })
-                                ->columnSpanFull(),
-
-                            TextInput::make('discountValue')
-                                ->label('Discount %')
-                                ->numeric()
-                                ->disabled()
-                                ->dehydrated()
-                                ->visible(fn ($get): bool => filled($get('discountType')))
-                                ->columnSpanFull(),
-
-                            Repeater::make('addOns')
-                                ->label('Add-ons')
+                    Step::make('Payment')
+                        ->icon('heroicon-o-credit-card')
+                        ->description('Finalize and pay')
+                        ->schema([
+                            Grid::make(2)
                                 ->schema([
-                                    TextInput::make('name')
-                                        ->label('Add-on')
-                                        ->required(),
+                                    Section::make('Payment Settings')
+                                        ->schema([
+                                            ToggleButtons::make('paymentTiming')
+                                                ->label('Payment timing')
+                                                ->options([
+                                                    'pay_later' => 'Pay later',
+                                                    'pay_now' => 'Pay now',
+                                                ])
+                                                ->grouped()
+                                                ->required(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine-in')
+                                                ->default(fn ($get): string => ($get('orderType') ?? $this->orderType) === 'dine-in' ? 'pay_later' : 'pay_now')
+                                                ->visible(fn ($get): bool => ($get('orderType') ?? $this->orderType) === 'dine-in')
+                                                ->live()
+                                                ->afterStateUpdated(function (?string $state): void {
+                                                    if ($state === null) {
+                                                        return;
+                                                    }
 
-                                    TextInput::make('price')
-                                        ->label('Price')
-                                        ->numeric()
-                                        ->prefix($this->getCurrencySymbol())
-                                        ->step(0.01)
-                                        ->default(0)
-                                        ->required(),
-                                ])
-                                ->addActionLabel('Add add-on')
-                                ->reorderable(false)
-                                ->defaultItems(0)
-                                ->columns(2),
-                        ])
-                        ->collapsed()
-                        ->columnSpanFull(),
+                                                    $this->paymentTiming = $state;
+                                                })
+                                                ->columnSpanFull(),
+
+                                            ToggleButtons::make('paymentMethod')
+                                                ->label('Payment method')
+                                                ->options([
+                                                    'cash' => 'Cash',
+                                                    'gcash' => 'GCash',
+                                                    'maya' => 'Maya',
+                                                    'bank_transfer' => 'Bank',
+                                                ])
+                                                ->grouped()
+                                                ->default('cash')
+                                                ->visible(fn ($get): bool => ($get('paymentTiming') ?? $this->paymentTiming) === 'pay_now'
+                                                    && ($get('orderType') ?? $this->orderType) !== 'delivery')
+                                                ->live()
+                                                ->afterStateUpdated(function (?string $state): void {
+                                                    if ($state === null) {
+                                                        return;
+                                                    }
+
+                                                    $this->paymentMethod = $state;
+                                                })
+                                                ->columnSpanFull(),
+
+                                            ToggleButtons::make('cashTender')
+                                                ->label('Quick cash')
+                                                ->options([
+                                                    'exact' => 'Exact',
+                                                    'next_50' => 'Next 50',
+                                                    'next_100' => 'Next 100',
+                                                    'next_500' => 'Next 500',
+                                                ])
+                                                ->grouped()
+                                                ->dehydrated(false)
+                                                ->visible(fn ($get): bool => ($get('paymentTiming') ?? $this->paymentTiming) === 'pay_now'
+                                                    && ($get('paymentMethod') ?? $this->paymentMethod) === 'cash'
+                                                    && ! $this->isTabletMode)
+                                                ->live()
+                                                ->afterStateUpdated(function (?string $state, callable $set, $get): void {
+                                                    if ($state === null) {
+                                                        return;
+                                                    }
+
+                                                    $originalSubtotal = collect($this->cartItems)->sum(fn (array $item): float => (float) ($item['subtotal'] ?? 0));
+                                                    $itemDiscountTotal = collect($this->cartItems)->sum(function (array $item): float {
+                                                        $subtotal = (float) ($item['subtotal'] ?? 0);
+                                                        $percentage = (float) ($item['discount_percentage'] ?? 0);
+
+                                                        return $percentage > 0 ? $subtotal * ($percentage / 100) : 0.0;
+                                                    });
+
+                                                    $orderDiscountAmount = 0.0;
+                                                    if (filled($get('discountValue'))) {
+                                                        $orderDiscountAmount = $originalSubtotal * ((float) $get('discountValue') / 100);
+                                                    }
+
+                                                    $addOnsTotal = 0.0;
+                                                    foreach (($get('addOns') ?? []) as $addOn) {
+                                                        if (! empty($addOn['price'])) {
+                                                            $addOnsTotal += (float) $addOn['price'];
+                                                        }
+                                                    }
+
+                                                    $finalTotal = $originalSubtotal - $itemDiscountTotal - $orderDiscountAmount + $addOnsTotal;
+
+                                                    $tendered = match ($state) {
+                                                        'exact' => $finalTotal,
+                                                        'next_50' => ceil($finalTotal / 50) * 50,
+                                                        'next_100' => ceil($finalTotal / 100) * 100,
+                                                        'next_500' => ceil($finalTotal / 500) * 500,
+                                                        default => $finalTotal,
+                                                    };
+
+                                                    $set('paidAmount', $tendered);
+                                                    $this->paidAmount = $tendered;
+                                                    $this->calculateTotals();
+                                                })
+                                                ->columnSpanFull(),
+
+                                            TextInput::make('paidAmount')
+                                                ->label('Cash received')
+                                                ->numeric()
+                                                ->step(0.01)
+                                                ->prefix($this->getCurrencySymbol())
+                                                ->default(0)
+                                                ->dehydrated(fn (): bool => ! $this->isTabletMode)
+                                                ->required(fn ($get): bool => ($get('paymentTiming') ?? $this->paymentTiming) === 'pay_now'
+                                                    && ($get('paymentMethod') ?? $this->paymentMethod) === 'cash'
+                                                    && ! $this->isTabletMode)
+                                                ->visible(fn ($get): bool => ($get('paymentTiming') ?? $this->paymentTiming) === 'pay_now'
+                                                    && ($get('paymentMethod') ?? $this->paymentMethod) === 'cash'
+                                                    && ! $this->isTabletMode)
+                                                ->live()
+                                                ->afterStateUpdated(function ($state): void {
+                                                    $this->paidAmount = (float) ($state ?? 0);
+                                                    $this->calculateTotals();
+                                                })
+                                                ->columnSpanFull(),
+
+                                            View::make('filament.pages.pos.modals.cash-numpad-sheet')
+                                                ->viewData(function ($get): array {
+                                                    $originalSubtotal = collect($this->cartItems)->sum(fn (array $item): float => (float) ($item['subtotal'] ?? 0));
+                                                    $itemDiscountTotal = collect($this->cartItems)->sum(function (array $item): float {
+                                                        $subtotal = (float) ($item['subtotal'] ?? 0);
+                                                        $percentage = (float) ($item['discount_percentage'] ?? 0);
+
+                                                        return $percentage > 0 ? $subtotal * ($percentage / 100) : 0.0;
+                                                    });
+
+                                                    $discountAmount = 0.0;
+                                                    if (filled($get('discountValue'))) {
+                                                        $discountAmount = $originalSubtotal * ((float) $get('discountValue') / 100);
+                                                    }
+
+                                                    $addOnsTotal = 0.0;
+                                                    foreach (($get('addOns') ?? []) as $addOn) {
+                                                        if (! empty($addOn['price'])) {
+                                                            $addOnsTotal += (float) $addOn['price'];
+                                                        }
+                                                    }
+
+                                                    $finalTotal = $originalSubtotal - $itemDiscountTotal - $discountAmount + $addOnsTotal;
+
+                                                    return [
+                                                        'currency' => $this->getCurrencySymbol(),
+                                                        'initial' => (string) $this->paidAmount,
+                                                        'total' => $finalTotal,
+                                                    ];
+                                                })
+                                                ->visible(fn ($get): bool => ($get('paymentTiming') ?? $this->paymentTiming) === 'pay_now'
+                                                    && ($get('paymentMethod') ?? $this->paymentMethod) === 'cash'
+                                                    && $this->isTabletMode)
+                                                ->columnSpanFull(),
+                                        ])
+                                        ->columnSpan(1),
+
+                                    Section::make('Totals')
+                                        ->schema([
+                                            View::make('filament.pages.pos.modals.place-order-totals')
+                                                ->viewData(function ($get): array {
+                                                    $originalSubtotal = collect($this->cartItems)->sum(fn (array $item): float => (float) ($item['subtotal'] ?? 0));
+                                                    $itemDiscountTotal = collect($this->cartItems)->sum(function (array $item): float {
+                                                        $subtotal = (float) ($item['subtotal'] ?? 0);
+                                                        $percentage = (float) ($item['discount_percentage'] ?? 0);
+
+                                                        return $percentage > 0 ? $subtotal * ($percentage / 100) : 0.0;
+                                                    });
+
+                                                    $discountAmount = 0.0;
+                                                    if (filled($get('discountValue'))) {
+                                                        $discountAmount = $originalSubtotal * ((float) $get('discountValue') / 100);
+                                                    }
+
+                                                    $addOnsTotal = 0.0;
+                                                    foreach (($get('addOns') ?? []) as $addOn) {
+                                                        if (! empty($addOn['price'])) {
+                                                            $addOnsTotal += (float) $addOn['price'];
+                                                        }
+                                                    }
+
+                                                    $finalTotal = $originalSubtotal - $itemDiscountTotal - $discountAmount + $addOnsTotal;
+
+                                                    $paidAmount = $this->isTabletMode
+                                                        ? $this->paidAmount
+                                                        : (float) ($get('paidAmount') ?? 0);
+
+                                                    $changeAmount = $paidAmount - $finalTotal;
+
+                                                    return [
+                                                        'subtotal' => $originalSubtotal - $itemDiscountTotal,
+                                                        'discountAmount' => $discountAmount,
+                                                        'addOnsTotal' => $addOnsTotal,
+                                                        'finalTotal' => $finalTotal,
+                                                        'paidAmount' => $paidAmount,
+                                                        'changeAmount' => $changeAmount,
+                                                        'paymentTiming' => (string) ($get('paymentTiming') ?? $this->paymentTiming),
+                                                        'paymentMethod' => (string) ($get('paymentMethod') ?? $this->paymentMethod),
+                                                        'formatCurrency' => $this->formatCurrency(...),
+                                                    ];
+                                                })
+                                                ->columnSpanFull(),
+                                        ])
+                                        ->columnSpan(1),
+                                ]),
+                        ]),
                 ])
-                ->action(function (array $data): void {
-                    $this->orderType = (string) ($data['orderType'] ?? $this->orderType);
-
-                    $this->customerId = filled($data['customerId'] ?? null) ? (int) $data['customerId'] : null;
-                    $this->customerName = (string) ($data['customerName'] ?? '');
-
-                    $this->tableNumber = $data['tableNumber'] ?? null;
-                    $this->notes = (string) ($data['notes'] ?? '');
-
-                    $this->paymentTiming = match ($this->orderType) {
-                        'dine-in' => (string) ($data['paymentTiming'] ?? $this->paymentTiming ?? 'pay_later'),
-                        default => 'pay_now',
-                    };
-
-                    $this->paymentMethod = match ($this->orderType) {
-                        'delivery' => (string) ($data['deliveryProvider'] ?? $data['paymentMethod'] ?? $this->paymentMethod ?? 'grab'),
-                        default => (string) ($data['paymentMethod'] ?? $this->paymentMethod ?? 'cash'),
-                    };
-
-                    $this->discountType = filled($data['discountType'] ?? null) ? (string) $data['discountType'] : null;
-                    $this->discountValue = filled($data['discountValue'] ?? null) ? (float) $data['discountValue'] : null;
-                    $this->addOns = $data['addOns'] ?? [];
-                    $this->creationDate = $data['creationDate'] ?? now()->toDateTimeString();
-
-                    if ($this->paymentTiming !== 'pay_now' || $this->paymentMethod !== 'cash') {
-                        $this->paidAmount = 0.0;
-                    } elseif (! $this->isTabletMode) {
-                        $this->paidAmount = filled($data['paidAmount'] ?? null) ? (float) $data['paidAmount'] : 0.0;
-                    }
-
-                    $this->calculateTotals();
-
-                    $this->createOrder();
-                })
-                ->modalWidth('7xl')
-                ->modalHeading('Confirm & Send Order to Kitchen')
-                ->modalSubmitActionLabel('Confirm & Send')
-                ->modalCancelActionLabel('Back')
-                ->visible(fn (): bool => $this->cartItems !== []),
+                ->action(fn () => $this->createOrder()),
         ];
     }
 

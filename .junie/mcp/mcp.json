@@ -1,9 +1,9 @@
 {
     "mcpServers": {
         "laravel-boost": {
-            "command": "/home/yuuki/.config/herd-lite/bin/php",
+            "command": "/home/admin/.config/herd-lite/bin/php",
             "args": [
-                "/home/yuuki/coamifee-shop/artisan",
+                "/home/admin/coamifee-shop/artisan",
                 "boost:mcp"
             ]
         }
