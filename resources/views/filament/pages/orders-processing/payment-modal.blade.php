@@ -158,6 +158,7 @@
 
                 @foreach($methods as $value => $method)
                     <button 
+                        type="button"
                         @click="paymentMethod = '{{ $value }}'"
                         :class="paymentMethod === '{{ $value }}' 
                             ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300 transform scale-105' 
@@ -198,10 +199,10 @@
 
                             <!-- Quick Amount Buttons -->
                             <div class="grid grid-cols-2 gap-2 mt-auto">
-                                <button @click="setExact()" class="py-3 px-4 bg-gray-200 hover:bg-gray-300 rounded-lg font-semibold text-gray-700 transition-colors">Exact Amount</button>
-                                <button @click="addAmount(100)" class="py-3 px-4 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-semibold transition-colors">+100</button>
-                                <button @click="addAmount(500)" class="py-3 px-4 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-semibold transition-colors">+500</button>
-                                <button @click="addAmount(1000)" class="py-3 px-4 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-semibold transition-colors">+1000</button>
+                                <button type="button" @click="setExact()" class="py-3 px-4 bg-gray-200 hover:bg-gray-300 rounded-lg font-semibold text-gray-700 transition-colors">Exact Amount</button>
+                                <button type="button" @click="addAmount(100)" class="py-3 px-4 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-semibold transition-colors">+100</button>
+                                <button type="button" @click="addAmount(500)" class="py-3 px-4 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-semibold transition-colors">+500</button>
+                                <button type="button" @click="addAmount(1000)" class="py-3 px-4 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-semibold transition-colors">+1000</button>
                             </div>
                         </div>
 
@@ -210,15 +211,16 @@
                             <div class="grid grid-cols-3 gap-3 h-full">
                                 @foreach([1, 2, 3, 4, 5, 6, 7, 8, 9] as $num)
                                     <button 
+                                        type="button"
                                         @click="appendNumber({{ $num }})"
                                         class="text-2xl font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl aspect-[4/3] transition-colors"
                                     >
                                         {{ $num }}
                                     </button>
                                 @endforeach
-                                <button @click="appendDecimal()" class="text-2xl font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl aspect-[4/3]">.</button>
-                                <button @click="appendNumber(0)" class="text-2xl font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl aspect-[4/3]">0</button>
-                                <button @click="backspace()" class="flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-100 rounded-xl aspect-[4/3]">
+                                <button type="button" @click="appendDecimal()" class="text-2xl font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl aspect-[4/3]">.</button>
+                                <button type="button" @click="appendNumber(0)" class="text-2xl font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl aspect-[4/3]">0</button>
+                                <button type="button" @click="backspace()" class="flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-100 rounded-xl aspect-[4/3]">
                                     <x-filament::icon icon="heroicon-o-backspace" class="w-8 h-8" />
                                 </button>
                             </div>
