@@ -51,6 +51,12 @@ final class OrdersProcessing extends Page
 
     public float $cashReceived = 0.0;
 
+    public array $paymentState = [
+        'paymentMethod' => 'cash',
+        'paidAmount' => 0,
+        'orderId' => null,
+    ];
+
     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     // protected static UnitEnum|string|null $navigationGroup = 'Operations';
@@ -68,6 +74,92 @@ final class OrdersProcessing extends Page
     private OrderProcessingService $orderProcessingService;
 
     private PosService $posService;
+
+    public function processPayment(): void
+    {
+        $data = $this->paymentState;
+
+        try {
+            DB::beginTransaction();
+
+            if (! $data['orderId']) {
+                throw new Exception('Order ID is missing.');
+            }
+
+            $order = Order::query()->findOrFail($data['orderId']);
+
+            Log::info('Processing payment collection via custom method', [
+                'order_id' => $order->id,
+                'payment_method' => $data['paymentMethod'],
+                'paid_amount' => $data['paidAmount'],
+            ]);
+
+            // Recalculate order total
+            $this->recalculateOrderTotal($order);
+            $order = $order->fresh();
+
+            $finalTotal = (float) $order->total;
+            $subtotal = (float) $order->subtotal;
+            $discountAmount = (float) ($order->discount_amount ?? 0);
+            $changeAmount = 0;
+            $paidAmount = (float) $data['paidAmount'];
+
+            // Validate cash payment
+            if ($data['paymentMethod'] === 'cash') {
+                if ($paidAmount < $finalTotal) {
+                    throw new Exception("Cash received ({$this->formatCurrency($paidAmount)}) is less than the total amount ({$this->formatCurrency($finalTotal)})");
+                }
+                $changeAmount = $paidAmount - $finalTotal;
+            } else {
+                // For non-cash, we assume exact payment was verified by cashier
+                $paidAmount = $finalTotal;
+            }
+
+            // Process inventory
+            $inventoryProcessed = $this->orderProcessingService->processOrder($order);
+
+            if (! $inventoryProcessed) {
+                throw new Exception('Cannot complete payment due to insufficient stock. Please restock ingredients.');
+            }
+
+            $order->update([
+                'status' => 'completed',
+                'payment_status' => 'paid',
+                'payment_method' => $data['paymentMethod'],
+                'subtotal' => $subtotal,
+                'total' => $finalTotal,
+                'paid_amount' => $paidAmount,
+                'change_amount' => $changeAmount,
+            ]);
+
+            DB::commit();
+
+            Notification::make()
+                ->success()
+                ->title('Payment Collected')
+                ->body("Order #{$order->id} completed. Total: ".$this->formatCurrency($finalTotal))
+                ->send();
+
+            $this->unmountAction();
+            $this->dispatch('$refresh');
+
+            $this->dispatch('payment-collected', [
+                'order_id' => $order->id,
+                'total' => $finalTotal,
+            ]);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('Error during payment collection: '.$e->getMessage());
+
+            Notification::make()
+                ->danger()
+                ->title('Payment Failed')
+                ->body($e->getMessage())
+                ->persistent()
+                ->send();
+        }
+    }
 
     public function boot(GeneralSettingsService $settingsService, OrderProcessingService $orderProcessingService, PosService $posService): void
     {
@@ -327,35 +419,18 @@ final class OrdersProcessing extends Page
             ->modalWidth('6xl')
             ->modalSubmitAction(false)
             ->modalCancelAction(false)
-            ->fillForm(function (array $arguments): array {
+            ->fillForm(function (array $arguments): void {
                 $order = Order::with('items')->find($arguments['orderId']);
-
-                // Recalculate order total to ensure it's up to date with any item discounts
                 $this->recalculateOrderTotal($order);
-
-                // Refresh after update to get latest value
                 $order = $order->fresh();
 
-                $isDelivery = $order->order_type === 'delivery';
-
-                return [
-                    'orderId' => $arguments['orderId'],
-                    'paymentMethod' => $isDelivery ? 'grab' : 'cash',
+                $this->paymentState = [
+                    'orderId' => (int) $arguments['orderId'],
+                    'paymentMethod' => $order->order_type === 'delivery' ? 'grab' : 'cash',
                     'paidAmount' => 0,
                 ];
             })
-            ->form([
-                Hidden::make('orderId'),
-                Hidden::make('paymentMethod'),
-                Hidden::make('paidAmount'),
-            ])
             ->modalContent(function (array $arguments) {
-                // If arguments are empty (which can happen in some contexts), try to get from form state if possible,
-                // but modalContent is evaluated when modal opens.
-                // For Page Actions, arguments passed to mountAction are usually available here.
-
-                // Fallback if arguments is empty but form is filled?
-                // We'll trust arguments are passed as they are in fillForm.
                 $orderId = $arguments['orderId'] ?? null;
                 if (! $orderId) {
                     return new HtmlString('<div class="p-4 text-red-500">Error: Order ID not found.</div>');
@@ -366,122 +441,6 @@ final class OrdersProcessing extends Page
                 return view('filament.pages.orders-processing.payment-modal', [
                     'order' => $order,
                 ]);
-            })
-            ->action(function (array $data): void {
-                try {
-                    DB::beginTransaction();
-
-                    $order = Order::query()->findOrFail($data['orderId']);
-
-                    Log::info('Processing payment collection', [
-                        'order_id' => $order->id,
-                        'payment_method' => $data['paymentMethod'],
-                    ]);
-
-                    // Recalculate order total to ensure it's up to date with all item discounts
-                    $this->recalculateOrderTotal($order);
-                    $order = $order->fresh();
-
-                    // Use the already-calculated total which includes all item-level discounts
-                    $finalTotal = (float) $order->total;
-                    $subtotal = (float) $order->subtotal;
-                    $discountAmount = (float) ($order->discount_amount ?? 0);
-                    $changeAmount = 0;
-                    $paidAmount = 0;
-
-                    // Validate cash payment
-                    if ($data['paymentMethod'] === 'cash') {
-                        $paidAmount = (float) ($data['paidAmount'] ?? 0);
-                        if ($paidAmount < $finalTotal) {
-                            Log::warning('Insufficient cash payment', [
-                                'order_id' => $order->id,
-                                'paid_amount' => $paidAmount,
-                                'final_total' => $finalTotal,
-                            ]);
-
-                            Notification::make()
-                                ->danger()
-                                ->title('Insufficient Payment')
-                                ->body("Cash received ({$this->formatCurrency($paidAmount)}) is less than the total amount ({$this->formatCurrency($finalTotal)})")
-                                ->send();
-
-                            DB::rollBack();
-
-                            return;
-                        }
-
-                        $changeAmount = $paidAmount - $finalTotal;
-                    }
-
-                    // Process inventory deduction when payment is collected
-                    $inventoryProcessed = $this->orderProcessingService->processOrder($order);
-
-                    if (! $inventoryProcessed) {
-                        DB::rollBack();
-
-                        Log::error('Inventory processing failed during payment', [
-                            'order_id' => $order->id,
-                        ]);
-
-                        Notification::make()
-                            ->danger()
-                            ->title('Insufficient Inventory')
-                            ->body('Cannot complete payment due to insufficient stock. Please check the logs or restock ingredients.')
-                            ->persistent()
-                            ->send();
-
-                        return;
-                    }
-
-                    $order->update([
-                        'status' => 'completed',
-                        'payment_status' => 'paid',
-                        'payment_method' => $data['paymentMethod'],
-                        'subtotal' => $subtotal,
-                        'discount_type' => $data['discountType'] ?? null,
-                        'discount_value' => $data['discountValue'] ?? null,
-                        'discount_amount' => $discountAmount,
-                        'total' => $finalTotal,
-                        'paid_amount' => $paidAmount,
-                        'change_amount' => $changeAmount,
-                    ]);
-
-                    DB::commit();
-
-                    Log::info('Payment collected successfully', [
-                        'order_id' => $order->id,
-                        'total' => $finalTotal,
-                    ]);
-
-                    Notification::make()
-                        ->success()
-                        ->title('Payment Collected')
-                        ->body("Order #{$order->id} completed. Total: ".$this->formatCurrency($finalTotal))
-                        ->send();
-
-                    $this->dispatch('$refresh');
-
-                    // Dispatch event to refresh sales data across all components
-                    $this->dispatch('payment-collected', [
-                        'order_id' => $order->id,
-                        'total' => $finalTotal,
-                    ]);
-                } catch (Exception $e) {
-                    DB::rollBack();
-
-                    Log::error('Error during payment collection', [
-                        'order_id' => $data['orderId'] ?? null,
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString(),
-                    ]);
-
-                    Notification::make()
-                        ->danger()
-                        ->title('Error')
-                        ->body('An error occurred: '.$e->getMessage())
-                        ->persistent()
-                        ->send();
-                }
             });
     }
 

@@ -1,7 +1,7 @@
 
 <div x-data="{
-    paymentMethod: @entangle('mountedActionsData.0.paymentMethod'),
-    paidAmount: @entangle('mountedActionsData.0.paidAmount'),
+    paymentMethod: @entangle('paymentState.paymentMethod'),
+    paidAmount: @entangle('paymentState.paidAmount'),
     total: {{ $order->total }},
     currency: '{{ $this->currency->getSymbol() }}',
     
@@ -13,10 +13,10 @@
         } else if (current.includes('.')) {
             // Limit to 2 decimal places
             if (current.split('.')[1].length < 2) {
-                this.paidAmount = parseFloat(current + num);
+                this.paidAmount = current + num;
             }
         } else {
-            this.paidAmount = parseFloat(current + num);
+            this.paidAmount = current + num;
         }
     },
     
@@ -37,8 +37,6 @@
             this.paidAmount = str.slice(0, -1);
             if (this.paidAmount === '' || this.paidAmount === '.') {
                 this.paidAmount = 0;
-            } else {
-                 this.paidAmount = parseFloat(this.paidAmount);
             }
         } else {
             this.paidAmount = 0;
@@ -50,10 +48,6 @@
     },
     
     addAmount(amount) {
-        // Round up to nearest amount + add
-        // Or just add to current
-        // Let's make it 'Next Bill' logic or just add
-        // Implementation: Add to current paid amount
         this.paidAmount = (parseFloat(this.paidAmount || 0) + amount).toFixed(2);
     },
 
@@ -67,7 +61,7 @@
     
     get isSufficient() {
         if (this.paymentMethod !== 'cash') return true;
-        return parseFloat(this.paidAmount || 0) >= this.total;
+        return parseFloat(this.paidAmount || 0) >= (this.total - 0.01);
     }
 }" class="flex flex-col h-full bg-gray-50 -m-6">
 
@@ -212,14 +206,14 @@
                                 @foreach([1, 2, 3, 4, 5, 6, 7, 8, 9] as $num)
                                     <button 
                                         type="button"
-                                        @click="appendNumber({{ $num }})"
+                                        @click="appendNumber('{{ $num }}')"
                                         class="text-2xl font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl aspect-[4/3] transition-colors"
                                     >
                                         {{ $num }}
                                     </button>
                                 @endforeach
                                 <button type="button" @click="appendDecimal()" class="text-2xl font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl aspect-[4/3]">.</button>
-                                <button type="button" @click="appendNumber(0)" class="text-2xl font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl aspect-[4/3]">0</button>
+                                <button type="button" @click="appendNumber('0')" class="text-2xl font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl aspect-[4/3]">0</button>
                                 <button type="button" @click="backspace()" class="flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-100 rounded-xl aspect-[4/3]">
                                     <x-filament::icon icon="heroicon-o-backspace" class="w-8 h-8" />
                                 </button>
@@ -251,7 +245,7 @@
             <div class="p-4 bg-white border-t border-gray-200">
                 <button 
                     type="button"
-                    @click="$wire.set('mountedActionsData.0.paidAmount', paidAmount); $wire.callMountedAction()"
+                    @click="$wire.processPayment()"
                     :disabled="!isSufficient"
                     :class="isSufficient 
                         ? 'bg-green-600 hover:bg-green-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5' 
@@ -268,3 +262,4 @@
         </div>
     </div>
 </div>
+
