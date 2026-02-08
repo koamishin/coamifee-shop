@@ -245,7 +245,7 @@
             <div class="p-4 bg-white border-t border-gray-200">
                 <button 
                     type="button"
-                    @click="$wire.processPayment()"
+                    @click="$wire.processPayment({{ $order->id }}, paymentMethod, paidAmount)"
                     :disabled="!isSufficient"
                     :class="isSufficient 
                         ? 'bg-green-600 hover:bg-green-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5' 

@@ -14,7 +14,6 @@ use App\Services\OrderModificationService;
 use App\Services\OrderProcessingService;
 use App\Services\PosService;
 use App\Services\RefundService;
-use BackedEnum;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
@@ -57,41 +56,23 @@ final class OrdersProcessing extends Page
         'orderId' => null,
     ];
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-clipboard-document-list';
-
-    // protected static UnitEnum|string|null $navigationGroup = 'Operations';
-
-    protected string $view = 'filament.pages.orders-processing';
-
-    protected static ?string $navigationLabel = 'Orders Processing';
-
-    protected static ?string $title = 'Orders Processing';
-
-    protected static ?int $navigationSort = 2;
-
     private GeneralSettingsService $settingsService;
 
     private OrderProcessingService $orderProcessingService;
 
     private PosService $posService;
 
-    public function processPayment(): void
+    public function processPayment(int $orderId, string $paymentMethod, float $paidAmount): void
     {
-        $data = $this->paymentState;
-
         try {
             DB::beginTransaction();
 
-            if (! $data['orderId']) {
-                throw new Exception('Order ID is missing.');
-            }
-
-            $order = Order::query()->findOrFail($data['orderId']);
+            $order = Order::query()->findOrFail($orderId);
 
             Log::info('Processing payment collection via custom method', [
                 'order_id' => $order->id,
-                'payment_method' => $data['paymentMethod'],
-                'paid_amount' => $data['paidAmount'],
+                'payment_method' => $paymentMethod,
+                'paid_amount' => $paidAmount,
             ]);
 
             // Recalculate order total
@@ -100,13 +81,12 @@ final class OrdersProcessing extends Page
 
             $finalTotal = (float) $order->total;
             $subtotal = (float) $order->subtotal;
-            $discountAmount = (float) ($order->discount_amount ?? 0);
             $changeAmount = 0;
-            $paidAmount = (float) $data['paidAmount'];
 
             // Validate cash payment
-            if ($data['paymentMethod'] === 'cash') {
-                if ($paidAmount < $finalTotal) {
+            if ($paymentMethod === 'cash') {
+                // Use a small epsilon for float comparison
+                if ($paidAmount < ($finalTotal - 0.01)) {
                     throw new Exception("Cash received ({$this->formatCurrency($paidAmount)}) is less than the total amount ({$this->formatCurrency($finalTotal)})");
                 }
                 $changeAmount = $paidAmount - $finalTotal;
@@ -125,7 +105,7 @@ final class OrdersProcessing extends Page
             $order->update([
                 'status' => 'completed',
                 'payment_status' => 'paid',
-                'payment_method' => $data['paymentMethod'],
+                'payment_method' => $paymentMethod,
                 'subtotal' => $subtotal,
                 'total' => $finalTotal,
                 'paid_amount' => $paidAmount,
